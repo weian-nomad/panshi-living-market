@@ -1,0 +1,18 @@
+[package]
+name = "panshi-protocol"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+build = "build.rs"
+
+[dependencies]
+prost.workspace = true
+sha2.workspace = true
+
+[build-dependencies]
+prost-build.workspace = true
+protoc-bin-vendored.workspace = true
+
+[lints]
+workspace = true

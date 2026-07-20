@@ -1,0 +1,84 @@
+name: Engineering gates
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  contracts-and-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .node-version
+      - name: Install pinned pnpm
+        run: npm install --global pnpm@11.15.0
+      - name: Install JavaScript dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Validate public OpenAPI
+        run: pnpm contracts:lint
+      - name: Regenerate public client
+        run: pnpm contracts:generate
+      - name: Reject generated-client drift
+        run: git diff --exit-code -- apps/web/src/api/generated
+      - name: Audit command and event catalog
+        run: ruby tools/contract-audit.rb
+      - name: Verify sealed historical fixtures
+        run: ruby tools/fixture-audit.rb
+      - name: Type-check workspaces
+        run: pnpm --recursive --if-present check
+      - name: Test web rules
+        run: pnpm test
+      - name: Build web client
+        run: pnpm build
+
+  rust:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16.14-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: panshi_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d panshi_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PANSHI_TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/panshi_test
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install pinned Rust toolchain
+        run: rustup show
+      - name: Install pinned Buf
+        run: tools/contracts/install-buf.sh
+      - name: Lint Protobuf contracts
+        env:
+          BUF_CACHE_DIR: ${{ runner.temp }}/buf-cache
+        run: .tools/bin/buf lint
+      - name: Enforce crate boundaries
+        run: tools/contracts/check-boundaries.sh
+      - name: Format
+        run: cargo fmt --all -- --check
+      - name: Lint
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Test native workspace
+        run: cargo test --workspace --locked
+      - name: Install pinned Wasmtime
+        run: |
+          curl --fail --silent --show-error --location \
+            --output "${RUNNER_TEMP}/wasmtime.tar.xz" \
+            https://github.com/bytecodealliance/wasmtime/releases/download/v45.0.0/wasmtime-v45.0.0-x86_64-linux.tar.xz
+          echo "9d92e6dc04630f617e0e5d532327a5a917ac4898587e07f4fb7a5fc7fffef760  ${RUNNER_TEMP}/wasmtime.tar.xz" | sha256sum --check
+          tar --extract --xz --file "${RUNNER_TEMP}/wasmtime.tar.xz" --directory "${RUNNER_TEMP}"
+          echo "${RUNNER_TEMP}/wasmtime-v45.0.0-x86_64-linux" >> "${GITHUB_PATH}"
+      - name: Compare native and WASI canonical bytes
+        run: tools/verify-kernel-parity.sh

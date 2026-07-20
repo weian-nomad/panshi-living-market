@@ -1,0 +1,10 @@
+{
+  "fixtureSchemaVersion": 1,
+  "fixtureId": "historical-episode-001",
+  "truthClass": "fictional_setting",
+  "decisionInputSha256": "168f382ff35775e807847f04e6aedc90d18e3142581189d0d0b06a3747024858",
+  "expectedActionsSha256": "d355620d07730ce6944ac32fbcd5eb3ec1db6b4509fb79c38c6697a4deb12cae",
+  "canonicalInputProtobufSha256": "079ebac621d8300a55795ea09229d9eba3ebfc2a7278ce32eb406e5dd966b439",
+  "canonicalOutputProtobufSha256": "c1cf5f16630c6bfbd8ef6317931c20e6baf5341df0c8a24a3f437aa8cf33f700",
+  "sealed": true
+}

@@ -1,0 +1,702 @@
+openapi: 3.1.0
+info:
+  title: Panshi Living Market Public API
+  version: 1.0.0
+  description: Historical isolated beta contract for the five-seat game loop.
+  license:
+    name: Proprietary
+    identifier: LicenseRef-Proprietary
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+servers:
+  - url: https://api.panshi.app
+    description: Historical beta API
+security:
+  - bearerAuth: []
+tags:
+  - name: Round desk
+    description: Read and arrange the five-seat round desk.
+  - name: Commands
+    description: Read durable command receipts.
+  - name: Reveal
+    description: Read delayed revision-aware character decisions.
+paths:
+  /v1/rounds/{roundId}:
+    get:
+      summary: Get the authoritative round desk projection
+      operationId: getRoundDesk
+      tags: [Round desk]
+      parameters:
+        - $ref: '#/components/parameters/RoundId'
+      responses:
+        '200':
+          description: Authoritative desk projection.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ProjectionETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoundDeskProjection'
+        '404':
+          $ref: '#/components/responses/Problem'
+  /v1/rounds/{roundId}/seat-plan:
+    put:
+      summary: Save one complete five-seat plan
+      operationId: saveSeatPlan
+      tags: [Round desk]
+      parameters:
+        - $ref: '#/components/parameters/RoundId'
+        - $ref: '#/components/parameters/CommandId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveSeatPlanRequest'
+      responses:
+        '200':
+          description: Command is committed or is a duplicate of a committed command.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandReceipt'
+        '202':
+          description: Command was accepted and remains pending.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandReceipt'
+        '409':
+          description: Version, ownership, cutoff, or idempotency conflict.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandReceipt'
+        '422':
+          description: Complete placement failed domain validation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandReceipt'
+  /v1/rounds/{roundId}/seat-plan/preview:
+    get:
+      summary: Preview the legal action space for a committed plan
+      operationId: getLegalActionPreview
+      tags: [Round desk]
+      parameters:
+        - $ref: '#/components/parameters/RoundId'
+        - name: canonicalVersion
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/Version'
+        - name: layoutDigest
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/Digest'
+      responses:
+        '200':
+          description: Legal action space for the exact committed layout.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegalActionPreview'
+        '409':
+          $ref: '#/components/responses/Problem'
+  /v1/rounds/{roundId}/seat-plan/seal:
+    post:
+      summary: Seal the latest committed seat plan
+      operationId: sealSeatPlan
+      tags: [Round desk]
+      parameters:
+        - $ref: '#/components/parameters/RoundId'
+        - $ref: '#/components/parameters/CommandId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SealSeatPlanRequest'
+      responses:
+        '200':
+          description: Seat plan is sealed or the same committed command was replayed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandReceipt'
+        '202':
+          description: Seal command remains pending.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandReceipt'
+        '409':
+          description: Seal preconditions failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandReceipt'
+  /v1/commands/{commandId}:
+    get:
+      summary: Get a durable command receipt
+      operationId: getCommandStatus
+      tags: [Commands]
+      parameters:
+        - name: commandId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: Durable command journal receipt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandReceipt'
+        '404':
+          $ref: '#/components/responses/Problem'
+  /v1/decision-sessions/{decisionSessionId}/reveal:
+    get:
+      summary: Get the revision-aware five-seat reveal
+      operationId: getDecisionReveal
+      tags: [Reveal]
+      parameters:
+        - name: decisionSessionId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: Revision-aware reveal projection.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionReveal'
+        '202':
+          description: Canonical action exists but the projection is not yet ready.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectionPending'
+        '404':
+          $ref: '#/components/responses/Problem'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    RoundId:
+      name: roundId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Uuid'
+    CommandId:
+      name: X-Command-Id
+      in: header
+      required: true
+      schema:
+        $ref: '#/components/schemas/Uuid'
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 160
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      schema:
+        type: string
+        pattern: '^"round:[0-9]+"$'
+  headers:
+    ProjectionETag:
+      description: Projection version, not a canonical write authority.
+      schema:
+        type: string
+        pattern: '^"projection:[0-9]+"$'
+  responses:
+    Problem:
+      description: Typed read or validation failure.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    Uuid:
+      type: string
+      format: uuid
+    Digest:
+      type: string
+      pattern: '^[a-f0-9]{64}$'
+    Version:
+      type: integer
+      format: int64
+      minimum: 0
+    FixedPoint:
+      type: string
+      pattern: '^-?[0-9]+\.[0-9]{6}$'
+    HistoricalMode:
+      type: string
+      const: historical
+    TruthClass:
+      type: string
+      enum:
+        - real_fact
+        - statistical_sample
+        - fictional_setting
+        - symbolic_interpretation
+        - simulated_narrative
+    AuthoritativeState:
+      type: string
+      enum: [open, seat_plan_sealed, input_sealed, action_committed, held, void]
+    DataState:
+      type: string
+      enum: [ready, stale, held, void, corrected]
+    RevealState:
+      type: string
+      enum: [hidden, pending, available, corrected, void]
+    ControlState:
+      type: string
+      const: controlled
+    ReasonCode:
+      type: string
+      enum:
+        - VERSION_CONFLICT
+        - CUTOFF_PASSED
+        - CONTROL_INACTIVE
+        - SESSION_HELD
+        - CELL_MIGRATING
+        - RIGHTS_REVOKED
+        - MODE_UNAVAILABLE
+        - PROJECTION_LAGGING
+        - IDEMPOTENCY_KEY_REUSED
+        - INVALID_PLACEMENT
+        - LAYOUT_DIGEST_MISMATCH
+        - UNKNOWN_RESOURCE
+    SeatId:
+      type: string
+      enum: [gatekeeper, core-a, core-b, flank, explore]
+    InformationPerspective:
+      type: string
+      enum:
+        - company-announcements
+        - industry-events
+        - historical-price-volume
+        - cross-company-comparison
+        - new-events-and-anomalies
+    Direction:
+      type: string
+      enum: [no-action, upside, downside]
+    Placement:
+      type: object
+      additionalProperties: false
+      required: [seatId, characterId, dossierId]
+      properties:
+        seatId:
+          $ref: '#/components/schemas/SeatId'
+        characterId:
+          $ref: '#/components/schemas/Uuid'
+        dossierId:
+          $ref: '#/components/schemas/Uuid'
+    SaveSeatPlanRequest:
+      type: object
+      additionalProperties: false
+      required: [baseVersion, layoutDigest, placements]
+      properties:
+        baseVersion:
+          $ref: '#/components/schemas/Version'
+        layoutDigest:
+          $ref: '#/components/schemas/Digest'
+        placements:
+          type: array
+          minItems: 5
+          maxItems: 5
+          items:
+            $ref: '#/components/schemas/Placement'
+    SealSeatPlanRequest:
+      type: object
+      additionalProperties: false
+      required: [canonicalVersion, layoutDigest]
+      properties:
+        canonicalVersion:
+          $ref: '#/components/schemas/Version'
+        layoutDigest:
+          $ref: '#/components/schemas/Digest'
+    CommandReceipt:
+      type: object
+      additionalProperties: false
+      required:
+        - commandId
+        - disposition
+        - canonicalVersion
+        - retryable
+        - reasonCode
+        - statusResource
+      properties:
+        commandId:
+          $ref: '#/components/schemas/Uuid'
+        disposition:
+          type: string
+          enum: [committed, pending, duplicate, rejected]
+        canonicalVersion:
+          $ref: '#/components/schemas/Version'
+        retryable:
+          type: boolean
+        reasonCode:
+          oneOf:
+            - $ref: '#/components/schemas/ReasonCode'
+            - type: 'null'
+        statusResource:
+          type: string
+          pattern: '^/v1/commands/[0-9a-f-]{36}$'
+    CharacterSummary:
+      type: object
+      additionalProperties: false
+      required: [id, displayName, stateLabel, contextDepth, truthClass]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 40
+        stateLabel:
+          type: string
+          minLength: 1
+          maxLength: 80
+        contextDepth:
+          type: integer
+          minimum: 0
+          maximum: 5
+        truthClass:
+          type: string
+          const: fictional_setting
+    FictionalCompanySummary:
+      type: object
+      additionalProperties: false
+      required: [id, displayName, cohortLabel, truthClass]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 60
+        cohortLabel:
+          type: string
+          minLength: 1
+          maxLength: 60
+        truthClass:
+          type: string
+          const: fictional_setting
+    DossierSummary:
+      type: object
+      additionalProperties: false
+      required: [id, displayName, companies, truthClass]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 60
+        companies:
+          type: array
+          minItems: 4
+          maxItems: 4
+          items:
+            $ref: '#/components/schemas/FictionalCompanySummary'
+        truthClass:
+          type: string
+          const: fictional_setting
+    SeatState:
+      type: object
+      additionalProperties: false
+      required:
+        - seatId
+        - capitalWeight
+        - qmax
+        - informationPerspective
+        - peerSourceSeatId
+        - riskBrakeLabel
+      properties:
+        seatId:
+          $ref: '#/components/schemas/SeatId'
+        capitalWeight:
+          $ref: '#/components/schemas/FixedPoint'
+        qmax:
+          $ref: '#/components/schemas/FixedPoint'
+        informationPerspective:
+          $ref: '#/components/schemas/InformationPerspective'
+        peerSourceSeatId:
+          $ref: '#/components/schemas/SeatId'
+        riskBrakeLabel:
+          type: string
+          minLength: 1
+          maxLength: 80
+    RoundDeskProjection:
+      type: object
+      additionalProperties: false
+      required:
+        - mode
+        - authoritativeState
+        - canonicalVersion
+        - projectionVersion
+        - serverNow
+        - interactionCutoffAt
+        - evidenceCutoffAt
+        - controlState
+        - pendingBoundaryTransition
+        - dataState
+        - revealState
+        - canSubmit
+        - blockingReasonCodes
+        - truthClasses
+        - logicalCellId
+        - ownershipEpoch
+        - roundId
+        - episodeLabel
+        - maskedSessionLabel
+        - previousKeyCause
+        - characters
+        - dossiers
+        - seats
+        - placements
+      properties:
+        mode:
+          $ref: '#/components/schemas/HistoricalMode'
+        authoritativeState:
+          $ref: '#/components/schemas/AuthoritativeState'
+        canonicalVersion:
+          $ref: '#/components/schemas/Version'
+        projectionVersion:
+          $ref: '#/components/schemas/Version'
+        serverNow:
+          type: string
+          format: date-time
+        interactionCutoffAt:
+          type: string
+          format: date-time
+        evidenceCutoffAt:
+          type: string
+          format: date-time
+        controlState:
+          $ref: '#/components/schemas/ControlState'
+        pendingBoundaryTransition:
+          oneOf:
+            - type: string
+            - type: 'null'
+        dataState:
+          $ref: '#/components/schemas/DataState'
+        revealState:
+          $ref: '#/components/schemas/RevealState'
+        canSubmit:
+          type: boolean
+        blockingReasonCodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReasonCode'
+        truthClasses:
+          type: array
+          items:
+            $ref: '#/components/schemas/TruthClass'
+        logicalCellId:
+          $ref: '#/components/schemas/Uuid'
+        ownershipEpoch:
+          $ref: '#/components/schemas/Version'
+        roundId:
+          $ref: '#/components/schemas/Uuid'
+        episodeLabel:
+          type: string
+          minLength: 1
+          maxLength: 80
+        maskedSessionLabel:
+          type: string
+          minLength: 1
+          maxLength: 80
+        previousKeyCause:
+          type: string
+          minLength: 1
+          maxLength: 240
+        characters:
+          type: array
+          minItems: 5
+          maxItems: 5
+          items:
+            $ref: '#/components/schemas/CharacterSummary'
+        dossiers:
+          type: array
+          minItems: 5
+          maxItems: 5
+          items:
+            $ref: '#/components/schemas/DossierSummary'
+        seats:
+          type: array
+          minItems: 5
+          maxItems: 5
+          items:
+            $ref: '#/components/schemas/SeatState'
+        placements:
+          type: array
+          minItems: 5
+          maxItems: 5
+          items:
+            $ref: '#/components/schemas/Placement'
+    SeatLegalActionPreview:
+      type: object
+      additionalProperties: false
+      required: [seatId, companies, qmax, informationPerspective, peerSourceSeatId]
+      properties:
+        seatId:
+          $ref: '#/components/schemas/SeatId'
+        companies:
+          type: array
+          minItems: 4
+          maxItems: 4
+          items:
+            $ref: '#/components/schemas/FictionalCompanySummary'
+        qmax:
+          $ref: '#/components/schemas/FixedPoint'
+        informationPerspective:
+          $ref: '#/components/schemas/InformationPerspective'
+        peerSourceSeatId:
+          $ref: '#/components/schemas/SeatId'
+    LegalActionPreview:
+      type: object
+      additionalProperties: false
+      required: [roundId, canonicalVersion, layoutDigest, seats]
+      properties:
+        roundId:
+          $ref: '#/components/schemas/Uuid'
+        canonicalVersion:
+          $ref: '#/components/schemas/Version'
+        layoutDigest:
+          $ref: '#/components/schemas/Digest'
+        seats:
+          type: array
+          minItems: 5
+          maxItems: 5
+          items:
+            $ref: '#/components/schemas/SeatLegalActionPreview'
+    SeatActionReveal:
+      type: object
+      additionalProperties: false
+      required:
+        - seatId
+        - characterId
+        - direction
+        - confidence
+        - firstUtility
+        - secondUtility
+        - utilityGap
+        - truthClasses
+      properties:
+        seatId:
+          $ref: '#/components/schemas/SeatId'
+        characterId:
+          $ref: '#/components/schemas/Uuid'
+        fictionalCompanyId:
+          oneOf:
+            - $ref: '#/components/schemas/Uuid'
+            - type: 'null'
+        direction:
+          $ref: '#/components/schemas/Direction'
+        confidence:
+          $ref: '#/components/schemas/FixedPoint'
+        firstUtility:
+          $ref: '#/components/schemas/FixedPoint'
+        secondUtility:
+          $ref: '#/components/schemas/FixedPoint'
+        utilityGap:
+          $ref: '#/components/schemas/FixedPoint'
+        truthClasses:
+          type: array
+          items:
+            $ref: '#/components/schemas/TruthClass'
+    DecisionReveal:
+      type: object
+      additionalProperties: false
+      required:
+        - decisionSessionId
+        - currentRevision
+        - previousRevisions
+        - adjudicationReasonClass
+        - scoreChanged
+        - crewHistoryChanged
+        - riskBrakeCarry
+        - actionDigest
+        - actions
+      properties:
+        decisionSessionId:
+          $ref: '#/components/schemas/Uuid'
+        currentRevision:
+          $ref: '#/components/schemas/Version'
+        previousRevisions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Version'
+        adjudicationReasonClass:
+          oneOf:
+            - type: string
+            - type: 'null'
+        scoreChanged:
+          type: boolean
+        crewHistoryChanged:
+          type: boolean
+        riskBrakeCarry:
+          type: boolean
+        actionDigest:
+          $ref: '#/components/schemas/Digest'
+        actions:
+          type: array
+          minItems: 5
+          maxItems: 5
+          items:
+            $ref: '#/components/schemas/SeatActionReveal'
+    ProjectionPending:
+      type: object
+      additionalProperties: false
+      required: [decisionSessionId, canonicalVersion, projectionVersion, reasonCode]
+      properties:
+        decisionSessionId:
+          $ref: '#/components/schemas/Uuid'
+        canonicalVersion:
+          $ref: '#/components/schemas/Version'
+        projectionVersion:
+          $ref: '#/components/schemas/Version'
+        reasonCode:
+          type: string
+          const: PROJECTION_LAGGING
+    Problem:
+      type: object
+      additionalProperties: false
+      required: [type, title, status, reasonCode, traceId]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+        title:
+          type: string
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        reasonCode:
+          $ref: '#/components/schemas/ReasonCode'
+        traceId:
+          type: string
+          minLength: 16
+          maxLength: 64

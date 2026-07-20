@@ -31,7 +31,7 @@ _2026-07-20｜判決：`PRE-CODE MAXIMUM REACHED`_
 - 角色：因素影響率、角色差異率、反事實與模型 fallback fixtures。
 - 賽制：500 個分層賽季、盲策略支配、Coverage、risk brake 與 scoring golden model。
 - 外部條件：歷史資料權利、臺灣法遵、當期模式書面路徑與訊號誤讀測試。
-- 工程：Protobuf／OpenAPI、golden fixtures、threat model、migration、failure injection 與 load qualification。
+- 工程：OpenAPI edge conformance、threat model、command handlers、projection worker、failure injection 與 load qualification。Protobuf canonical bytes、native／WASI golden parity、SQLx migration 與 atomic append vertical slice 已關閉。
 - 設計：高保真 Figma、元件 library、首批生成角色資產、motion study、可用性與無障礙驗證。FigJam 尚有一個舊「查看十五則注意事項」節點；刪除前不得交付工程。
 
 完整項目與驗收證據見 [Pre-code backlog](../../BACKLOG.md)。

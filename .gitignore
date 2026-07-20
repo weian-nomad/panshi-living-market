@@ -4,11 +4,16 @@
 !.env.example
 
 node_modules/
+.tools/
+apps/web/public/art/five-seat-observatory-v1.png
+apps/web/public/art/five-seat-observatory-v1.webp
+.pnpm-store/
 .next/
 .turbo/
 coverage/
 dist/
 build/
+target/
 DerivedData/
 xcuserdata/
 *.xcuserstate

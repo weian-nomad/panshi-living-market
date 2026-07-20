@@ -1,0 +1,12 @@
+[package]
+name = "panshi-scoring"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+panshi-decision-kernel = { path = "../decision-kernel" }
+
+[lints]
+workspace = true

@@ -1,0 +1,121 @@
+syntax = "proto3";
+
+package panshi.game.v1;
+
+import "panshi/common/v1/envelope.proto";
+import "panshi/game/v1/desk.proto";
+
+enum Direction {
+  DIRECTION_UNSPECIFIED = 0;
+  DIRECTION_NO_ACTION = 1;
+  DIRECTION_UPSIDE = 2;
+  DIRECTION_DOWNSIDE = 3;
+}
+
+message DecisionInputSnapshot {
+  uint32 snapshot_schema_version = 1;
+  bytes decision_session_id = 2;
+  bytes round_id = 3;
+  bytes content_session_id = 4;
+  bytes seat_plan_sealed_event_id = 5;
+  uint64 round_desk_version = 6;
+  bytes layout_digest = 7;
+  panshi.common.v1.ImmutableSection episode = 8;
+  panshi.common.v1.ImmutableSection seat_plan = 9;
+  panshi.common.v1.ImmutableSection crew = 10;
+  panshi.common.v1.ImmutableSection score = 11;
+  panshi.common.v1.ImmutableSection appraisals = 12;
+  panshi.common.v1.ImmutableSection legal_actions = 13;
+  string policy_revision = 14;
+  bytes policy_digest = 15;
+  string kernel_abi = 16;
+  string algorithm_id = 17;
+  int64 fixed_point_scale = 18;
+}
+
+message DecisionInputSealed {
+  bytes decision_session_id = 1;
+  bytes seat_plan_digest = 2;
+  bytes crew_snapshot_digest = 3;
+  bytes score_snapshot_digest = 4;
+  bytes fact_pack_id = 5;
+  bytes appraisal_pack_id = 6;
+  bytes pack_bind_permit_id = 7;
+  bytes benchmark_pack_id = 8;
+  bytes action_mask_digest = 9;
+  bytes engine_digest = 10;
+  bytes snapshot_digest = 11;
+  string kernel_abi = 12;
+  string algorithm_id = 13;
+  panshi.common.v1.ReplayPatch replay_patch = 14;
+  bytes input_digest = 15;
+  bytes kernel_abi_digest = 16;
+}
+
+message CompanyActionInputV1 {
+  bytes fictional_company_id = 1;
+  int64 upside_conviction_fixed = 2;
+  int64 downside_conviction_fixed = 3;
+  bool upside_allowed = 4;
+  bool downside_allowed = 5;
+}
+
+message SeatDecisionInputV1 {
+  SeatId seat_id = 1;
+  bytes character_id = 2;
+  repeated CompanyActionInputV1 companies = 3;
+  int64 qmax_fixed = 4;
+  int64 resistance_fixed = 5;
+  int64 no_action_utility_fixed = 6;
+  bytes tie_break_seed = 7;
+}
+
+message DecisionKernelInputV1 {
+  uint32 schema_version = 1;
+  bytes algorithm_digest = 2;
+  bytes snapshot_digest = 3;
+  bytes decision_input_sealed_event_id = 4;
+  uint64 decision_session_version = 5;
+  bytes decision_session_id = 6;
+  bytes round_id = 7;
+  bytes content_session_id = 8;
+  bytes logical_cell_id = 9;
+  uint64 ownership_epoch = 10;
+  repeated SeatDecisionInputV1 seats = 11;
+  bytes kernel_abi_digest = 12;
+}
+
+message SeatAction {
+  SeatId seat_id = 1;
+  bytes character_id = 2;
+  bytes fictional_company_id = 3;
+  Direction direction = 4;
+  int64 confidence_fixed = 5;
+  int64 first_utility_fixed = 6;
+  int64 second_utility_fixed = 7;
+  int64 utility_gap_fixed = 8;
+  bytes seed_reference = 9;
+}
+
+message ActionsCommitted {
+  bytes decision_session_id = 1;
+  bytes snapshot_digest = 2;
+  string kernel_abi = 3;
+  string algorithm_id = 4;
+  repeated SeatAction actions = 5;
+  bytes action_digest = 6;
+  panshi.common.v1.ReplayPatch replay_patch = 7;
+  bytes decision_input_sealed_event_id = 8;
+  uint64 decision_session_input_version = 9;
+  bytes input_digest = 10;
+  bytes algorithm_digest = 11;
+  bytes kernel_abi_digest = 12;
+}
+
+message DecisionKernelOutputV1 {
+  uint32 schema_version = 1;
+  bytes algorithm_digest = 2;
+  bytes input_digest = 3;
+  repeated SeatAction actions = 4;
+  bytes kernel_abi_digest = 5;
+}

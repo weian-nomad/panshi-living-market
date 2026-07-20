@@ -1,0 +1,24 @@
+{
+  "name": "panshi-living-market",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.15.0",
+  "engines": {
+    "node": ">=24 <25",
+    "pnpm": "11.15.0"
+  },
+  "scripts": {
+    "audit:contracts": "ruby tools/contract-audit.rb",
+    "audit:fixtures": "ruby tools/fixture-audit.rb",
+    "build": "pnpm --recursive --if-present build",
+    "check": "pnpm audit:contracts && pnpm audit:fixtures && pnpm contracts:lint && pnpm --recursive --if-present check",
+    "contracts:generate": "openapi-ts",
+    "contracts:lint": "redocly lint contracts/openapi/public-v1.yaml",
+    "test": "pnpm --recursive --if-present test"
+  },
+  "devDependencies": {
+    "@hey-api/openapi-ts": "catalog:",
+    "@redocly/cli": "catalog:",
+    "typescript": "catalog:"
+  }
+}

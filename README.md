@@ -8,7 +8,9 @@
 
 ## 目前狀態
 
-產品憲法 v2.1 與核心架構已完成 pre-code 封頂審查；目前沒有已知缺口會迫使後續重切 bounded context、canonical history、deterministic kernel、privacy isolation 或 scale path。這不等於產品已可上線：排席原型、角色反事實、賽制試算、資料權利、法遵、Figma 與工程 qualification 仍須逐項過 gate。封測權益完整開放，不串金流、不顯示廣告。公開首版凍結為至少一年前的封存資料，遊玩時使用虛構公司名與遮蔽日期；當期真實公司不是預設架構，須另過臺灣法遵、資料授權與訊號誤讀 gate。
+產品憲法 v2.1 與核心架構已完成 pre-code 封頂審查。第一條可執行切片已進場：OpenAPI／Protobuf 契約、五席聚合狀態機、固定小數決策核心、封存 Protobuf golden fixture、SQLx／PostgreSQL canonical event store，以及可操作的桌面／手機排席介面都在同一個 monorepo。這仍不是可上線版本：command handlers、projection worker、資料權利、法遵與故障注入 qualification 尚未全數關閉。
+
+封測權益完整開放，不串金流、不顯示廣告。公開首版凍結為至少一年前的封存資料，遊玩時使用虛構公司名與遮蔽日期；當期真實公司不是預設架構，須另過臺灣法遵、資料授權與訊號誤讀 gate。
 
 現在的正式文件：
 
@@ -21,6 +23,7 @@
 - [Machine-readable command transition map](./contracts/policy/command-transition-map.yaml)
 - [Client truth／recovery contract](./docs/architecture/client-contract.md)
 - [Pre-code readiness 判決](./docs/reviews/pre-code-readiness.md)
+- [Canonical vertical-slice GO 判決](./docs/reviews/vertical-slice-gate-2026-07-20.md)
 - [全球競品與相鄰產品模式](./docs/research/competitive-patterns.md)
 - [跨產品契約](./docs/repository-boundary.md)
 - [重構後 pre-code backlog](./BACKLOG.md)
@@ -44,6 +47,25 @@
 - 不讓付費提高模型勝率、提早看封存答案或改寫角色情緒。
 - 不在公開 repo 保存憑證、私有資料、生成媒體、營運紀錄或未公開供應資訊。
 
-程式碼會在排席原型、賽制試算、角色可證偽、法遵邊界與新架構 P0 關閉後進場。第一個可執行版本仍須使用最終資料形狀與正式 API 契約，不做之後必須整批搬家的展示型切片。
+## 本機驗證
 
-規格契約可用 `ruby tools/contract-audit.rb` 稽核；目前會核對 133 個 commands、147 個 canonical events，以及 transition 與 payload map 是否完整對應。CI 會在相關契約變動時自動重跑。
+需求：Node 24、pnpm 11.15、Rust 1.97.1、Buf 1.72。完整 native／WASI 位元組驗證另需 Wasmtime 45.0.0。
+
+```bash
+pnpm install --frozen-lockfile
+pnpm check
+pnpm test
+cargo clippy --workspace --all-targets --locked -- -D warnings
+cargo test --workspace --locked
+tools/verify-kernel-parity.sh
+```
+
+啟動排席介面：
+
+```bash
+pnpm --filter @panshi/web dev
+```
+
+原創觀測桌插畫屬 release asset，不進 source control。缺少該檔時仍會顯示完整的 code-native 星盤、五席、狀態與操作；詳見 [`apps/web/public/art`](./apps/web/public/art/README.md)。
+
+規格契約會核對 133 個 commands、147 個 canonical events，以及 transition 與 payload map 是否完整對應；歷史 fixture 的 JSON、canonical Protobuf 與 SHA-256 也會獨立驗證。CI 同時拒絕 OpenAPI client drift、Protobuf lint、crate boundary 違規、浮點數核心、PostgreSQL atomic append 失敗，以及 native／WASI／golden bytes 分歧。

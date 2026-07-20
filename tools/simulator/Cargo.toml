@@ -1,0 +1,13 @@
+[package]
+name = "panshi-simulator"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+panshi-decision-kernel = { path = "../../crates/decision-kernel" }
+panshi-protocol = { path = "../../crates/protocol" }
+
+[lints]
+workspace = true

@@ -1,0 +1,79 @@
+syntax = "proto3";
+
+package panshi.game.v1;
+
+import "panshi/common/v1/envelope.proto";
+
+enum SeatId {
+  SEAT_ID_UNSPECIFIED = 0;
+  SEAT_ID_GATEKEEPER = 1;
+  SEAT_ID_CORE_A = 2;
+  SEAT_ID_CORE_B = 3;
+  SEAT_ID_FLANK = 4;
+  SEAT_ID_EXPLORE = 5;
+}
+
+enum InformationPerspective {
+  INFORMATION_PERSPECTIVE_UNSPECIFIED = 0;
+  INFORMATION_PERSPECTIVE_COMPANY_ANNOUNCEMENTS = 1;
+  INFORMATION_PERSPECTIVE_INDUSTRY_EVENTS = 2;
+  INFORMATION_PERSPECTIVE_HISTORICAL_PRICE_VOLUME = 3;
+  INFORMATION_PERSPECTIVE_CROSS_COMPANY_COMPARISON = 4;
+  INFORMATION_PERSPECTIVE_NEW_EVENTS_AND_ANOMALIES = 5;
+}
+
+message Placement {
+  SeatId seat_id = 1;
+  bytes character_id = 2;
+  bytes dossier_id = 3;
+}
+
+message SeatPlanLayout {
+  repeated Placement placements = 1;
+}
+
+message SaveSeatPlan {
+  bytes round_id = 1;
+  uint64 base_version = 2;
+  bytes layout_digest = 3;
+  repeated Placement placements = 4;
+}
+
+message SeatPlanSaved {
+  bytes round_id = 1;
+  bytes layout_digest = 2;
+  repeated Placement placements = 3;
+  uint64 base_version = 4;
+  panshi.common.v1.ReplayPatch replay_patch = 5;
+}
+
+message SealSeatPlan {
+  bytes round_id = 1;
+  bytes content_session_id = 2;
+  bytes layout_digest = 3;
+  uint64 canonical_version = 4;
+}
+
+message SeatPlanSealed {
+  bytes round_id = 1;
+  bytes content_session_id = 2;
+  bytes layout_digest = 3;
+  int64 interaction_cutoff_unix_micros = 4;
+  int64 database_committed_at_unix_micros = 5;
+  panshi.common.v1.ReplayPatch replay_patch = 6;
+}
+
+message SeatLegalActionPreview {
+  SeatId seat_id = 1;
+  repeated bytes fictional_company_ids = 2;
+  int64 qmax_fixed = 3;
+  InformationPerspective information_perspective = 4;
+  SeatId peer_source_seat_id = 5;
+}
+
+message LegalActionPreview {
+  bytes round_id = 1;
+  uint64 canonical_version = 2;
+  bytes layout_digest = 3;
+  repeated SeatLegalActionPreview seats = 4;
+}

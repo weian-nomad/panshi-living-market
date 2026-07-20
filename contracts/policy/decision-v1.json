@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "policyRevision": "five-seat-action-policy/1",
+  "kernelAbi": "panshi-decision-kernel/wasi-v1",
+  "fixedPointScale": 1000000,
+  "confidenceLevels": ["0.250000", "0.500000", "0.750000", "1.000000"],
+  "convictionClamp": ["-1.000000", "1.000000"],
+  "utilityNumerator": "2*q_raw*conviction_raw*1000000 - q_raw*q_raw*resistance_raw",
+  "utilityComparison": "signed_i128_numerator_descending",
+  "utilityOutputRounding": "numerator_div_1000000000000_truncate_toward_zero",
+  "noAction": {
+    "alwaysLegal": true,
+    "companyId": null,
+    "confidence": "0.000000"
+  },
+  "winnerOrder": [
+    "utility_descending",
+    "sha256(PSZS/TIE/v1\\0 || per_seat_hmac_seed || company_id_or_zero_16_bytes || direction_u8 || confidence_i64_be)_ascending"
+  ],
+  "batch": {
+    "seatCount": 5,
+    "companyCountPerSeat": 4,
+    "atomicCommit": true
+  }
+}

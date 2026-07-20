@@ -18,12 +18,12 @@ _版本 1.0｜2026-07-20｜高保真 Figma 與生成資產的共同約束_
 
 | 用途 | 字型策略 | 原因 |
 | --- | --- | --- |
-| 繁中介面與長文 | IBM Plex Sans TC | 筆畫清楚，數字與拉丁文協調，可用於密度高的狀態畫面 |
+| 繁中介面與長文 | Noto Sans TC／平台繁中 sans stack | 筆畫清楚，可用於密度高的狀態畫面；首切片不為未使用字形配送 40 MB font payload |
 | 數字、時間、revision、分數 | IBM Plex Mono | 固定寬度讓版本與數值易比較，不借用交易終端的螢光語法 |
 | 大標與章節 | Noto Serif TC，限 32 px 以上 | 讓卷宗與人物敘事有紙本感；不進小字、按鈕或風險資訊 |
 | 品牌字標 | 由「盤勢・眾生」六字另畫字形 | 只做 wordmark，不改造整套開源字型，也不把字標當內文 font |
 
-IBM Plex 採 SIL Open Font License；正式打包前保存實際 font file、版本、license 與 subset 清單。參考：[IBM Plex 官方 repository](https://github.com/IBM/plex)、[IBM Plex license](https://github.com/IBM/plex/blob/master/LICENSE.txt)。Noto Serif TC 也須在 asset manifest 固定版本與授權檔。
+IBM Plex Mono 採 SIL Open Font License；正式打包前保存實際 font file、版本、license 與 subset 清單。參考：[IBM Plex 官方 repository](https://github.com/IBM/plex)、[IBM Plex license](https://github.com/IBM/plex/blob/master/LICENSE.txt)。繁中字先走平台的 Noto／PingFang／JhengHei 與 Noto／Songti serif stack；品牌字與正式跨平台 CJK master 確定後再產出授權清楚的 glyph subset。正式 client 不向第三方字型服務發出 runtime 請求。
 
 ## 色彩與材質
 
