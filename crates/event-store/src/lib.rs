@@ -73,6 +73,48 @@ pub struct AppendReceipt {
     pub events: Vec<EventReceipt>,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum CommandState {
+    Pending,
+    Committed,
+    Rejected,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CommandRegistration {
+    pub command_id: Id,
+    pub command_owner: String,
+    pub idempotency_key: String,
+    pub command_kind: String,
+    pub command_bytes: Vec<u8>,
+    pub request_hash: Digest,
+    pub status_resource: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CommandRecord {
+    pub command_id: Id,
+    pub command_kind: String,
+    pub command_bytes: Vec<u8>,
+    pub request_hash: Digest,
+    pub state: CommandState,
+    pub is_replay: bool,
+    pub canonical_version: Option<u64>,
+    pub retryable: bool,
+    pub reason_code: Option<String>,
+    pub status_resource: String,
+    pub receipt_bytes: Option<Vec<u8>>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CommandRejection {
+    pub command_id: Id,
+    pub command_owner: String,
+    pub request_hash: Digest,
+    pub canonical_version: u64,
+    pub reason_code: String,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum AppendError {
     EmptyBatch,
@@ -86,11 +128,31 @@ pub enum AppendError {
     },
     OwnershipEpochConflict,
     IdempotencyDigestConflict,
+    CommandNotFound,
+    CommandAlreadyRejected,
     NumericOutOfRange,
     Persistence,
 }
 
 pub trait EventStore: Send + Sync {
+    /// Durably records the exact versioned command before domain execution.
+    fn register_command(
+        &self,
+        command: CommandRegistration,
+    ) -> impl Future<Output = Result<CommandRecord, AppendError>> + Send;
+
+    /// Freezes a deterministic domain rejection as a terminal journal result.
+    fn reject_command(
+        &self,
+        rejection: CommandRejection,
+    ) -> impl Future<Output = Result<CommandRecord, AppendError>> + Send;
+
+    /// Reads the authoritative command lifecycle, independently of projections.
+    fn command(
+        &self,
+        command_id: Id,
+    ) -> impl Future<Output = Result<Option<CommandRecord>, AppendError>> + Send;
+
     /// Atomically appends every event or none of them.
     ///
     /// # Errors
@@ -102,6 +164,37 @@ pub trait EventStore: Send + Sync {
         &self,
         request: AppendRequest,
     ) -> impl Future<Output = Result<AppendReceipt, AppendError>> + Send;
+}
+
+impl AppendRequest {
+    #[must_use]
+    pub fn registration(&self, command_bytes: Vec<u8>) -> CommandRegistration {
+        CommandRegistration {
+            command_id: self.command_id,
+            command_owner: self.command_owner.clone(),
+            idempotency_key: self.idempotency_key.clone(),
+            command_kind: "canonical-event-append-v1".into(),
+            command_bytes,
+            request_hash: self.command_digest,
+            status_resource: format!("/v1/commands/{}", uuid_text(self.command_id)),
+        }
+    }
+}
+
+fn uuid_text(bytes: Id) -> String {
+    let hex = |value: u8| -> char {
+        const DIGITS: &[u8; 16] = b"0123456789abcdef";
+        char::from(DIGITS[usize::from(value)])
+    };
+    let mut value = String::with_capacity(36);
+    for (index, byte) in bytes.into_iter().enumerate() {
+        if matches!(index, 4 | 6 | 8 | 10) {
+            value.push('-');
+        }
+        value.push(hex(byte >> 4));
+        value.push(hex(byte & 0x0f));
+    }
+    value
 }
 
 /// Rejects malformed append batches before an adapter opens a transaction.

@@ -78,6 +78,23 @@ impl SeatPlan {
     pub fn at(&self, seat_id: SeatId) -> &Placement {
         &self.placements[seat_id as usize]
     }
+
+    /// Hashes the complete canonical layout shared by every transport.
+    ///
+    /// The preimage is the NUL-terminated domain tag followed by five records
+    /// in fixed seat order. Each record is `seat_u8` (1 through 5), the raw
+    /// 16-byte character UUID, and the raw 16-byte dossier UUID.
+    #[must_use]
+    pub fn layout_digest(&self) -> [u8; 32] {
+        let mut hasher = Sha256::new();
+        hasher.update(b"PSZS/SEAT_PLAN_LAYOUT/v1\0");
+        for placement in &self.placements {
+            hasher.update([placement.seat_id as u8 + 1]);
+            hasher.update(placement.character_id.0);
+            hasher.update(placement.dossier_id.0);
+        }
+        hasher.finalize().into()
+    }
 }
 
 impl SeatId {
@@ -180,4 +197,35 @@ mod tests {
             Err(SeatPlanError::DuplicateDossier(DossierId([12; 16])))
         );
     }
+
+    #[test]
+    fn layout_digest_is_order_independent_after_canonicalization() {
+        let canonical = SeatPlan::new([
+            placement(SeatId::Gatekeeper, 1),
+            placement(SeatId::CoreA, 2),
+            placement(SeatId::CoreB, 3),
+            placement(SeatId::Flank, 4),
+            placement(SeatId::Explore, 5),
+        ])
+        .expect("canonical plan");
+        let shuffled = SeatPlan::new([
+            placement(SeatId::Explore, 5),
+            placement(SeatId::CoreB, 3),
+            placement(SeatId::Gatekeeper, 1),
+            placement(SeatId::Flank, 4),
+            placement(SeatId::CoreA, 2),
+        ])
+        .expect("shuffled plan");
+
+        assert_eq!(canonical.layout_digest(), shuffled.layout_digest());
+        assert_eq!(
+            canonical.layout_digest(),
+            [
+                0x8a, 0x44, 0xac, 0x0b, 0x54, 0x04, 0x37, 0xb1, 0xc1, 0xa6, 0x8c, 0x70, 0x39,
+                0xe8, 0xe4, 0xa1, 0xf9, 0x70, 0x0b, 0xcb, 0x4a, 0xd2, 0xb3, 0x89, 0x40, 0xbf,
+                0xec, 0x50, 0x6d, 0xd5, 0x89, 0x33,
+            ]
+        );
+    }
 }
+use sha2::{Digest, Sha256};

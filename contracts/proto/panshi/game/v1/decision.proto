@@ -50,6 +50,15 @@ message DecisionInputSealed {
   panshi.common.v1.ReplayPatch replay_patch = 14;
   bytes input_digest = 15;
   bytes kernel_abi_digest = 16;
+  bytes kernel_input_bytes = 17;
+  bytes round_id = 18;
+  bytes content_session_id = 19;
+  bytes logical_cell_id = 20;
+  uint64 ownership_epoch = 21;
+  bytes seat_plan_sealed_event_id = 22;
+  uint64 round_desk_version = 23;
+  bytes layout_digest = 24;
+  bytes algorithm_digest = 25;
 }
 
 message CompanyActionInputV1 {

@@ -78,6 +78,46 @@ impl RoundDesk {
         }
     }
 
+    /// Rehydrates a canonical aggregate from an already validated event history.
+    ///
+    /// # Errors
+    ///
+    /// Rejects an impossible version sequence or a saved plan whose bytes do
+    /// not produce its recorded layout digest.
+    pub fn rehydrate(
+        round_id: AggregateId,
+        logical_cell_id: AggregateId,
+        ownership_epoch: u64,
+        stream_version: u64,
+        interaction_cutoff_unix_micros: i64,
+        saved_plan: Option<SavedSeatPlan>,
+        sealed_plan: Option<SealedSeatPlan>,
+    ) -> Result<Self, RoundDeskError> {
+        if saved_plan.as_ref().is_some_and(|saved| {
+            saved.stream_version > stream_version || saved.plan.layout_digest() != saved.layout_digest
+        }) || sealed_plan.as_ref().is_some_and(|sealed| {
+            sealed.round_id != round_id
+                || sealed.logical_cell_id != logical_cell_id
+                || sealed.ownership_epoch != ownership_epoch
+                || sealed.stream_version > stream_version
+                || saved_plan
+                    .as_ref()
+                    .is_none_or(|saved| saved.layout_digest != sealed.layout_digest)
+        }) {
+            return Err(RoundDeskError::LayoutDigestMismatch);
+        }
+        Ok(Self {
+            round_id,
+            logical_cell_id,
+            ownership_epoch,
+            state: RoundState::Open,
+            stream_version,
+            interaction_cutoff_unix_micros,
+            saved_plan,
+            sealed_plan,
+        })
+    }
+
     /// Applies one complete atomic seat plan.
     ///
     /// # Errors
@@ -98,6 +138,9 @@ impl RoundDesk {
         }
         if database_now_unix_micros >= self.interaction_cutoff_unix_micros {
             return Err(RoundDeskError::CutoffPassed);
+        }
+        if plan.layout_digest() != layout_digest {
+            return Err(RoundDeskError::LayoutDigestMismatch);
         }
 
         self.stream_version += 1;
@@ -188,10 +231,11 @@ mod tests {
     #[test]
     fn save_then_seal_uses_exact_version_cutoff_and_digest() {
         let mut desk = RoundDesk::open([1; 16], [6; 16], 2, 7, 1_000);
-        desk.save_seat_plan(7, 999, plan(), [4; 32], [2; 16])
+        let digest = plan().layout_digest();
+        desk.save_seat_plan(7, 999, plan(), digest, [2; 16])
             .expect("save before cutoff");
         let sealed = desk
-            .seal_seat_plan(8, 1_000, [3; 16], [4; 32], [5; 16])
+            .seal_seat_plan(8, 1_000, [3; 16], digest, [5; 16])
             .expect("seal at cutoff");
 
         assert_eq!(sealed.stream_version, 9);
@@ -201,8 +245,9 @@ mod tests {
     #[test]
     fn save_at_cutoff_fails_closed() {
         let mut desk = RoundDesk::open([1; 16], [6; 16], 2, 7, 1_000);
+        let digest = plan().layout_digest();
         assert_eq!(
-            desk.save_seat_plan(7, 1_000, plan(), [4; 32], [2; 16]),
+            desk.save_seat_plan(7, 1_000, plan(), digest, [2; 16]),
             Err(RoundDeskError::CutoffPassed)
         );
         assert_eq!(desk.stream_version, 7);
@@ -211,11 +256,12 @@ mod tests {
     #[test]
     fn early_or_wrong_digest_seal_never_advances_version() {
         let mut desk = RoundDesk::open([1; 16], [6; 16], 2, 7, 1_000);
-        desk.save_seat_plan(7, 900, plan(), [4; 32], [2; 16])
+        let digest = plan().layout_digest();
+        desk.save_seat_plan(7, 900, plan(), digest, [2; 16])
             .expect("save");
 
         assert_eq!(
-            desk.seal_seat_plan(8, 999, [3; 16], [4; 32], [5; 16]),
+            desk.seal_seat_plan(8, 999, [3; 16], digest, [5; 16]),
             Err(RoundDeskError::CutoffNotReached)
         );
         assert_eq!(
@@ -223,5 +269,15 @@ mod tests {
             Err(RoundDeskError::LayoutDigestMismatch)
         );
         assert_eq!(desk.stream_version, 8);
+    }
+
+    #[test]
+    fn save_rejects_a_client_invented_layout_digest() {
+        let mut desk = RoundDesk::open([1; 16], [6; 16], 2, 7, 1_000);
+        assert_eq!(
+            desk.save_seat_plan(7, 999, plan(), [4; 32], [2; 16]),
+            Err(RoundDeskError::LayoutDigestMismatch)
+        );
+        assert_eq!(desk.stream_version, 7);
     }
 }

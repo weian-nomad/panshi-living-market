@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "roundId": "10000000-0000-4000-8000-000000000001",
+  "decisionSessionId": "10000000-0000-4000-8000-000000000002",
+  "contentSessionId": "10000000-0000-4000-8000-000000000003",
+  "contentRevisionId": "10000000-0000-4000-8000-000000000004",
+  "logicalCellId": "10000000-0000-4000-8000-000000000005",
+  "episodeLabel": "封存劇本・潮線失真",
+  "maskedSessionLabel": "劇本日 08:20",
+  "previousKeyCause": "港口壅塞沒有消失，只是從新聞退到報表背面。",
+  "characters": [
+    {"id":"20000000-0000-4000-8000-000000000001","displayName":"宋知微","initials":"微","instinct":"先找缺口，才肯表態","stateLabel":"戒心上升","contextDepth":4,"tone":"clay","truthClass":"fictional_setting"},
+    {"id":"20000000-0000-4000-8000-000000000002","displayName":"顧長川","initials":"川","instinct":"證據要能反覆驗證","stateLabel":"專注穩定","contextDepth":3,"tone":"sage","truthClass":"fictional_setting"},
+    {"id":"20000000-0000-4000-8000-000000000003","displayName":"方以寧","initials":"寧","instinct":"會聽人，但不跟風","stateLabel":"願意協作","contextDepth":2,"tone":"indigo","truthClass":"fictional_setting"},
+    {"id":"20000000-0000-4000-8000-000000000004","displayName":"沈曜","initials":"曜","instinct":"追新，也記得退路","stateLabel":"好奇升溫","contextDepth":1,"tone":"copper","truthClass":"fictional_setting"},
+    {"id":"20000000-0000-4000-8000-000000000005","displayName":"林澄","initials":"澄","instinct":"保留餘地也是決定","stateLabel":"需要休息","contextDepth":5,"tone":"slate","truthClass":"fictional_setting"}
+  ],
+  "dossiers": [
+    {"id":"30000000-0000-4000-8000-000000000001","displayName":"潮汐卷","signal":"供應鏈的回聲","truthClass":"fictional_setting","companies":[
+      {"id":"41000000-0000-4000-8000-000000000001","displayName":"浮橋運輸","cohortLabel":"航運服務","truthClass":"fictional_setting"},
+      {"id":"41000000-0000-4000-8000-000000000002","displayName":"岸線材料","cohortLabel":"工業材料","truthClass":"fictional_setting"},
+      {"id":"41000000-0000-4000-8000-000000000003","displayName":"白帆倉儲","cohortLabel":"倉儲服務","truthClass":"fictional_setting"},
+      {"id":"41000000-0000-4000-8000-000000000004","displayName":"深港系統","cohortLabel":"港務系統","truthClass":"fictional_setting"}
+    ]},
+    {"id":"30000000-0000-4000-8000-000000000002","displayName":"燈塔卷","signal":"需求開始分岔","truthClass":"fictional_setting","companies":[
+      {"id":"42000000-0000-4000-8000-000000000001","displayName":"遠燈光學","cohortLabel":"精密光學","truthClass":"fictional_setting"},
+      {"id":"42000000-0000-4000-8000-000000000002","displayName":"星礁元件","cohortLabel":"電子元件","truthClass":"fictional_setting"},
+      {"id":"42000000-0000-4000-8000-000000000003","displayName":"折光製造","cohortLabel":"設備製造","truthClass":"fictional_setting"},
+      {"id":"42000000-0000-4000-8000-000000000004","displayName":"晨霧感測","cohortLabel":"感測器","truthClass":"fictional_setting"}
+    ]},
+    {"id":"30000000-0000-4000-8000-000000000003","displayName":"果園卷","signal":"價格與庫存拉扯","truthClass":"fictional_setting","companies":[
+      {"id":"43000000-0000-4000-8000-000000000001","displayName":"青枝食品","cohortLabel":"食品加工","truthClass":"fictional_setting"},
+      {"id":"43000000-0000-4000-8000-000000000002","displayName":"野泉冷鏈","cohortLabel":"冷鏈物流","truthClass":"fictional_setting"},
+      {"id":"43000000-0000-4000-8000-000000000003","displayName":"穗日包材","cohortLabel":"包裝材料","truthClass":"fictional_setting"},
+      {"id":"43000000-0000-4000-8000-000000000004","displayName":"丘陵通路","cohortLabel":"零售通路","truthClass":"fictional_setting"}
+    ]},
+    {"id":"30000000-0000-4000-8000-000000000004","displayName":"織機卷","signal":"舊產能正在換手","truthClass":"fictional_setting","companies":[
+      {"id":"44000000-0000-4000-8000-000000000001","displayName":"迴梭工業","cohortLabel":"工業設備","truthClass":"fictional_setting"},
+      {"id":"44000000-0000-4000-8000-000000000002","displayName":"細雨纖維","cohortLabel":"機能纖維","truthClass":"fictional_setting"},
+      {"id":"44000000-0000-4000-8000-000000000003","displayName":"複線設備","cohortLabel":"自動設備","truthClass":"fictional_setting"},
+      {"id":"44000000-0000-4000-8000-000000000004","displayName":"沉木機械","cohortLabel":"精密機械","truthClass":"fictional_setting"}
+    ]},
+    {"id":"30000000-0000-4000-8000-000000000005","displayName":"季風卷","signal":"政策風向仍未定","truthClass":"fictional_setting","companies":[
+      {"id":"45000000-0000-4000-8000-000000000001","displayName":"南徑能源","cohortLabel":"能源服務","truthClass":"fictional_setting"},
+      {"id":"45000000-0000-4000-8000-000000000002","displayName":"穹頂工程","cohortLabel":"工程服務","truthClass":"fictional_setting"},
+      {"id":"45000000-0000-4000-8000-000000000003","displayName":"逆風儲能","cohortLabel":"儲能系統","truthClass":"fictional_setting"},
+      {"id":"45000000-0000-4000-8000-000000000004","displayName":"候鳥電網","cohortLabel":"電網服務","truthClass":"fictional_setting"}
+    ]}
+  ],
+  "seats": [
+    {"seatId":"gatekeeper","label":"守門席","capitalWeight":"0.200000","qmax":"1.000000","informationPerspective":"company-announcements","peerSourceSeatId":"explore","riskBrakeLabel":"風險正常"},
+    {"seatId":"core-a","label":"核心席 A","capitalWeight":"0.200000","qmax":"0.750000","informationPerspective":"industry-events","peerSourceSeatId":"gatekeeper","riskBrakeLabel":"信心上限 75%"},
+    {"seatId":"core-b","label":"核心席 B","capitalWeight":"0.200000","qmax":"0.000000","informationPerspective":"historical-price-volume","peerSourceSeatId":"core-a","riskBrakeLabel":"本席暫不建立立場"},
+    {"seatId":"flank","label":"側翼席","capitalWeight":"0.200000","qmax":"0.500000","informationPerspective":"cross-company-comparison","peerSourceSeatId":"core-b","riskBrakeLabel":"信心上限 50%"},
+    {"seatId":"explore","label":"探索席","capitalWeight":"0.200000","qmax":"1.000000","informationPerspective":"new-events-and-anomalies","peerSourceSeatId":"flank","riskBrakeLabel":"風險正常"}
+  ],
+  "placements": [
+    {"seatId":"gatekeeper","characterId":"20000000-0000-4000-8000-000000000001","dossierId":"30000000-0000-4000-8000-000000000001"},
+    {"seatId":"core-a","characterId":"20000000-0000-4000-8000-000000000002","dossierId":"30000000-0000-4000-8000-000000000002"},
+    {"seatId":"core-b","characterId":"20000000-0000-4000-8000-000000000003","dossierId":"30000000-0000-4000-8000-000000000003"},
+    {"seatId":"flank","characterId":"20000000-0000-4000-8000-000000000004","dossierId":"30000000-0000-4000-8000-000000000004"},
+    {"seatId":"explore","characterId":"20000000-0000-4000-8000-000000000005","dossierId":"30000000-0000-4000-8000-000000000005"}
+  ]
+}

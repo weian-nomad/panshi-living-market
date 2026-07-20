@@ -1,6 +1,6 @@
 use panshi_event_store::{
-    AppendError, AppendRequest, EventStore, ModeDomain, NewEvent, PostgresEventStore,
-    StreamPrecondition,
+    AppendError, AppendRequest, CommandRejection, CommandState, EventStore, ModeDomain, NewEvent,
+    PostgresEventStore, StreamPrecondition,
 };
 use sqlx::postgres::PgPoolOptions;
 
@@ -71,14 +71,58 @@ async fn append_is_atomic_idempotent_and_hash_chained() {
     assert!(replay.deduplicated);
     assert_eq!(replay.events, first.events);
 
+    for (consumer, worker, whole_command) in [
+        ("projection-v1", "projection-test", true),
+        ("runner-v1", "runner-test", false),
+    ] {
+        let batch: serde_json::Value = sqlx::query_scalar(
+            "SELECT batch FROM event_store.claim_outbox_batch_v1($1, $2, 30, $3, $4)",
+        )
+        .bind(consumer)
+        .bind(worker)
+        .bind(if whole_command {
+            None::<&str>
+        } else {
+            Some("SeatPlanSaved")
+        })
+        .bind(whole_command)
+        .fetch_one(&pool)
+        .await
+        .expect("consumer independently claims event");
+        assert_eq!(batch["events"].as_array().map(Vec::len), Some(1));
+        assert_eq!(batch["events"][0]["commandOrdinal"], 1);
+        assert_eq!(batch["events"][0]["commandCount"], 1);
+
+        sqlx::query(
+            "SELECT event_store.complete_outbox_batch_v1( \
+               $1, $2, $3::uuid[], 'APPLIED', $4::bytea, NULL)",
+        )
+        .bind(consumer)
+        .bind(worker)
+        .bind(vec![uuid::Uuid::from_bytes(first.events[0].event_id)])
+        .bind(vec![31_u8; 32])
+        .execute(&pool)
+        .await
+        .expect("complete owned consumer lease");
+    }
+
+    let projection_delivery_count: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM event_store.consumer_inbox WHERE delivery_state = 'APPLIED'",
+    )
+    .fetch_one(&pool)
+    .await
+    .expect("inspect independent deliveries");
+    assert_eq!(projection_delivery_count, 2);
+
     let mut digest_conflict = command;
     digest_conflict.command_digest = [99; 32];
     assert_eq!(
         store.append(digest_conflict).await,
         Err(AppendError::IdempotencyDigestConflict)
     );
+    let stale = request(3, "stale", 0);
     assert_eq!(
-        store.append(request(3, "stale", 0)).await,
+        store.append(stale.clone()).await,
         Err(AppendError::VersionConflict {
             stream_type: "RoundDesk".into(),
             stream_id: [2; 16],
@@ -86,17 +130,49 @@ async fn append_is_atomic_idempotent_and_hash_chained() {
             actual: 1,
         })
     );
+    let pending = store
+        .command(stale.command_id)
+        .await
+        .expect("read pending command")
+        .expect("registered command");
+    assert_eq!(pending.state, CommandState::Pending);
+    assert!(pending.retryable);
 
-    let (events, outbox, version, hash_length): (i64, i64, i64, i32) = sqlx::query_as(
+    let rejected = store
+        .reject_command(CommandRejection {
+            command_id: stale.command_id,
+            command_owner: stale.command_owner,
+            request_hash: stale.command_digest,
+            canonical_version: 1,
+            reason_code: "VERSION_CONFLICT".into(),
+        })
+        .await
+        .expect("freeze deterministic rejection");
+    assert_eq!(rejected.state, CommandState::Rejected);
+    assert_eq!(rejected.reason_code.as_deref(), Some("VERSION_CONFLICT"));
+    assert!(!rejected.retryable);
+    assert_eq!(rejected.canonical_version, Some(1));
+
+    let terminal_mutation = sqlx::query(
+        "UPDATE event_store.command_journal SET reason_code = 'CUTOFF_PASSED' \
+         WHERE command_id = $1",
+    )
+    .bind(uuid::Uuid::from_bytes(stale.command_id))
+    .execute(&pool)
+    .await;
+    assert!(terminal_mutation.is_err());
+
+    let (events, outbox, version, hash_length, journals): (i64, i64, i64, i32, i64) = sqlx::query_as(
         "SELECT (SELECT count(*) FROM event_store.events), \
                 (SELECT count(*) FROM event_store.outbox), \
-                stream_version, octet_length(last_event_hash) \
+                stream_version, octet_length(last_event_hash), \
+                (SELECT count(*) FROM event_store.command_journal) \
          FROM event_store.stream_heads",
     )
     .fetch_one(&pool)
     .await
     .expect("inspect committed rows");
-    assert_eq!((events, outbox, version, hash_length), (1, 1, 1, 32));
+    assert_eq!((events, outbox, version, hash_length, journals), (1, 1, 1, 32, 2));
 
     sqlx::query("SET ROLE panshi_event_writer")
         .execute(&pool)

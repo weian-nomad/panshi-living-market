@@ -3,8 +3,8 @@ use sqlx::{PgPool, migrate::MigrateError, postgres::PgDatabaseError};
 use uuid::Uuid;
 
 use crate::{
-    AppendError, AppendReceipt, AppendRequest, Digest, EventReceipt, EventStore, ModeDomain,
-    validate_request,
+    AppendError, AppendReceipt, AppendRequest, CommandRecord, CommandRegistration,
+    CommandRejection, CommandState, Digest, EventReceipt, EventStore, ModeDomain, validate_request,
 };
 
 #[derive(Clone, Debug)]
@@ -26,20 +26,199 @@ impl PostgresEventStore {
     pub async fn migrate(pool: &PgPool) -> Result<(), MigrateError> {
         sqlx::migrate!("./migrations").run(pool).await
     }
-}
 
-impl EventStore for PostgresEventStore {
-    async fn append(&self, request: AppendRequest) -> Result<AppendReceipt, AppendError> {
+    /// Appends events for a command already persisted by `register_command`.
+    ///
+    /// # Errors
+    ///
+    /// Returns typed CAS, ownership, idempotency, or persistence failures.
+    pub async fn append_registered(
+        &self,
+        request: AppendRequest,
+    ) -> Result<AppendReceipt, AppendError> {
         validate_request(&request)?;
-        let wire_request = request_json(&request);
         let receipt: Value =
             sqlx::query_scalar("SELECT receipt FROM event_store.append_batch($1::jsonb)")
-                .bind(wire_request)
+                .bind(request_json(&request))
                 .fetch_one(&self.pool)
                 .await
                 .map_err(|error| map_database_error(&error))?;
         parse_receipt(&receipt)
     }
+
+    /// Claims a pending command with a renewable database-time lease.
+    ///
+    /// # Errors
+    ///
+    /// Returns a persistence error when the authoritative journal is unavailable.
+    pub async fn claim_command(
+        &self,
+        owner: &str,
+        command_id: [u8; 16],
+        worker: &str,
+        lease_seconds: i32,
+    ) -> Result<bool, AppendError> {
+        sqlx::query_scalar(
+            "SELECT event_store.claim_command_v1($1, $2, $3, $4)",
+        )
+        .bind(owner)
+        .bind(Uuid::from_bytes(command_id))
+        .bind(worker)
+        .bind(lease_seconds)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|_| AppendError::Persistence)
+    }
+}
+
+impl EventStore for PostgresEventStore {
+    async fn register_command(
+        &self,
+        command: CommandRegistration,
+    ) -> Result<CommandRecord, AppendError> {
+        let request = json!({
+            "commandId": uuid(command.command_id),
+            "commandOwner": command.command_owner,
+            "idempotencyKey": command.idempotency_key,
+            "commandKind": command.command_kind,
+            "commandHex": hex(&command.command_bytes),
+            "requestHashHex": hex(&command.request_hash),
+            "statusResource": command.status_resource,
+        });
+        let value: Value =
+            sqlx::query_scalar("SELECT record FROM event_store.register_command_v1($1::jsonb)")
+                .bind(request)
+                .fetch_one(&self.pool)
+                .await
+                .map_err(|error| map_database_error(&error))?;
+        parse_command_record(&value)
+    }
+
+    async fn reject_command(
+        &self,
+        rejection: CommandRejection,
+    ) -> Result<CommandRecord, AppendError> {
+        let request = json!({
+            "commandId": uuid(rejection.command_id),
+            "commandOwner": rejection.command_owner,
+            "requestHashHex": hex(&rejection.request_hash),
+            "canonicalVersion": rejection.canonical_version,
+            "reasonCode": rejection.reason_code,
+        });
+        let _: Value =
+            sqlx::query_scalar("SELECT receipt FROM event_store.reject_command_v1($1::jsonb)")
+                .bind(request)
+                .fetch_one(&self.pool)
+                .await
+                .map_err(|error| map_database_error(&error))?;
+        self.command(rejection.command_id)
+            .await?
+            .ok_or(AppendError::CommandNotFound)
+    }
+
+    async fn command(&self, command_id: [u8; 16]) -> Result<Option<CommandRecord>, AppendError> {
+        let value: Option<Value> = sqlx::query_scalar(
+            "SELECT jsonb_build_object( \
+               'commandId', command_id, 'commandKind', command_kind, \
+               'commandHex', encode(command_bytes, 'hex'), \
+               'requestHashHex', encode(request_hash, 'hex'), \
+               'state', command_state, 'isReplay', false, \
+               'canonicalVersion', canonical_version, 'retryable', retryable, \
+               'reasonCode', reason_code, 'statusResource', status_resource, \
+               'receiptHex', CASE WHEN receipt_bytes IS NULL THEN NULL \
+                                  ELSE encode(receipt_bytes, 'hex') END) \
+             FROM event_store.command_journal WHERE command_id = $1",
+        )
+        .bind(Uuid::from_bytes(command_id))
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|_| AppendError::Persistence)?;
+        value.as_ref().map(parse_command_record).transpose()
+    }
+
+    async fn append(&self, request: AppendRequest) -> Result<AppendReceipt, AppendError> {
+        validate_request(&request)?;
+        let wire_request = request_json(&request);
+        let registration = request.registration(
+            serde_json::to_vec(&wire_request).map_err(|_| AppendError::Persistence)?,
+        );
+        let registered = self.register_command(registration).await?;
+        if registered.state == CommandState::Rejected {
+            return Err(AppendError::CommandAlreadyRejected);
+        }
+        if registered.state == CommandState::Committed {
+            let bytes = registered
+                .receipt_bytes
+                .ok_or(AppendError::Persistence)?;
+            let value = serde_json::from_slice(&bytes).map_err(|_| AppendError::Persistence)?;
+            let mut receipt = parse_receipt(&value)?;
+            receipt.deduplicated = true;
+            return Ok(receipt);
+        }
+        self.append_registered(request).await
+    }
+}
+
+fn parse_command_record(value: &Value) -> Result<CommandRecord, AppendError> {
+    let state = match value.get("state").and_then(Value::as_str) {
+        Some("PENDING") => CommandState::Pending,
+        Some("COMMITTED") => CommandState::Committed,
+        Some("REJECTED") => CommandState::Rejected,
+        _ => return Err(AppendError::Persistence),
+    };
+    let receipt_bytes = value
+        .get("receiptHex")
+        .and_then(Value::as_str)
+        .map(parse_hex)
+        .transpose()?;
+    Ok(CommandRecord {
+        command_id: parse_uuid(value.get("commandId").and_then(Value::as_str))?,
+        command_kind: value
+            .get("commandKind")
+            .and_then(Value::as_str)
+            .ok_or(AppendError::Persistence)?
+            .to_owned(),
+        command_bytes: parse_hex(
+            value
+                .get("commandHex")
+                .and_then(Value::as_str)
+                .ok_or(AppendError::Persistence)?,
+        )?,
+        request_hash: parse_digest(value.get("requestHashHex").and_then(Value::as_str))?,
+        state,
+        is_replay: value
+            .get("isReplay")
+            .and_then(Value::as_bool)
+            .ok_or(AppendError::Persistence)?,
+        canonical_version: value.get("canonicalVersion").and_then(Value::as_u64),
+        retryable: value
+            .get("retryable")
+            .and_then(Value::as_bool)
+            .ok_or(AppendError::Persistence)?,
+        reason_code: value
+            .get("reasonCode")
+            .and_then(Value::as_str)
+            .map(ToOwned::to_owned),
+        status_resource: value
+            .get("statusResource")
+            .and_then(Value::as_str)
+            .ok_or(AppendError::Persistence)?
+            .to_owned(),
+        receipt_bytes,
+    })
+}
+
+fn parse_hex(value: &str) -> Result<Vec<u8>, AppendError> {
+    if !value.len().is_multiple_of(2) {
+        return Err(AppendError::Persistence);
+    }
+    (0..value.len())
+        .step_by(2)
+        .map(|index| {
+            u8::from_str_radix(&value[index..index + 2], 16)
+                .map_err(|_| AppendError::Persistence)
+        })
+        .collect()
 }
 
 fn request_json(request: &AppendRequest) -> Value {
