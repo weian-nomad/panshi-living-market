@@ -1,25 +1,25 @@
 # Panshi Living Market rules
 
-This repository is the canonical source for 《盤勢・眾生》, an autonomous-character market strategy game. Read this file before changing product rules, user-facing copy, data contracts, design, code, deployment, model behavior, or financial content.
+This repository is the canonical source for 《盤勢・眾生》, a reality-synced AI character world. Read this file before changing product rules, user-facing copy, data contracts, design, code, deployment, model behavior, or financial content.
 
 ## Read order
 
-1. `docs/product-constitution.md`
-2. `docs/architecture/architecture-constitution.md`
-3. `docs/architecture/event-catalog.md`
-4. `docs/architecture/state-payload-map.md`
-5. `docs/architecture/client-contract.md`
-6. `docs/repository-boundary.md`
-7. `docs/design/visual-system-brief.md`
-8. `docs/ux/user-journey.md`
-9. `BACKLOG.md`
+1. `docs/v3/product-reset.md`
+2. `docs/v3/execution-handoff.md`
+3. `docs/v3/user-journey.md`
+4. `docs/v3/visual-system.md`
+5. `docs/v3/competitive-reset.md`
+6. `.agents/product-marketing.md`
+7. `docs/repository-boundary.md`
 
-If the artifacts conflict, the product constitution wins. Update it first, then architecture, FigJam, tests, and implementation in the same change. Rejected drafts remain in Git history and must not be restored as active specifications.
+The V2 product constitution, architecture, event catalog, client contract, user journey, backlog, tests, and current implementation are superseded historical material until V3 replacements exist. They may supply implementation techniques, but cannot define the product. If artifacts conflict, `docs/v3/product-reset.md` wins. Update the V3 product basis first, then derive architecture, FigJam, tests, and implementation. Rejected drafts remain in Git history and must not be restored as active specifications.
 
 ## Product invariants
 
 - Characters are fictional adults. Real-world inputs may constrain aggregate distributions, historical context, and public events, but cannot identify or imitate a real person.
-- The player uses `排席` to place five unique characters and five dossiers, fixed for one five-valid-trading-day round, on five predefined desks. Desk order determines one-pass social input. The player cannot choose a character's final company, stance, confidence position, price, leverage, stop, or exit.
+- The public world is the primary surface. Market events are the shared physical layer; characters and their continuing lives are the visible subject.
+- A player is an observatory keeper with at most five active care slots. The player may provide bounded resources, questions, introductions, and one daily note. The player cannot choose a character's final company, stance, confidence, price, position, leverage, stop, or exit.
+- Characters continue while the player is away. Relationship, memory, and life changes are canonical and cannot be rerolled after a market result.
 - Astrology, four-axis personality preferences, blood type, memories, relationships, and state may affect attention and interpretation. They cannot affect price data, hidden information access, or expected paper performance.
 - Every visible claim carries one `truth_class`: `real_fact`, `statistical_sample`, `fictional_setting`, `symbolic_interpretation`, or `simulated_narrative`.
 - Missing, stale, conflicting, unlicensed, or unsealed facts fail closed. A model failure is preserved for review and enters the versioned deterministic fallback path; it can never trigger retries until a more favorable action appears.
@@ -28,7 +28,7 @@ If the artifacts conflict, the product constitution wins. Update it first, then 
 ## Repository boundary
 
 - The separate Panshi market-research repository owns market ingestion, company-chart research, source licensing, fact revision, manifest sealing, and daily evidence videos.
-- This repository owns game identity, characters, memories, relationships, five-seat configuration, sealed decisions, division play, delayed public projections, game entitlements, and game clients.
+- This repository owns game identity, characters, memories, relationships, care rights, world simulation, simulated actions, public story projections, game entitlements, and game clients.
 - Consume market evidence only through a released, versioned sealed-fact contract and authenticated immutable artifacts. Never query the upstream database, mount its SQLite files, import its app packages, or add it as a Git submodule.
 - Shared login or subscription status must travel through a documented external API or token contract. Do not share auth tables or session cookies across codebases by accident.
 - Public code uses capability aliases. Do not name private infrastructure, credential paths, unpublished providers, or operational hosts.
@@ -45,8 +45,8 @@ If the artifacts conflict, the product constitution wins. Update it first, then 
 ## Finance and legal safety
 
 - Treat all market content as cultural research and fictional paper simulation. Do not add calls to action that resemble personalized trading advice.
-- No global paper-performance leaderboard, model-performance claim, guaranteed outcome, urgency around a security, or monetized access to earlier market information. The proposed competition is a bounded eight-player division whose rules must pass legal and incentive review.
-- Public v1 uses isolated historical seasons with fictional company names and masked dates. Current-market character actions remain a separate disabled mode until source rights, Taiwan legal review, an approved operating path, and signal-confusion testing all pass.
+- No global paper-performance leaderboard, model-performance claim, guaranteed outcome, urgency around a security, or monetized access to earlier market information.
+- Current-market public events are a core V3 product input. External release still requires source rights, Taiwan legal review, an approved operating path, and signal-confusion testing; failure of a gate disables the affected event or public projection, not the character-world architecture.
 - Product disclaimers support the interaction design; they do not repair an unsafe feature. Change the feature when a flow can be read as a buy or sell instruction.
 
 ## Design and copy
@@ -58,7 +58,7 @@ If the artifacts conflict, the product constitution wins. Update it first, then 
 
 ## Engineering workflow
 
-- The approved stack and topology live in `docs/architecture/architecture-constitution.md`. Do not restore the deleted city/world-day architecture or add a second source of truth.
+- V2 architecture documents are not approved for V3. Do not extend the five-seat server loop until a V3 world-simulation and observation architecture is derived from `docs/v3/product-reset.md`.
 - Prototypes may use disposable presentation code, but domain contracts, fixtures, and simulations must stay framework-independent and must not silently become production architecture.
 - Use exact production dependency versions and committed lockfiles. Add a dependency only with license, maintenance, runtime impact, and removal notes.
 - Contract, replay, property, policy, accessibility, visual, migration, security, and failure-injection tests are release gates.

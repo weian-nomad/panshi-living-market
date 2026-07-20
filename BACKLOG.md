@@ -1,5 +1,7 @@
 # Pre-code backlog
 
+> **已被 V3 產品重置凍結。** 下列項目屬五席排程方向，只能作歷史與技術參考，不得作為現行動工順序。現行產品判決見 [`docs/v3/product-reset.md`](./docs/v3/product-reset.md)。
+
 _2026-07-20｜依[產品憲法 v2.1](./docs/product-constitution.md)重建。核心架構已達 `PRE-CODE MAXIMUM REACHED`；原型、資料權利、設計與工程 qualification gate 尚未關閉。_
 
 ## P0-A｜排席是否好玩

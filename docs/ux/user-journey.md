@@ -1,5 +1,7 @@
 # 排席 User Journey v2.1
 
+> **已被 V3 取代。** 這張旅程只保留作歷史紀錄；不得交給設計或工程。V3 旅程將由 [`docs/v3/product-reset.md`](../v3/product-reset.md) 重畫。
+
 _2026-07-20｜依[產品憲法 v2.1](../product-constitution.md)繪製_
 
 可編輯 FigJam：[盤勢・眾生 v2.1｜三段使用者旅程](https://www.figma.com/board/Nf5M4WTPOqp0eRzNP5Q5yO)
