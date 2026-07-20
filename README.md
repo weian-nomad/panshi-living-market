@@ -16,6 +16,7 @@ V4 產品基準：
 
 - [產品北極星](./docs/v4/product-north-star.md)
 - [十分鐘互動原型](./docs/v4/interaction-prototype.md)
+- [兩輪 Pro 原型審查與 24 人測試閘門](./docs/v4/prototype-review-2026-07-20.md)
 - [相鄰產品研究](./docs/v4/research-reset.md)
 - [跨產品契約](./docs/repository-boundary.md)
 
@@ -47,7 +48,7 @@ V2、V3 歷史與技術材料，不得拿來定義 V4：
 - 不讓付費提高勝率、提早取得市場事實或改寫角色情緒。
 - 不在公開 repo 保存憑證、私有資料、生成媒體、營運紀錄或未公開供應資訊。
 
-## V2 技術材料的本機驗證
+## 本機驗證
 
 需求：Node 24、pnpm 11.15、Rust 1.97.1、Buf 1.72。完整 native／WASI 位元組驗證另需 Wasmtime 45.0.0。
 
@@ -60,11 +61,13 @@ cargo test --workspace --locked
 tools/verify-kernel-parity.sh
 ```
 
-啟動目前的 V2 技術原型：
+啟動 V4 十分鐘跟拍原型：
 
 ```bash
 pnpm --filter @panshi/web dev
 ```
+
+開啟後會播放 2026-07-17 的封存場景。按住一位居民進入跟拍，按住不放並拖向另一位居民或公告即可交接；點按與下方三個按鈕提供相同的替代操作。
 
 原創觀測桌插畫屬歷史資產，不再決定 V4 畫面。V4 以全螢幕共同場景、可跟拍的小人、灰藍自然光和冷色市場訊號重做視覺。
 

@@ -35,6 +35,10 @@ renders/
 credentials/
 .codex-private/
 
+# Intermediate image-generation outputs; only the alpha-clean source and WebP ship.
+apps/web/public/art/v4/layers/resident-atlas-v1.png
+apps/web/public/art/v4/layers/resident-atlas-v2.png
+
 .npmrc
 .netrc
 *.pem
