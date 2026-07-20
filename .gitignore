@@ -32,6 +32,7 @@ runtime/
 tmp/
 outputs/
 renders/
+study-exports/
 credentials/
 .codex-private/
 

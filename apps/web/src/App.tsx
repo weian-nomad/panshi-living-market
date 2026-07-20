@@ -16,6 +16,8 @@ import {
   type Resident,
 } from "./scene";
 import { hitTestWorldPoint, type WorldHitTarget } from "./interaction";
+import { STUDY_SAMPLE_INTERVAL_MS } from "./study";
+import type { StudyRecorder } from "./studyRecorder";
 
 type FocusMode = "wide" | "hold" | "tap";
 
@@ -63,7 +65,7 @@ function ResidentFigure({ resident }: { resident: Resident }) {
   );
 }
 
-export function App() {
+export function App({ studyRecorder }: { studyRecorder?: StudyRecorder } = {}) {
   const [seconds, setSeconds] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [focusId, setFocusId] = useState<string | null>(null);
@@ -73,6 +75,13 @@ export function App() {
   const pressRef = useRef<PressSession | null>(null);
   const releaseTimerRef = useRef<number | null>(null);
   const worldRef = useRef<HTMLDivElement | null>(null);
+  const secondsRef = useRef(seconds);
+  const playingRef = useRef(isPlaying);
+  const focusIdRef = useRef(focusId);
+
+  secondsRef.current = seconds;
+  playingRef.current = isPlaying;
+  focusIdRef.current = focusId;
 
   const moment = getSceneMoment(seconds);
   const focusedResident = useMemo(
@@ -100,6 +109,47 @@ export function App() {
   }, [isPlaying]);
 
   useEffect(() => {
+    if (!studyRecorder) return;
+
+    const sample = () => {
+      studyRecorder.sample(secondsRef.current, {
+        visible: document.visibilityState === "visible",
+        playing: playingRef.current,
+        focusedResidentId: residents.some((resident) => resident.id === focusIdRef.current)
+          ? focusIdRef.current
+          : null,
+      });
+    };
+    const recordForcedInterruption = () => {
+      studyRecorder.sample(secondsRef.current, {
+        visible: false,
+        playing: playingRef.current,
+        focusedResidentId: residents.some((resident) => resident.id === focusIdRef.current)
+          ? focusIdRef.current
+          : null,
+      });
+      void studyRecorder.flush();
+    };
+    const handlePageHide = () => {
+      recordForcedInterruption();
+      studyRecorder.end(secondsRef.current, "unloaded");
+      void studyRecorder.flush();
+    };
+
+    sample();
+    const interval = window.setInterval(sample, STUDY_SAMPLE_INTERVAL_MS);
+    document.addEventListener("visibilitychange", sample);
+    document.addEventListener("freeze", recordForcedInterruption);
+    window.addEventListener("pagehide", handlePageHide);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", sample);
+      document.removeEventListener("freeze", recordForcedInterruption);
+      window.removeEventListener("pagehide", handlePageHide);
+    };
+  }, [studyRecorder]);
+
+  useEffect(() => {
     if (!showGuide) return;
     const timer = window.setTimeout(() => setShowGuide(false), 8_000);
     return () => window.clearTimeout(timer);
@@ -125,6 +175,16 @@ export function App() {
     setFocusMode(mode);
   }
 
+  function recordStudySample(nextFocusId: string | null = focusIdRef.current) {
+    studyRecorder?.sample(secondsRef.current, {
+      visible: document.visibilityState === "visible",
+      playing: playingRef.current,
+      focusedResidentId: residents.some((resident) => resident.id === nextFocusId)
+        ? nextFocusId
+        : null,
+    });
+  }
+
   function completeFollowGuide() {
     setShowGuide(false);
     try {
@@ -136,6 +196,7 @@ export function App() {
 
   function returnToWide() {
     clearReleaseTimer();
+    recordStudySample(null);
     setFocusId(null);
     setFocusMode("wide");
   }
@@ -158,6 +219,10 @@ export function App() {
       session.activated = true;
       setPressingId(null);
       completeFollowGuide();
+      if (residents.some((resident) => resident.id === session.focusId)) {
+        studyRecorder?.followStarted(secondsRef.current, session.focusId, "hold");
+      }
+      recordStudySample(session.focusId);
       enterFocus(session.focusId, "hold");
     }, HOLD_DELAY_MS);
     pressRef.current = session;
@@ -193,7 +258,15 @@ export function App() {
     const nextId = hitTestWorldPoint(point, hitTargets);
 
     if (nextId && nextId !== session.focusId) {
+      const fromId = session.focusId;
       session.focusId = nextId;
+      if (
+        residents.some((resident) => resident.id === fromId) &&
+        residents.some((resident) => resident.id === nextId)
+      ) {
+        studyRecorder?.handoffCompleted(secondsRef.current, fromId, nextId);
+      }
+      recordStudySample(nextId);
       enterFocus(nextId, "hold");
     }
   }
@@ -207,6 +280,10 @@ export function App() {
     setPressingId(null);
 
     if (!session.activated) {
+      if (residents.some((resident) => resident.id === session.focusId)) {
+        studyRecorder?.followStarted(secondsRef.current, session.focusId, "tap");
+      }
+      recordStudySample(session.focusId);
       enterFocus(session.focusId, "tap");
       return;
     }
@@ -228,7 +305,34 @@ export function App() {
     const base = currentIndex < 0 ? 0 : currentIndex;
     const nextIndex = (base + direction + residents.length) % residents.length;
     const next = residents[nextIndex];
-    if (next) enterFocus(next.id, "tap");
+    if (next) {
+      studyRecorder?.followStarted(secondsRef.current, next.id, "control");
+      recordStudySample(next.id);
+      enterFocus(next.id, "tap");
+    }
+  }
+
+  function togglePlayback() {
+    setIsPlaying((current) => {
+      const next = !current;
+      playingRef.current = next;
+      studyRecorder?.sample(secondsRef.current, {
+        visible: document.visibilityState === "visible",
+        playing: next,
+        focusedResidentId: residents.some((resident) => resident.id === focusIdRef.current)
+          ? focusIdRef.current
+          : null,
+      });
+      return next;
+    });
+  }
+
+  function startFromControls() {
+    const first = residents[0];
+    if (!first) return;
+    studyRecorder?.followStarted(secondsRef.current, first.id, "control");
+    recordStudySample(first.id);
+    enterFocus(first.id, "tap");
   }
 
   const worldStyle = {
@@ -249,7 +353,7 @@ export function App() {
             <span>歷史資料演示</span>
             <time dateTime="2026-07-17T09:00:00+08:00">2026.07.17</time>
           </div>
-          <button className="scene-toggle" type="button" onClick={() => setIsPlaying((current) => !current)} aria-label={isPlaying ? "暫停現場" : "繼續現場"}>
+          <button className="scene-toggle" type="button" onClick={togglePlayback} aria-label={isPlaying ? "暫停現場" : "繼續現場"}>
             <span className={isPlaying ? "pause-icon" : "play-icon"} aria-hidden="true" />
           </button>
         </header>
@@ -405,7 +509,7 @@ export function App() {
             <button
               className="control-primary"
               type="button"
-              onClick={focusId ? returnToWide : () => enterFocus(residents[0]?.id ?? "", "tap")}
+              onClick={focusId ? returnToWide : startFromControls}
             >
               <span className="viewfinder-icon" aria-hidden="true" />
               {focusId ? "回到全景" : "開始跟拍"}

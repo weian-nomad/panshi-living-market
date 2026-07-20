@@ -17,6 +17,7 @@ V4 產品基準：
 - [產品北極星](./docs/v4/product-north-star.md)
 - [十分鐘互動原型](./docs/v4/interaction-prototype.md)
 - [兩輪 Pro 原型審查與 24 人測試閘門](./docs/v4/prototype-review-2026-07-20.md)
+- [24 人研究模式與固定裁決](./docs/v4/study-mode.md)
 - [相鄰產品研究](./docs/v4/research-reset.md)
 - [跨產品契約](./docs/repository-boundary.md)
 
