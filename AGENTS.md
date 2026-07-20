@@ -1,25 +1,23 @@
 # Panshi Living Market rules
 
-This repository is the canonical source for 《盤勢・眾生》, a reality-synced AI character world. Read this file before changing product rules, user-facing copy, data contracts, design, code, deployment, model behavior, or financial content.
+This repository is the canonical source for 《盤勢・眾生》, a market-driven interactive reality show. Read this file before changing product rules, user-facing copy, data contracts, design, code, deployment, model behavior, or financial content.
 
 ## Read order
 
-1. `docs/v3/product-reset.md`
-2. `docs/v3/execution-handoff.md`
-3. `docs/v3/user-journey.md`
-4. `docs/v3/visual-system.md`
-5. `docs/v3/competitive-reset.md`
-6. `.agents/product-marketing.md`
-7. `docs/repository-boundary.md`
+1. `docs/v4/product-north-star.md`
+2. `docs/v4/interaction-prototype.md`
+3. `docs/v4/research-reset.md`
+4. `.agents/product-marketing.md`
+5. `docs/repository-boundary.md`
 
-The V2 product constitution, architecture, event catalog, client contract, user journey, backlog, tests, and current implementation are superseded historical material until V3 replacements exist. They may supply implementation techniques, but cannot define the product. If artifacts conflict, `docs/v3/product-reset.md` wins. Update the V3 product basis first, then derive architecture, FigJam, tests, and implementation. Rejected drafts remain in Git history and must not be restored as active specifications.
+V2 and V3 product documents are rejected historical material. They may explain past mistakes or supply implementation techniques, but cannot define the product. If artifacts conflict, `docs/v4/product-north-star.md` wins. V4 is not architecture-frozen: the ten-minute interaction prototype must pass its kill metrics before a production world architecture is derived.
 
 ## Product invariants
 
 - Characters are fictional adults. Real-world inputs may constrain aggregate distributions, historical context, and public events, but cannot identify or imitate a real person.
-- The public world is the primary surface. Market events are the shared physical layer; characters and their continuing lives are the visible subject.
-- A player is an observatory keeper with at most five active care slots. The player may provide bounded resources, questions, introductions, and one daily note. The player cannot choose a character's final company, stance, confidence, price, position, leverage, stop, or exit.
-- Characters continue while the player is away. Relationship, memory, and life changes are canonical and cannot be rerolled after a market result.
+- The public world is the primary surface. Market events are environmental pressure; characters and their continuing lives are the visible subject.
+- A viewer is a live camera operator and, when entitled, a character introducer. The viewer may choose whom to follow and may select a model core only at character creation. There are no care actions, chat prompts, trading instructions, resource buffs, or omniscient replay.
+- Characters continue while the viewer is away. Relationship, memory, and life changes are canonical and cannot be rerolled after a market result.
 - Astrology, four-axis personality preferences, blood type, memories, relationships, and state may affect attention and interpretation. They cannot affect price data, hidden information access, or expected paper performance.
 - Every visible claim carries one `truth_class`: `real_fact`, `statistical_sample`, `fictional_setting`, `symbolic_interpretation`, or `simulated_narrative`.
 - Missing, stale, conflicting, unlicensed, or unsealed facts fail closed. A model failure is preserved for review and enters the versioned deterministic fallback path; it can never trigger retries until a more favorable action appears.
@@ -46,19 +44,19 @@ The V2 product constitution, architecture, event catalog, client contract, user 
 
 - Treat all market content as cultural research and fictional paper simulation. Do not add calls to action that resemble personalized trading advice.
 - No global paper-performance leaderboard, model-performance claim, guaranteed outcome, urgency around a security, or monetized access to earlier market information.
-- Current-market public events are a core V3 product input. External release still requires source rights, Taiwan legal review, an approved operating path, and signal-confusion testing; failure of a gate disables the affected event or public projection, not the character-world architecture.
+- Current-market public events are a core V4 product input. External release still requires source rights, Taiwan legal review, an approved operating path, and signal-confusion testing; failure of a gate disables the affected event or public projection, not the character-world architecture.
 - Product disclaimers support the interaction design; they do not repair an unsafe feature. Change the feature when a flow can be read as a buy or sell instruction.
 
 ## Design and copy
 
 - Use Traditional Chinese for product-facing Taiwan copy. Follow the workspace `copy-taste` routing rules before drafting or editing public text.
-- The visual direction is adult, tactile, and legible: ink black, aged paper, restrained copper, and one cool market-data accent. Avoid casino cues, neon-fintech dashboards, decorative particles, and generic AI gradients.
+- The visual direction is adult, spatial, and legible: ink black, grey-blue natural light, old-paper white, oxidized copper, and one cool market-data signal. Avoid casino cues, black-gold dashboards, decorative particle fields, and generic AI gradients.
 - Every component needs loading, empty, stale, error, held-for-review, offline, reduced-motion, keyboard, screen-reader, and narrow/wide layout states where applicable.
 - Generated character art needs a reproducible prompt, seed or source record, usage approval, crop-safe masters, motion layers, and a non-animated fallback.
 
 ## Engineering workflow
 
-- V2 architecture documents are not approved for V3. Do not extend the five-seat server loop until a V3 world-simulation and observation architecture is derived from `docs/v3/product-reset.md`.
+- V2 and V3 architecture concepts do not define V4. Do not extend the five-seat loop, WorldNode schedule, care system, daily-main-story projection, or trace-puzzle concept. Build the disposable ten-minute follow-camera prototype first.
 - Prototypes may use disposable presentation code, but domain contracts, fixtures, and simulations must stay framework-independent and must not silently become production architecture.
 - Use exact production dependency versions and committed lockfiles. Add a dependency only with license, maintenance, runtime impact, and removal notes.
 - Contract, replay, property, policy, accessibility, visual, migration, security, and failure-injection tests are release gates.
