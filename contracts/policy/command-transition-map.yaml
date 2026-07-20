@@ -1,0 +1,237 @@
+schema_version: 1
+contract_revision: command-transition-v1.2.0
+source: docs/architecture/event-catalog.md
+
+# Every canonical command appears exactly once. `from` and `to` describe the
+# primary target. Additional stream writes are listed under `also_transitions`.
+# `ANY` means the handler has policy preconditions but no linear lifecycle.
+global_preconditions:
+  canonical_write:
+    - expected stream versions match every declared precondition
+    - logical_cell_id and ownership_epoch match the authoritative directory
+    - lifecycle_epoch matches CrewLifecycleFence for gameplay, autonomy, deadline, and migration commands
+    - command_owner and idempotency_key are unique
+  immutable_payload:
+    - every state mutation carries versioned forward patch bytes or an immutable content-addressed blob reference
+    - reversible settlement mutations carry both forward and inverse patch bytes
+
+commands:
+  - { command: RegisterModeDomain, owner: governance, primary_target: ModeDomain, from: [ABSENT], to: REGISTERED, emits: [ModeDomainRegistered] }
+  - { command: EnableModeDomain, owner: governance, primary_target: ModeDomain, from: [REGISTERED], to: ENABLED, emits: [ModeDomainEnabled] }
+  - { command: SuspendModeDomain, owner: governance, primary_target: ModeDomain, from: [ENABLED], to: SUSPENDED, emits: [ModeDomainSuspended] }
+  - { command: ResumeModeDomain, owner: governance, primary_target: ModeDomain, from: [SUSPENDED], to: ENABLED, emits: [ModeDomainResumed] }
+  - { command: RetireModeDomain, owner: governance, primary_target: ModeDomain, from: [REGISTERED, ENABLED, SUSPENDED], to: RETIRED, emits: [ModeDomainRetired] }
+  - { command: ApproveRightsManifest, owner: governance, primary_target: RightsManifest, from: [DRAFT], to: APPROVED, emits: [RightsManifestApproved] }
+  - { command: RevokeRightsManifest, owner: governance, primary_target: RightsManifest, from: [APPROVED], to: REVOKED, emits: [RightsManifestRevoked] }
+  - { command: PublishPolicyBundle, owner: governance, primary_target: PolicyBundle, from: [DRAFT], to: PUBLISHED, emits: [PolicyBundlePublished] }
+  - { command: RegisterModelAdapter, owner: governance, primary_target: ModelAdapter, from: [ABSENT], to: REGISTERED, emits: [ModelAdapterRegistered] }
+  - { command: ApproveModelSnapshot, owner: governance, primary_target: ModelSnapshot, from: [DRAFT], to: APPROVED, emits: [ModelSnapshotApproved] }
+  - { command: CreateEpisode, owner: content, primary_target: Episode, from: [ABSENT], to: DRAFT, emits: [EpisodeCreated] }
+  - { command: ApproveEpisode, owner: content, primary_target: Episode, from: [DRAFT], to: APPROVED, emits: [EpisodeApproved] }
+  - { command: SealEpisode, owner: content, primary_target: Episode, from: [APPROVED], to: SEALED, emits: [EpisodeSealed] }
+  - { command: CreateSessionSchedule, owner: content, primary_target: SessionSchedule, from: [ABSENT], to: DRAFT, emits: [SessionScheduleCreated] }
+  - { command: ActivateSessionSchedule, owner: content, primary_target: SessionSchedule, from: [DRAFT], to: ACTIVE, emits: [SessionScheduleActivated] }
+  - { command: ReviseSessionSchedule, owner: content, primary_target: SessionSchedule, from: [ACTIVE], to: ACTIVE, emits: [SessionScheduleRevised] }
+  - { command: RetireSessionSchedule, owner: content, primary_target: SessionSchedule, from: [DRAFT, ACTIVE], to: RETIRED, emits: [SessionScheduleRetired] }
+  - { command: OpenContentSessionLedger, owner: content, primary_target: ContentSessionLedger, from: [ABSENT], to: ACTIVE, emits: [ContentSessionLedgerOpened], preconditions: [SessionSchedule exists], rule: initialize content_position=0 and record the applicable authoritative fact and rights heads }
+  - { command: PositionFactRevisionForSession, owner: content, primary_target: ContentSessionLedger, from: [ACTIVE], to: ACTIVE, emits: [ContentFactRevisionPositioned], preconditions: [source FactRevisionPublished event is committed, source revision is the next applicable authoritative fact head], atomicity: lock the content-session ledger head and allocate exactly one next content_position in the Content DB transaction }
+  - { command: PositionRightsRevisionForSession, owner: content, primary_target: ContentSessionLedger, from: [ACTIVE], to: ACTIVE, emits: [ContentRightsRevisionPositioned], preconditions: [source RightsManifestApproved or RightsManifestRevoked event is committed, source revision is the next applicable authoritative rights head], atomicity: lock the content-session ledger head and allocate exactly one next content_position in the Content DB transaction }
+  - { command: SealUniverse, owner: content, primary_target: Universe, from: [BUILDING], to: SEALED, emits: [UniverseSealed] }
+  - { command: SealCalendar, owner: content, primary_target: Calendar, from: [BUILDING], to: SEALED, emits: [CalendarSealed] }
+  - { command: SealFactPack, owner: content, primary_target: FactPack, from: [BUILDING], to: SEALED, emits: [FactPackSealed] }
+  - { command: SealAppraisalUnit, owner: content, primary_target: AppraisalUnit, from: [BUILDING], to: SEALED, emits: [AppraisalUnitSealed] }
+  - { command: BuildContradictionGraph, owner: content, primary_target: ContradictionGraph, from: [BUILDING], to: SEALED, emits: [ContradictionGraphBuilt] }
+  - { command: SealAppraisalPack, owner: content, primary_target: AppraisalPack, from: [BUILDING], to: SEALED, emits: [AppraisalPackSealed] }
+  - { command: SealBenchmarkPack, owner: content, primary_target: BenchmarkPack, from: [BUILDING], to: SEALED, emits: [BenchmarkPackSealed] }
+  - { command: IssuePackBindPermit, owner: content, primary_target: ContentSessionLedger, from: [ACTIVE], to: ACTIVE, emits: [PackBindPermitIssued], preconditions: [pack is SEALED, ledger fact and rights heads equal the current applicable authoritative heads, pack fact_revision_digest equals the ledger fact head, pack rights_manifest_digest equals the ledger rights head, permit decision_session_id and pack_id are unused], atomicity: lock the content-session ledger head and allocate exactly one next content_position in the Content DB transaction, rule: any head or pack-digest mismatch rejects issuance; the permit position is the semantic bind instant and retry returns the original position }
+  - { command: MarkArtifactPackStale, owner: content, primary_target: ArtifactPack, from: [SEALED], to: STALE, emits: [ArtifactPackStaled], preconditions: [causation is a committed FactRevisionPublished event] }
+  - { command: RevokeArtifactPack, owner: content, primary_target: ArtifactPack, from: [SEALED, STALE], to: REVOKED, emits: [ArtifactPackRevoked], preconditions: [causation is a committed RightsManifestRevoked or EpisodeRevoked event] }
+  - { command: PublishEpisode, owner: content, primary_target: Episode, from: [SEALED], to: PUBLISHED, emits: [EpisodePublished] }
+  - { command: SuspendEpisode, owner: content, primary_target: Episode, from: [PUBLISHED], to: SUSPENDED, emits: [EpisodeSuspended] }
+  - { command: RevokeEpisode, owner: content, primary_target: Episode, from: [SEALED, PUBLISHED, SUSPENDED], to: REVOKED, emits: [EpisodeRevoked] }
+  - command: PublishFactRevision
+    owner: content
+    primary_target: FactRevision
+    from: [ABSENT]
+    to: PUBLISHED
+    emits: [FactRevisionPublished]
+    rule: A committed revision schedules MarkArtifactPackStale for each affected unbound pack.
+  - { command: DeclareEpisodeSessionFinality, owner: content, primary_target: SessionSchedule, from: [ACTIVE], to: ACTIVE, emits: [EpisodeSessionFinalityDeclared] }
+  - { command: DeclareMarketSessionFinality, owner: content, primary_target: SessionSchedule, from: [ACTIVE], to: ACTIVE, emits: [MarketSessionFinalityDeclared] }
+
+  - { command: GrantEntitlement, owner: identity, primary_target: Entitlement, from: [ABSENT, EXPIRED], to: ACTIVE, emits: [EntitlementGranted] }
+  - { command: ExpireEntitlement, owner: identity, primary_target: Entitlement, from: [ACTIVE], to: EXPIRED, emits: [EntitlementExpired] }
+  - { command: ScheduleControlRelease, owner: identity, primary_target: ControlLease, from: [CONTROLLED], to: RELEASE_PENDING, emits: [ControlReleaseScheduled] }
+  - { command: ReleaseControl, owner: identity, primary_target: ControlLease, from: [RELEASE_PENDING], to: AUTONOMOUS_PUBLIC, emits: [ControlReleased] }
+  - { command: ScheduleControlRestore, owner: identity, primary_target: ControlLease, from: [AUTONOMOUS_PUBLIC], to: RESTORE_PENDING, emits: [ControlRestoreScheduled] }
+  - { command: RestoreControl, owner: identity, primary_target: ControlLease, from: [RESTORE_PENDING], to: CONTROLLED, emits: [ControlRestored] }
+  - { command: RequestAccountExport, owner: identity, primary_target: Account, from: [ACTIVE], to: ACTIVE, emits: [AccountExportPrepared] }
+  - command: RequestAccountDeletion
+    owner: identity
+    primary_target: Account
+    from: [ACTIVE]
+    to: DELETION_PENDING
+    preconditions: [CrewLifecycleFence=DELETION_PENDING, VisibilityGrant=WITHDRAWN]
+    emits: [AccountDeletionRequested, ControlDeletionPending]
+    also_transitions:
+      - { target: ControlLease, from: [CONTROLLED, RELEASE_PENDING, RESTORE_PENDING, AUTONOMOUS_PUBLIC], to: DELETION_PENDING }
+    atomicity: update Account and ControlLease in one Identity transaction after validating the committed logical-cell fence receipt.
+  - { command: SealPrivacyArchive, owner: identity, primary_target: ControlLease, from: [DELETION_PENDING], to: PRIVACY_SEALED_ARCHIVE, emits: [PrivacyArchiveSealed], preconditions: [CrewLifecycleFence=ARCHIVED] }
+  - { command: CompleteAccountDeletion, owner: identity, primary_target: Account, from: [DELETION_PENDING], to: DELETED, emits: [AccountDeletionCompleted], preconditions: [ControlLease=PRIVACY_SEALED_ARCHIVE, CrewLifecycleFence=ARCHIVED] }
+
+  - command: BeginCrewDeletion
+    owner: lifecycle_visibility
+    primary_target: CrewLifecycleFence
+    from: [ACTIVE]
+    to: DELETION_PENDING
+    preconditions: [ControlLease in CONTROLLED|RELEASE_PENDING|RESTORE_PENDING|AUTONOMOUS_PUBLIC]
+    emits: [CrewDeletionFenceCommitted, VisibilityEpochAdvanced, SubjectVisibilityWithdrawn, AutonomyRunCancelled, DeadlineCancelled]
+    also_transitions:
+      - { target: VisibilityGrant, from: [HIDDEN, CONTROLLER_VISIBLE, PUBLIC_VISIBLE], to: WITHDRAWN }
+      - { target: AutonomyRun, from: [PLANNED, RUNNING], to: CANCELLED, when: active run exists }
+      - { target: Deadline, from: [SCHEDULED], to: CANCELLED, when: crew deadline exists }
+    atomicity: one logical-cell transaction; identity changes only after its committed receipt.
+  - { command: ArchiveCrewLifecycle, owner: lifecycle_visibility, primary_target: CrewLifecycleFence, from: [DELETION_PENDING], to: ARCHIVED, emits: [CrewLifecycleArchived], preconditions: [all DecisionSession streams are in a safe terminal state, active autonomy runs and crew deadlines are zero, VisibilityGrant=WITHDRAWN] }
+  - { command: AdvanceVisibilityEpoch, owner: lifecycle_visibility, primary_target: VisibilityGrant, from: [HIDDEN, CONTROLLER_VISIBLE, PUBLIC_VISIBLE], to: SAME, emits: [VisibilityEpochAdvanced] }
+  - { command: ReleaseControllerReveal, owner: lifecycle_visibility, primary_target: VisibilityGrant, from: [HIDDEN], to: CONTROLLER_VISIBLE, emits: [ControllerRevealReleased] }
+  - { command: ReleasePublicReveal, owner: lifecycle_visibility, primary_target: VisibilityGrant, from: [CONTROLLER_VISIBLE], to: PUBLIC_VISIBLE, emits: [PublicRevealReleased] }
+  - { command: WithdrawSubjectVisibility, owner: lifecycle_visibility, primary_target: VisibilityGrant, from: [HIDDEN, CONTROLLER_VISIBLE, PUBLIC_VISIBLE], to: WITHDRAWN, emits: [VisibilityEpochAdvanced, SubjectVisibilityWithdrawn] }
+
+  - { command: OriginateCrew, owner: character_life, primary_target: Crew, from: [ABSENT], to: ACTIVE, emits: [CrewOriginated] }
+  - { command: CreateSeasonEntry, owner: desk_play, primary_target: SeasonDesk, from: [ABSENT], to: ACTIVE, emits: [SeasonEntryCreated] }
+  - { command: CreateRound, owner: desk_play, primary_target: RoundDesk, from: [ABSENT], to: DRAFT, emits: [RoundCreated] }
+  - { command: ReadyRound, owner: desk_play, primary_target: RoundDesk, from: [DRAFT], to: READY, emits: [RoundReady] }
+  - { command: OpenRound, owner: desk_play, primary_target: RoundDesk, from: [READY], to: OPEN, emits: [RoundOpened] }
+  - { command: DraftDossiers, owner: desk_play, primary_target: RoundDesk, from: [DRAFT], to: DRAFT, emits: [DossiersDrafted] }
+  - { command: SealDossiers, owner: desk_play, primary_target: RoundDesk, from: [DRAFT], to: DRAFT, emits: [DossiersSealed] }
+  - { command: SaveSeatPlan, owner: desk_play, primary_target: RoundDesk, from: [OPEN], to: OPEN, emits: [SeatPlanSaved] }
+  - { command: CarryForwardSeatPlan, owner: desk_play, primary_target: RoundDesk, from: [OPEN], to: OPEN, emits: [SeatPlanCarriedForward] }
+  - { command: SealSeatPlan, owner: desk_play, primary_target: RoundDesk, from: [OPEN], to: OPEN, emits: [SeatPlanSealed] }
+  - { command: FreezeCrewSnapshot, owner: decision, primary_target: DecisionSession, from: [OPEN], to: OPEN, emits: [CrewSnapshotFrozen] }
+  - { command: EnterAutonomy, owner: character_life, primary_target: Crew, from: [ACTIVE], to: AUTONOMOUS, emits: [CrewEnteredAutonomy] }
+  - { command: ExitAutonomy, owner: character_life, primary_target: Crew, from: [AUTONOMOUS], to: ACTIVE, emits: [CrewExitedAutonomy] }
+  - { command: RetireCharacter, owner: character_life, primary_target: Crew, from: [ACTIVE, AUTONOMOUS], to: SAME, emits: [CharacterRetired] }
+
+  - { command: CreateSeason, owner: competition, primary_target: Season, from: [ABSENT], to: DRAFT, emits: [SeasonCreated] }
+  - { command: CommitSeasonSeed, owner: competition, primary_target: Season, from: [DRAFT], to: SEED_COMMITTED, emits: [SeasonSeedCommitted] }
+  - { command: OpenSeason, owner: competition, primary_target: Season, from: [SEED_COMMITTED], to: OPEN, emits: [SeasonOpened] }
+  - { command: LockSeason, owner: competition, primary_target: Season, from: [OPEN], to: LOCKED, emits: [SeasonLocked] }
+  - { command: RevealSeasonSeed, owner: competition, primary_target: Season, from: [CLOSED], to: SEED_REVEALED, emits: [SeasonSeedRevealed] }
+  - { command: CreateDivision, owner: competition, primary_target: Division, from: [ABSENT], to: DRAFT, emits: [DivisionCreated] }
+  - { command: AddDivisionMember, owner: competition, primary_target: Division, from: [DRAFT], to: DRAFT, emits: [DivisionMemberAdded] }
+  - { command: LockDivisionRoster, owner: competition, primary_target: Division, from: [DRAFT], to: ROSTER_LOCKED, emits: [DivisionRosterLocked] }
+  - { command: ActivateDivision, owner: competition, primary_target: Division, from: [ROSTER_LOCKED], to: ACTIVE, emits: [DivisionActivated] }
+  - { command: SubmitDivisionScoreContribution, owner: competition, primary_target: Division, from: [ACTIVE], to: ACTIVE, emits: [DivisionScoreContributionSubmitted] }
+  - { command: CloseDivision, owner: competition, primary_target: Division, from: [ACTIVE], to: CLOSED, emits: [DivisionClosed] }
+  - { command: PlanAutonomyRun, owner: public_world, primary_target: AutonomyRun, from: [ABSENT], to: PLANNED, emits: [AutonomyRunPlanned] }
+  - { command: StartAutonomyRun, owner: public_world, primary_target: AutonomyRun, from: [PLANNED], to: RUNNING, emits: [AutonomyRunStarted] }
+  - command: RequestCrewAutonomyAdvance
+    owner: public_world
+    primary_target: AutonomyRun
+    from: [RUNNING]
+    to: RUNNING
+    emits: [CrewAutonomyAdvanceRequested]
+    rule: Public World proposes a typed intent but cannot patch Crew.
+  - command: ApplyCrewAutonomyAdvance
+    owner: character_life
+    primary_target: Crew
+    from: [AUTONOMOUS]
+    to: AUTONOMOUS
+    preconditions: [causation is a committed CrewAutonomyAdvanceRequested event, AutonomyRun=RUNNING]
+    emits: [CrewStateAdvanced, AutonomyStateAdvanced]
+  - { command: CompleteAutonomyRun, owner: public_world, primary_target: AutonomyRun, from: [RUNNING], to: COMPLETED, emits: [AutonomyRunCompleted] }
+  - { command: CancelAutonomyRun, owner: public_world, primary_target: AutonomyRun, from: [PLANNED, RUNNING], to: CANCELLED, emits: [AutonomyRunCancelled] }
+  - { command: CreateCompetitionAdjudication, owner: competition, primary_target: CompetitionAdjudication, from: [ABSENT], to: OPEN, emits: [CompetitionAdjudicationCreated], preconditions: [every source ClosedSessionScoreCorrected revision is committed], rule: freeze the complete required correction item set and its digest at creation }
+  - { command: SupersedeDivisionContribution, owner: competition, primary_target: CompetitionAdjudication, from: [OPEN], to: OPEN, emits: [DivisionContributionSuperseded], preconditions: [contribution correction_item_id is required and not completed] }
+  - { command: CompleteContributionSupersession, owner: competition, primary_target: CompetitionAdjudication, from: [OPEN], to: CONTRIBUTIONS_SUPERSEDED, emits: [ContributionSupersessionCompleted], preconditions: [completed contribution subset digest equals required contribution subset digest] }
+  - { command: CorrectDivisionStanding, owner: competition, primary_target: CompetitionAdjudication, from: [CONTRIBUTIONS_SUPERSEDED], to: CONTRIBUTIONS_SUPERSEDED, emits: [DivisionStandingCorrected], preconditions: [division standing correction_item_id is required and not completed, source contribution set digest equals ContributionSupersessionCompleted digest] }
+  - { command: CompleteDivisionStandingCorrections, owner: competition, primary_target: CompetitionAdjudication, from: [CONTRIBUTIONS_SUPERSEDED], to: DIVISION_STANDINGS_CORRECTED, emits: [DivisionStandingCorrectionSetCompleted], preconditions: [completed division standing subset digest equals required division standing subset digest] }
+  - { command: CorrectSeasonStanding, owner: competition, primary_target: CompetitionAdjudication, from: [DIVISION_STANDINGS_CORRECTED], to: SEASON_STANDING_CORRECTED, emits: [SeasonStandingCorrected], preconditions: [season standing correction_item_id is required and not completed, source division standing set digest equals DivisionStandingCorrectionSetCompleted digest] }
+  - { command: CloseCompetitionAdjudication, owner: competition, primary_target: CompetitionAdjudication, from: [SEASON_STANDING_CORRECTED], to: CLOSED, emits: [CompetitionAdjudicationClosed], preconditions: [completed_correction_set_digest equals required_correction_set_digest] }
+
+  - { command: CreateDecisionSession, owner: decision, primary_target: DecisionSession, from: [ABSENT], to: OPEN, emits: [DecisionSessionCreated] }
+  - command: SealDecisionInput
+    owner: decision
+    primary_target: DecisionSession
+    from: [OPEN]
+    to: INPUT_SEALED
+    preconditions: [RoundDesk has SeatPlanSealed, AppraisalPackBound, CrewSnapshotFrozen]
+    emits: [SessionCausalityClosed, DecisionInputSealed]
+    also_transitions: [{ target: PreviousDecisionSession, from: [SETTLEMENT_COMMITTED], to: CAUSALITY_CLOSED, when: previous valid session exists }]
+    atomicity: close the previous session causality and seal this input in one logical-cell transaction.
+  - { command: BindAppraisalPack, owner: decision, primary_target: DecisionSession, from: [OPEN], to: OPEN, emits: [AppraisalPackBound], preconditions: [unexpired PackBindPermit is bound to this decision_session_id and pack_id, permit content_position replays on the named ContentSessionLedger] }
+  - { command: RecordAppraisalFallback, owner: decision, primary_target: DecisionSession, from: [OPEN], to: OPEN, emits: [AppraisalFallbackRecorded] }
+  - { command: SelectAttention, owner: decision, primary_target: DecisionSession, from: [INPUT_SEALED], to: INPUT_SEALED, emits: [AttentionSelected] }
+  - { command: CommitPeerPackets, owner: decision, primary_target: DecisionSession, from: [INPUT_SEALED], to: INPUT_SEALED, emits: [PeerPacketsCommitted] }
+  - { command: CommitActions, owner: decision, primary_target: DecisionSession, from: [INPUT_SEALED], to: ACTION_COMMITTED, emits: [ActionsCommitted] }
+  - { command: BindOpenPrice, owner: decision, primary_target: DecisionSession, from: [ACTION_COMMITTED], to: OUTCOME_PENDING, emits: [OpenPriceBound] }
+  - { command: BindClosePrice, owner: decision, primary_target: DecisionSession, from: [OUTCOME_PENDING], to: OUTCOME_PENDING, emits: [ClosePriceBound] }
+  - { command: VoidSeat, owner: decision, primary_target: DecisionSession, from: [OUTCOME_PENDING], to: OUTCOME_PENDING, emits: [SeatVoided] }
+  - { command: HoldSession, owner: decision, primary_target: DecisionSession, from: [OPEN, INPUT_SEALED, ACTION_COMMITTED, OUTCOME_PENDING, SETTLEMENT_COMMITTED], to: HELD_OVERLAY, emits: [SessionHeld] }
+  - { command: ReleaseSessionHold, owner: decision, primary_target: DecisionSession, from: [HELD_OVERLAY], to: PRIOR_STATE, emits: [SessionHoldReleased] }
+  - command: CommitSessionSettlement
+    owner: decision
+    primary_target: DecisionSession
+    from: [OUTCOME_PENDING]
+    to: SETTLEMENT_COMMITTED
+    emits: [SettlementJournalOpened, SessionSettlementPrepared, CrewSettlementApplied, DecisionScorePosted, RiskBrakeAdvanced, CoverageAdvanced, SettlementCommitted]
+    also_transitions:
+      - { target: Crew, from: [ACTIVE, AUTONOMOUS], to: SAME }
+      - { target: ScoreLedger, from: [ACTIVE], to: ACTIVE }
+    atomicity: one SERIALIZABLE logical-cell transaction with forward and inverse journal bytes.
+  - { command: CarryRiskBrakeCorrection, owner: competition_ledger, primary_target: ScoreLedger, from: [ACTIVE], to: ACTIVE, emits: [RiskBrakeCorrectionCarried], preconditions: [target session is in the same round and not INPUT_SEALED] }
+  - { command: RecordRiskBrakeNoActionSpace, owner: competition_ledger, primary_target: ScoreLedger, from: [ACTIVE], to: ACTIVE, emits: [RiskBrakeCorrectionNoActionSpace], preconditions: [no same-round unsealed session exists] }
+  - command: ResettleSession
+    owner: decision
+    primary_target: DecisionSession
+    from: [SETTLEMENT_COMMITTED]
+    to: SETTLEMENT_COMMITTED
+    emits: [SettlementReversed, CrewSettlementReversed, ScoreSettlementReversed, SessionResettled, CrewSettlementApplied, DecisionScorePosted, RiskBrakeAdvanced, CoverageAdvanced, SettlementRecommitted]
+    atomicity: reverse the prior exact journal and apply the new settlement in one transaction; no standalone reversal command exists.
+  - command: CorrectClosedSessionScore
+    owner: decision
+    primary_target: DecisionSession
+    from: [CAUSALITY_CLOSED]
+    to: CAUSALITY_CLOSED
+    emits: [SessionScoreCorrectionRecorded, ClosedSessionScoreCorrected, RiskBrakeAdvanced, CoverageAdvanced]
+    also_transitions: [{ target: ScoreLedger, from: [ACTIVE], to: ACTIVE }]
+    atomicity: append the session correction record and exact ScoreLedger patch in one logical-cell transaction; Crew is never patched.
+  - command: VoidSession
+    owner: decision
+    primary_target: DecisionSession
+    from: [OPEN, INPUT_SEALED, ACTION_COMMITTED, OUTCOME_PENDING, SETTLEMENT_COMMITTED, HELD_OVERLAY]
+    to: VOID_COMMITTED
+    emits: [SessionVoided, SettlementReversed, CrewSettlementReversed, ScoreSettlementReversed, VoidCommitted]
+    rule: reversal events are conditional on a committed settlement and are atomic with VoidCommitted.
+  - { command: BeginRoundFinalization, owner: desk_play, primary_target: RoundDesk, from: [OPEN], to: FINALIZING, emits: [RoundFinalizing] }
+  - command: CloseRoundCausality
+    owner: desk_play
+    primary_target: RoundDesk
+    from: [FINALIZING]
+    to: FINALIZING
+    emits: [SessionCausalityClosed]
+    also_transitions: [{ target: FinalDecisionSession, from: [SETTLEMENT_COMMITTED], to: CAUSALITY_CLOSED }]
+  - { command: SettleRound, owner: desk_play, primary_target: RoundDesk, from: [FINALIZING], to: SETTLED, emits: [RoundSettled] }
+  - { command: CloseRound, owner: desk_play, primary_target: RoundDesk, from: [SETTLED], to: CLOSED, emits: [RoundClosed] }
+  - { command: CloseSeason, owner: competition, primary_target: Season, from: [LOCKED], to: CLOSED, emits: [SeasonClosed] }
+  - { command: PublishStandings, owner: competition, primary_target: Division, from: [ACTIVE, CLOSED], to: SAME, emits: [StandingsPublished] }
+
+  - { command: VerifyReplay, owner: replay, primary_target: ReplayAudit, from: [ANY], to: SAME, emits: [ReplayVerified, ReplayFailed] }
+  - { command: ComputeCounterfactual, owner: replay, primary_target: ScenarioRecord, from: [ABSENT], to: STORED, emits: [], store: scenario }
+  - { command: ComputeAlternateCoreScenario, owner: replay, primary_target: ScenarioRecord, from: [ABSENT], to: STORED, emits: [], store: scenario }
+  - { command: ScheduleDeadline, owner: scheduler, primary_target: Deadline, from: [ABSENT], to: SCHEDULED, emits: [DeadlineScheduled] }
+  - { command: FireDeadline, owner: scheduler, primary_target: Deadline, from: [SCHEDULED], to: FIRED, emits: [DeadlineFired] }
+  - { command: CancelDeadline, owner: scheduler, primary_target: Deadline, from: [SCHEDULED], to: CANCELLED, emits: [DeadlineCancelled] }
+  - { command: ApplyCorrection, owner: adjudication, primary_target: AdjudicationEpoch, from: [OPEN], to: OPEN, emits: [CorrectionApplied] }
+  - { command: CreateAdjudicationEpoch, owner: adjudication, primary_target: AdjudicationEpoch, from: [ABSENT], to: OPEN, emits: [AdjudicationEpochCreated] }
+  - { command: ApplyCrewCorrectionLearning, owner: character_life, primary_target: Crew, from: [ACTIVE, AUTONOMOUS], to: SAME, emits: [CrewCorrectionLearned], preconditions: [causation is a committed SessionScoreCorrectionRecorded event, source session causality is closed] }
+  - { command: ApplyCrewAdjudicationLearning, owner: character_life, primary_target: Crew, from: [ACTIVE, AUTONOMOUS], to: SAME, emits: [CrewAdjudicationLearned], preconditions: [causation is a committed AdjudicationEpochCreated event, source session causality is closed] }
+  - { command: CheckpointProjection, owner: projection_worker, primary_target: ProjectionCheckpoint, from: [ANY], to: SAME, emits: [ProjectionCheckpointed] }
+  - { command: RequestCellMigration, owner: cell_router, primary_target: CellMigration, from: [ABSENT], to: ACTIVE_SOURCE, emits: [CellMigrationRequested] }
+  - { command: FreezeCellBundle, owner: cell_router, primary_target: CellMigration, from: [ACTIVE_SOURCE], to: FREEZE_REQUESTED, emits: [CellBundleFreezeRequested] }
+  - { command: ConfirmCellBundleFrozen, owner: cell_router, primary_target: CellMigration, from: [FREEZE_REQUESTED], to: FROZEN, emits: [CellBundleFrozen], preconditions: [source rejects writes, outbox drained, no open settlement or deletion hold] }
+  - { command: CopyCellBundle, owner: cell_router, primary_target: CellMigration, from: [FROZEN], to: COPIED, emits: [CellBundleCopied] }
+  - { command: VerifyCellBundle, owner: cell_router, primary_target: CellMigration, from: [COPIED], to: VERIFIED, emits: [CellBundleVerified] }
+  - { command: CutOverCellOwnership, owner: cell_router, primary_target: CellMigration, from: [VERIFIED], to: ACTIVE_TARGET, emits: [CellOwnershipCutOver] }
+  - { command: AbortCellMigration, owner: cell_router, primary_target: CellMigration, from: [FREEZE_REQUESTED, FROZEN, COPIED, VERIFIED], to: ACTIVE_SOURCE, emits: [CellMigrationAborted] }
+  - { command: TombstoneCellSource, owner: cell_router, primary_target: CellMigration, from: [ACTIVE_TARGET], to: SOURCE_TOMBSTONED, emits: [CellSourceTombstoned] }
