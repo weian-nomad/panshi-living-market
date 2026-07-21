@@ -46,11 +46,29 @@ jobs:
         run: docker build --file deploy/study/Dockerfile --build-arg RELEASE_REVISION="${{ github.sha }}" --tag panshi-study-ci .
       - name: Smoke sealed study container
         run: |
-          docker run --detach --name panshi-study-ci --publish 8080:8080 panshi-study-ci
+          docker network create panshi-study-ci
+          docker run --detach \
+            --name panshi-study-ci \
+            --network panshi-study-ci \
+            --read-only \
+            --cap-drop ALL \
+            --security-opt no-new-privileges:true \
+            --pids-limit 64 \
+            --memory 128m \
+            --cpus 0.5 \
+            --tmpfs /tmp:rw,noexec,nosuid,size=8m,uid=10001,gid=10001 \
+            --tmpfs /data:rw,noexec,nosuid,size=8m,uid=10001,gid=10001 \
+            --tmpfs /config:rw,noexec,nosuid,size=8m,uid=10001,gid=10001 \
+            --publish 127.0.0.1:8080:8080 \
+            panshi-study-ci
           deploy/study/smoke.sh http://127.0.0.1:8080
+          docker exec panshi-study-ci grep -Eq '^CapBnd:[[:space:]]*0000000000000000$' /proc/1/status
+          test "$(docker inspect --format '{{.State.Status}}' panshi-study-ci)" = running
       - name: Stop study container
         if: always()
-        run: docker rm --force panshi-study-ci || true
+        run: |
+          docker rm --force panshi-study-ci || true
+          docker network rm panshi-study-ci || true
 
   rust:
     runs-on: ubuntu-latest
