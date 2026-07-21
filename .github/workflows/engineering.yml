@@ -40,7 +40,7 @@ jobs:
         run: pnpm test
       - name: Build web client
         env:
-          VITE_STUDY_BUILD_ID: study-2026-07-21.3
+          VITE_STUDY_BUILD_ID: study-2026-07-21.4
         run: pnpm build
       - name: Build sealed study container
         run: docker build --file deploy/study/Dockerfile --build-arg RELEASE_REVISION="${{ github.sha }}" --tag panshi-study-ci .

@@ -1,7 +1,7 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 
-const SEALED_STUDY_BUILD_ID = "study-2026-07-21.3";
+const SEALED_STUDY_BUILD_ID = "study-2026-07-21.4";
 
 export default defineConfig(({ mode }) => {
   const environment = loadEnv(mode, ".", "");

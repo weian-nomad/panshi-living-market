@@ -72,7 +72,7 @@ pnpm --filter @panshi/web dev
 封存正式研究 build 時必須指定整批受測者共用的 build ID：
 
 ```bash
-VITE_STUDY_BUILD_ID=study-2026-07-21.3 pnpm --filter @panshi/web build
+VITE_STUDY_BUILD_ID=study-2026-07-21.4 pnpm --filter @panshi/web build
 ```
 
 production build 未指定這個 build ID，或指定不同值，建置會直接失敗。正式根路徑只顯示封閉研究訊息；研究入口仍會在寫入前再次核對封存版本。

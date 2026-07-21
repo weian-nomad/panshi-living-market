@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-const releaseId = "study-2026-07-21.3";
-const consentVersion = "2026-07-21.v3";
-const evaluatorRevision = "v4-study-3";
+const releaseId = "study-2026-07-21.4";
+const consentVersion = "2026-07-21.v4";
+const evaluatorRevision = "v4-study-4";
 const origin = "https://world.panshi.app";
 const paths = {
   application: new URL("../apps/web/src/studyRelease.ts", import.meta.url),
@@ -36,9 +36,12 @@ assert.ok(contents.evaluator.includes(consentVersion), "consent version drifted"
 assert.ok(contents.application.includes(origin), "application origin drifted");
 assert.ok(contents.document.includes(`<link rel="canonical" href="${origin}/"`), "canonical origin drifted");
 assert.ok(contents.document.includes('name="robots" content="noindex, nofollow, noarchive"'), "noindex missing");
-assert.ok(contents.worker.includes("panshi-v4-study-2026-07-21-3"), "worker cache release drifted");
-assert.ok(contents.consent.includes("完整網址會經邊緣存取服務送達靜態網站伺服器"), "edge URL transit consent missing");
-assert.ok(contents.consent.includes("存取驗證紀錄依方案最長保留 180 天"), "access retention consent missing");
-assert.ok(contents.consent.includes("連線資料不進入研究匯出"), "data separation consent missing");
+assert.ok(contents.worker.includes("panshi-v4-study-2026-07-21-4"), "worker cache release drifted");
+assert.ok(contents.consent.includes("完整網址會經邊緣連線服務送達靜態網站伺服器"), "edge URL transit consent missing");
+assert.ok(contents.consent.includes("開啟研究頁時不會進行身分驗證"), "public access consent missing");
+assert.ok(contents.consent.includes("也不另行啟用或匯出 HTTP 請求日誌"), "edge logging consent missing");
+assert.ok(contents.consent.includes("這些資料不進入研究匯出"), "data separation consent missing");
+assert.ok(!contents.consent.includes("操作員存取身分"), "obsolete access identity consent remains");
+assert.ok(!contents.consent.includes("存取驗證紀錄"), "obsolete access log consent remains");
 
 console.log(`study release audit passed: ${releaseId}`);

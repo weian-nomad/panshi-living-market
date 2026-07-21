@@ -1,4 +1,4 @@
-const CACHE_NAME = "panshi-v4-study-2026-07-21-3";
+const CACHE_NAME = "panshi-v4-study-2026-07-21-4";
 const SHELL_PATHS = [
   "/",
   "/index.html",

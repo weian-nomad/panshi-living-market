@@ -1,8 +1,8 @@
 import { STUDY_ORIGIN } from "./studyRelease.ts";
 
 export const STUDY_SCHEMA_VERSION = 1 as const;
-export const STUDY_CONSENT_VERSION = "2026-07-21.v3";
-export const STUDY_EVALUATOR_REVISION = "v4-study-3" as const;
+export const STUDY_CONSENT_VERSION = "2026-07-21.v4";
+export const STUDY_EVALUATOR_REVISION = "v4-study-4" as const;
 export const STUDY_SAMPLE_INTERVAL_MS = 1_000;
 export const STUDY_MAX_SAMPLE_GAP_MS = 1_750;
 export const STUDY_MIN_FULL_CYCLE_MS = 598_000;

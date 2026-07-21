@@ -22,7 +22,7 @@ function runStarted(overrides: Partial<StudyEvent> = {}): StudyEvent {
     sceneSecond: 0,
     type: "run_started",
     consentVersion: STUDY_CONSENT_VERSION,
-    appBuildId: "study-2026-07-21.3",
+    appBuildId: "study-2026-07-21.4",
     ...overrides,
   } as StudyEvent;
 }
@@ -46,7 +46,7 @@ describe("study export validation", () => {
       ...createStudyExport([runStarted()], "2026-07-21T01:00:00.000Z"),
       evaluatorRevision: "future-revision",
     };
-    expect(() => verifyStudyExport(exported)).toThrow("只接受 v4-study-3");
+    expect(() => verifyStudyExport(exported)).toThrow("只接受 v4-study-4");
   });
 
   it("rejects an export that claims a different collection origin", () => {

@@ -5,9 +5,9 @@ This image serves the sealed V4 study as static files. It has no application bac
 Build from the repository root:
 
 ```bash
-VITE_STUDY_BUILD_ID=study-2026-07-21.3 pnpm --filter @panshi/web build
-docker build -f deploy/study/Dockerfile --build-arg RELEASE_REVISION="$(git rev-parse HEAD)" -t panshi-study:study-2026-07-21.3 .
-docker run --rm -p 8080:8080 panshi-study:study-2026-07-21.3
+VITE_STUDY_BUILD_ID=study-2026-07-21.4 pnpm --filter @panshi/web build
+docker build -f deploy/study/Dockerfile --build-arg RELEASE_REVISION="$(git rev-parse HEAD)" -t panshi-study:study-2026-07-21.4 .
+docker run --rm -p 8080:8080 panshi-study:study-2026-07-21.4
 deploy/study/smoke.sh http://127.0.0.1:8080
 ```
 
