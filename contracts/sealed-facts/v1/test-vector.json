@@ -1,0 +1,21 @@
+{
+  "input": {
+    "fact_id": "sf_tw.2330.close.20260717.v1",
+    "schema_version": "sealed-fact/v1",
+    "source": "public_exchange",
+    "market_date_taipei": "2026-07-17",
+    "symbol": "2330:TW",
+    "fact_type": "daily_close",
+    "payload": {
+      "currency": "TWD",
+      "price": 1045
+    },
+    "provenance": {
+      "source_locator": "https://data.example/market/2330/2026-07-17",
+      "retrieved_at": "2026-07-17T06:00:00.000Z",
+      "observed_at": "2026-07-17T05:30:00.000Z"
+    }
+  },
+  "canonical_jcs_utf8": "{\"fact_id\":\"sf_tw.2330.close.20260717.v1\",\"fact_type\":\"daily_close\",\"market_date_taipei\":\"2026-07-17\",\"payload\":{\"currency\":\"TWD\",\"price\":1045},\"provenance\":{\"observed_at\":\"2026-07-17T05:30:00.000Z\",\"retrieved_at\":\"2026-07-17T06:00:00.000Z\",\"source_locator\":\"https://data.example/market/2330/2026-07-17\"},\"schema_version\":\"sealed-fact/v1\",\"source\":\"public_exchange\",\"symbol\":\"2330:TW\"}",
+  "content_hash": "sha256:a8780b048bdd6562b7f83d7afcbdf022a212ccf3d5cd3f84c1083256c4d4c7b1"
+}

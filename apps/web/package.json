@@ -8,6 +8,7 @@
     "check": "tsc -b --pretty false",
     "dev": "vite --host 0.0.0.0",
     "preview": "vite preview",
+    "study:verify": "node tools/verify-study-export.mjs",
     "test": "vitest run"
   },
   "dependencies": {

@@ -1,7 +1,11 @@
-const CACHE_NAME = "panshi-v4-study-shell-1";
+const CACHE_NAME = "panshi-v4-study-2026-07-21-1";
 const SHELL_PATHS = [
   "/",
   "/index.html",
+  "/manifest.webmanifest",
+  "/study-release.json",
+  "/icons/panshi-world-192.png",
+  "/icons/panshi-world-512.png",
   "/art/v4/layers/opening-hall-empty-v1.webp",
   "/art/v4/layers/resident-atlas-alpha-v1.webp",
 ];

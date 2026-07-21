@@ -30,12 +30,27 @@ jobs:
         run: ruby tools/contract-audit.rb
       - name: Verify sealed historical fixtures
         run: ruby tools/fixture-audit.rb
+      - name: Audit sealed market facts
+        run: node tools/sealed-fact-audit.mjs
+      - name: Audit sealed study release
+        run: node tools/study-release-audit.mjs
       - name: Type-check workspaces
         run: pnpm --recursive --if-present check
       - name: Test web rules
         run: pnpm test
       - name: Build web client
+        env:
+          VITE_STUDY_BUILD_ID: study-2026-07-21.1
         run: pnpm build
+      - name: Build sealed study container
+        run: docker build --file deploy/study/Dockerfile --build-arg RELEASE_REVISION="${{ github.sha }}" --tag panshi-study-ci .
+      - name: Smoke sealed study container
+        run: |
+          docker run --detach --name panshi-study-ci --publish 8080:8080 panshi-study-ci
+          deploy/study/smoke.sh http://127.0.0.1:8080
+      - name: Stop study container
+        if: always()
+        run: docker rm --force panshi-study-ci || true
 
   rust:
     runs-on: ubuntu-latest

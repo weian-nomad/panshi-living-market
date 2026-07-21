@@ -9,10 +9,16 @@ import {
   type StudyEvent,
   type StudyVisitOrdinal,
 } from "./study";
-import { StudyRecorder } from "./studyRecorder";
+import { StudyRecorder, StudyRunAlreadyCompletedError } from "./studyRecorder";
+import { isApprovedStudyRuntime, resolveStudyBuildId } from "./studyRelease";
 import { IndexedDbStudyStore } from "./studyStorage";
 
-const APP_BUILD_ID = "v4-study-1";
+const APP_BUILD_ID = resolveStudyBuildId(import.meta.env.VITE_STUDY_BUILD_ID, import.meta.env.DEV);
+const STUDY_RUNTIME_APPROVED = isApprovedStudyRuntime({
+  origin: window.location.origin,
+  isSecureContext: window.isSecureContext,
+  isDevelopment: import.meta.env.DEV,
+});
 
 type ParticipantRoute = {
   kind: "participant";
@@ -34,7 +40,7 @@ function readStudyRoute(): StudyRoute {
   const participantCode = normalizeParticipantCode(parameters.get("study") ?? "");
   const visit = Number(parameters.get("visit"));
   if (!participantCode) {
-    return { kind: "invalid", message: "研究代碼格式不符。請向研究人員取得新的連結。" };
+    return { kind: "invalid", message: "研究代碼必須是 P01 至 P24。請向研究人員取得新的連結。" };
   }
   if (visit !== 1 && visit !== 2) {
     return { kind: "invalid", message: "觀看次序缺少或不正確。請向研究人員取得新的連結。" };
@@ -44,7 +50,7 @@ function readStudyRoute(): StudyRoute {
 }
 
 function registerStudyServiceWorker() {
-  if (!import.meta.env.PROD || !("serviceWorker" in navigator)) return;
+  if (!import.meta.env.PROD || !STUDY_RUNTIME_APPROVED || !("serviceWorker" in navigator)) return;
   void navigator.serviceWorker.register("/study-sw.js", { scope: "/" });
 }
 
@@ -71,9 +77,17 @@ function StudyMessage({
   );
 }
 
-function ParticipantStudy({ route }: { route: ParticipantRoute }) {
+function ParticipantStudy({
+  route,
+  appBuildId,
+}: {
+  route: ParticipantRoute;
+  appBuildId: string;
+}) {
   const store = useMemo(() => new IndexedDbStudyStore(), []);
-  const [phase, setPhase] = useState<"checking" | "consent" | "starting" | "active" | "declined" | "error">("checking");
+  const [phase, setPhase] = useState<
+    "checking" | "consent" | "starting" | "active" | "completed" | "declined" | "error"
+  >("checking");
   const [recorder, setRecorder] = useState<StudyRecorder | null>(null);
   const startPromiseRef = useRef<Promise<void> | null>(null);
 
@@ -87,14 +101,15 @@ function ParticipantStudy({ route }: { route: ParticipantRoute }) {
       const nextRecorder = await StudyRecorder.start(store, {
         participantCode: route.participantCode,
         visitOrdinal: route.visitOrdinal,
-        appBuildId: APP_BUILD_ID,
+        appBuildId,
         onStorageFailure: () => setPhase("error"),
+        onRunCompleted: () => setPhase("completed"),
       });
       setRecorder(nextRecorder);
       setPhase("active");
-    })().catch(() => {
+    })().catch((error: unknown) => {
       startPromiseRef.current = null;
-      setPhase("error");
+      setPhase(error instanceof StudyRunAlreadyCompletedError ? "completed" : "error");
     });
     return startPromiseRef.current;
   }
@@ -144,6 +159,14 @@ function ParticipantStudy({ route }: { route: ParticipantRoute }) {
     return (
       <StudyMessage eyebrow="已退出" title="這次不會開始記錄">
         <p>把裝置交還研究人員即可。</p>
+      </StudyMessage>
+    );
+  }
+
+  if (phase === "completed") {
+    return (
+      <StudyMessage eyebrow={`觀看完成 · ${route.participantCode}`} title="這次紀錄已封存">
+        <p>不必再重新操作。請把裝置交還研究人員。</p>
       </StudyMessage>
     );
   }
@@ -222,7 +245,7 @@ function ResearcherConsole() {
   async function copyParticipantLink() {
     const participantCode = normalizeParticipantCode(participantCodeInput);
     if (!participantCode) {
-      setCopyStatus("代碼需為 2 至 16 位英數字或連字號。");
+      setCopyStatus("代碼必須是 P01 至 P24。");
       return;
     }
     const url = new URL(window.location.origin);
@@ -259,13 +282,25 @@ function ResearcherConsole() {
           <p>盤勢・眾生</p>
           <h1>24 人研究紀錄</h1>
         </div>
-        <span>{phase === "loading" ? "正在讀取" : `${events.length} 筆事件`}</span>
+        <span>
+          {phase === "loading"
+            ? "正在讀取"
+            : `${APP_BUILD_ID ?? "未封存"} · ${events.length} 筆事件`}
+        </span>
       </header>
 
       <section className="research-status" aria-live="polite">
         <p>目前裁決</p>
         <strong>
-          {result.invalidVisitDayCount > 0
+          {!APP_BUILD_ID
+            ? "研究版本未封存"
+            : result.invalidRunCount > 0
+              ? "有無法判定的觀看紀錄"
+              : result.duplicateVisitCount > 0
+                ? "同一觀看次序出現重複紀錄"
+              : result.appBuildIds.length > 1 || result.consentVersions.length > 1
+                ? "研究版本不一致"
+                : result.invalidVisitDayCount > 0
             ? "有觀看日期不符研究規則"
             : result.participantCount > 24
               ? "樣本數已超過 24 人"
@@ -275,7 +310,7 @@ function ResearcherConsole() {
                   ? "三項門檻通過"
                   : "至少一項未通過"}
         </strong>
-        <span>必須正好 24 人且隔日日期有效，才會產生正式裁決。</span>
+        <span>必須正好 24 人、同一封存版本，而且沒有損壞或錯日紀錄，才會產生正式裁決。</span>
       </section>
 
       <section className="research-metrics" aria-label="研究門檻">
@@ -306,7 +341,15 @@ function ResearcherConsole() {
         <div className="research-link-builder">
           <label>
             匿名代碼
-            <input value={participantCodeInput} onChange={(event) => setParticipantCodeInput(event.target.value)} maxLength={16} />
+            <input
+              value={participantCodeInput}
+              onChange={(event) => setParticipantCodeInput(event.target.value)}
+              maxLength={3}
+              autoCapitalize="characters"
+              autoComplete="off"
+              spellCheck={false}
+              placeholder="P01"
+            />
           </label>
           <label>
             觀看次序
@@ -384,12 +427,39 @@ export function StudyRoot() {
     }
   }, [route.kind]);
 
-  if (route.kind === "participant") return <ParticipantStudy route={route} />;
+  if (
+    (route.kind === "participant" || route.kind === "researcher") &&
+    !STUDY_RUNTIME_APPROVED
+  ) {
+    return (
+      <StudyMessage eyebrow="研究網址未通過核對" title="這裡不能讀寫研究紀錄">
+        <p>這個頁面不在正式的安全研究網址上，因此沒有開啟裝置資料。請把裝置交還研究人員。</p>
+      </StudyMessage>
+    );
+  }
+
+  if (route.kind === "participant") {
+    if (!APP_BUILD_ID) {
+      return (
+        <StudyMessage eyebrow="研究版本未封存" title="這個版本不能開始記錄">
+          <p>這個網址沒有連到封存版本，因此不會寫入研究紀錄。請把裝置交還研究人員。</p>
+        </StudyMessage>
+      );
+    }
+    return <ParticipantStudy route={route} appBuildId={APP_BUILD_ID} />;
+  }
   if (route.kind === "researcher") return <ResearcherConsole />;
   if (route.kind === "invalid") {
     return (
       <StudyMessage eyebrow="連結無法使用" title="無法開始這次觀看">
         <p>{route.message}</p>
+      </StudyMessage>
+    );
+  }
+  if (import.meta.env.PROD) {
+    return (
+      <StudyMessage eyebrow="封閉研究階段" title="這裡還不是公開入口">
+        <p>盤勢・眾生正在進行固定裝置測試。持有受測連結的人才能開始觀看；這個頁面不會建立任何紀錄。</p>
       </StudyMessage>
     );
   }

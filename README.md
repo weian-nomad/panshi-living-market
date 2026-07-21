@@ -18,6 +18,7 @@ V4 產品基準：
 - [十分鐘互動原型](./docs/v4/interaction-prototype.md)
 - [兩輪 Pro 原型審查與 24 人測試閘門](./docs/v4/prototype-review-2026-07-20.md)
 - [24 人研究模式與固定裁決](./docs/v4/study-mode.md)
+- [研究 origin 與通過後網域分工](./docs/v4/origin-and-release-decision.md)
 - [相鄰產品研究](./docs/v4/research-reset.md)
 - [跨產品契約](./docs/repository-boundary.md)
 
@@ -67,6 +68,14 @@ tools/verify-kernel-parity.sh
 ```bash
 pnpm --filter @panshi/web dev
 ```
+
+封存正式研究 build 時必須指定整批受測者共用的 build ID：
+
+```bash
+VITE_STUDY_BUILD_ID=study-2026-07-21.1 pnpm --filter @panshi/web build
+```
+
+production build 未指定這個 build ID，或指定不同值，建置會直接失敗。正式根路徑只顯示封閉研究訊息；研究入口仍會在寫入前再次核對封存版本。
 
 開啟後會播放 2026-07-17 的封存場景。按住一位居民進入跟拍，按住不放並拖向另一位居民或公告即可交接；點按與下方三個按鈕提供相同的替代操作。
 

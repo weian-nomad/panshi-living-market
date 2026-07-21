@@ -10,8 +10,10 @@
   "scripts": {
     "audit:contracts": "ruby tools/contract-audit.rb",
     "audit:fixtures": "ruby tools/fixture-audit.rb",
+    "audit:sealed-facts": "node tools/sealed-fact-audit.mjs",
+    "audit:study-release": "node tools/study-release-audit.mjs",
     "build": "pnpm --recursive --if-present build",
-    "check": "pnpm audit:contracts && pnpm audit:fixtures && pnpm contracts:lint && pnpm --recursive --if-present check",
+    "check": "pnpm audit:contracts && pnpm audit:fixtures && pnpm audit:sealed-facts && pnpm audit:study-release && pnpm contracts:lint && pnpm --recursive --if-present check",
     "contracts:generate": "openapi-ts",
     "contracts:lint": "redocly lint contracts/openapi/public-v1.yaml",
     "test": "pnpm --recursive --if-present test"

@@ -1,17 +1,30 @@
 import { describe, expect, it } from "vitest";
 
-import type { StudyEvent, StudyVisitOrdinal } from "./study";
-import { StudyRecorder } from "./studyRecorder";
+import type { StudyEvent, StudyRunStarted } from "./study";
+import { StudyRecorder, StudyRunAlreadyCompletedError } from "./studyRecorder";
 import type { StudyEventStore } from "./studyStorage";
 
 class MemoryStudyStore implements StudyEventStore {
   readonly events: StudyEvent[] = [];
-  private readonly attempts = new Map<string, number>();
+  private readonly runs = new Map<string, string>();
   failAfter = Number.POSITIVE_INFINITY;
 
   async append(event: StudyEvent): Promise<void> {
     if (this.events.length >= this.failAfter) throw new Error("storage failed");
     this.events.push(event);
+  }
+
+  async beginUniqueRun(event: StudyRunStarted) {
+    const key = `${event.appBuildId}/${event.participantCode}/${event.visitOrdinal}`;
+    if (this.runs.has(key)) return false;
+    await this.append(event);
+    this.runs.set(key, event.runId);
+    return true;
+  }
+
+  async readRun(participantCode: string, visitOrdinal: StudyRunStarted["visitOrdinal"], appBuildId: string) {
+    const runId = this.runs.get(`${appBuildId}/${participantCode}/${visitOrdinal}`);
+    return runId ? this.events.filter((event) => event.runId === runId) : [];
   }
 
   async readAll() {
@@ -20,7 +33,7 @@ class MemoryStudyStore implements StudyEventStore {
 
   async clearAll() {
     this.events.length = 0;
-    this.attempts.clear();
+    this.runs.clear();
   }
 
   async hasConsent() {
@@ -29,12 +42,6 @@ class MemoryStudyStore implements StudyEventStore {
 
   async recordConsent() {}
 
-  async allocateAttempt(participantCode: string, visitOrdinal: StudyVisitOrdinal) {
-    const key = `${participantCode}/${visitOrdinal}`;
-    const next = (this.attempts.get(key) ?? 0) + 1;
-    this.attempts.set(key, next);
-    return next;
-  }
 }
 
 describe("StudyRecorder", () => {
@@ -97,5 +104,91 @@ describe("StudyRecorder", () => {
 
     expect(failed).toBe(true);
     expect(store.events).toHaveLength(1);
+  });
+
+  it("resumes the same unique run and inserts an interruption boundary", async () => {
+    const store = new MemoryStudyStore();
+    let clock = 1_000;
+    const dependencies = {
+      monotonicNow: () => clock,
+      occurredAt: () => "2026-07-20T00:00:00.000Z",
+      createId: () => "run-1",
+    };
+    const first = await StudyRecorder.start(
+      store,
+      { participantCode: "P01", visitOrdinal: 1, appBuildId: "test" },
+      dependencies,
+    );
+    clock = 2_000;
+    first.sample(10, { visible: true, playing: true, focusedResidentId: "resident-a" });
+    await first.flush();
+
+    clock = 5_000;
+    const resumed = await StudyRecorder.start(
+      store,
+      { participantCode: "P01", visitOrdinal: 1, appBuildId: "test" },
+      { ...dependencies, createId: () => "must-not-create-run-2" },
+    );
+    await resumed.flush();
+
+    expect(store.events.filter((event) => event.type === "run_started")).toHaveLength(1);
+    expect(store.events.map((event) => event.runId)).toEqual(["run-1", "run-1", "run-1"]);
+    expect(store.events.map((event) => event.sequence)).toEqual([0, 1, 2]);
+    expect(store.events[2]).toMatchObject({ type: "watch_sample", visible: false, playing: false });
+  });
+
+  it("permanently locks a completed visit instead of creating another attempt", async () => {
+    const store = new MemoryStudyStore();
+    const dependencies = {
+      monotonicNow: () => 1_000,
+      occurredAt: () => "2026-07-20T00:00:00.000Z",
+      createId: () => "run-1",
+    };
+    const recorder = await StudyRecorder.start(
+      store,
+      { participantCode: "P01", visitOrdinal: 1, appBuildId: "test" },
+      dependencies,
+    );
+    recorder.completeCycle(0, { visible: true, playing: true, focusedResidentId: null });
+    await recorder.flush();
+
+    await expect(
+      StudyRecorder.start(
+        store,
+        { participantCode: "P01", visitOrdinal: 1, appBuildId: "test" },
+        dependencies,
+      ),
+    ).rejects.toBeInstanceOf(StudyRunAlreadyCompletedError);
+  });
+
+  it("seals visit two immediately after its first direct resident selection", async () => {
+    const store = new MemoryStudyStore();
+    let completed = false;
+    const recorder = await StudyRecorder.start(
+      store,
+      {
+        participantCode: "P01",
+        visitOrdinal: 2,
+        appBuildId: "test",
+        onRunCompleted: () => {
+          completed = true;
+        },
+      },
+      {
+        monotonicNow: () => 1_000,
+        occurredAt: () => "2026-07-21T00:00:00.000Z",
+        createId: () => "run-visit-2",
+      },
+    );
+    recorder.followStarted(2, "resident-a", "tap");
+    await recorder.flush();
+    await Promise.resolve();
+
+    expect(completed).toBe(true);
+    expect(store.events.map((event) => event.type)).toEqual([
+      "run_started",
+      "follow_started",
+      "run_ended",
+    ]);
   });
 });

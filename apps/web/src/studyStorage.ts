@@ -1,4 +1,4 @@
-import type { StudyEvent, StudyVisitOrdinal } from "./study";
+import type { StudyEvent, StudyRunStarted } from "./study";
 
 const DATABASE_NAME = "panshi-v4-study";
 const DATABASE_VERSION = 1;
@@ -12,11 +12,16 @@ type StudyMetaRecord = {
 
 export interface StudyEventStore {
   append(event: StudyEvent): Promise<void>;
+  beginUniqueRun(event: StudyRunStarted): Promise<boolean>;
+  readRun(
+    participantCode: string,
+    visitOrdinal: StudyRunStarted["visitOrdinal"],
+    appBuildId: string,
+  ): Promise<StudyEvent[]>;
   readAll(): Promise<StudyEvent[]>;
   clearAll(): Promise<void>;
   hasConsent(participantCode: string, consentVersion: string): Promise<boolean>;
   recordConsent(participantCode: string, consentVersion: string): Promise<void>;
-  allocateAttempt(participantCode: string, visitOrdinal: StudyVisitOrdinal): Promise<number>;
 }
 
 function requestResult<Result>(request: IDBRequest<Result>): Promise<Result> {
@@ -64,8 +69,8 @@ function consentKey(participantCode: string, consentVersion: string): string {
   return `consent/${participantCode}/${consentVersion}`;
 }
 
-function attemptKey(participantCode: string, visitOrdinal: StudyVisitOrdinal): string {
-  return `attempt/${participantCode}/${visitOrdinal}`;
+function runKey(participantCode: string, visitOrdinal: number, appBuildId: string): string {
+  return `run/${appBuildId}/${participantCode}/${visitOrdinal}`;
 }
 
 export class IndexedDbStudyStore implements StudyEventStore {
@@ -81,6 +86,44 @@ export class IndexedDbStudyStore implements StudyEventStore {
     const transaction = database.transaction(EVENT_STORE, "readwrite");
     transaction.objectStore(EVENT_STORE).add(event);
     await transactionComplete(transaction);
+  }
+
+  async beginUniqueRun(event: StudyRunStarted): Promise<boolean> {
+    const database = await this.database();
+    const transaction = database.transaction([EVENT_STORE, META_STORE], "readwrite");
+    const meta = transaction.objectStore(META_STORE);
+    const key = runKey(event.participantCode, event.visitOrdinal, event.appBuildId);
+    const existing = await requestResult<StudyMetaRecord | undefined>(meta.get(key));
+    if (typeof existing?.value === "string") {
+      await transactionComplete(transaction);
+      return false;
+    }
+
+    meta.add({ key, value: event.runId } satisfies StudyMetaRecord);
+    transaction.objectStore(EVENT_STORE).add(event);
+    await transactionComplete(transaction);
+    return true;
+  }
+
+  async readRun(
+    participantCode: string,
+    visitOrdinal: StudyRunStarted["visitOrdinal"],
+    appBuildId: string,
+  ): Promise<StudyEvent[]> {
+    const database = await this.database();
+    const metaTransaction = database.transaction(META_STORE, "readonly");
+    const record = await requestResult<StudyMetaRecord | undefined>(
+      metaTransaction.objectStore(META_STORE).get(runKey(participantCode, visitOrdinal, appBuildId)),
+    );
+    await transactionComplete(metaTransaction);
+    if (typeof record?.value !== "string") return [];
+
+    const eventTransaction = database.transaction(EVENT_STORE, "readonly");
+    const events = await requestResult<StudyEvent[]>(
+      eventTransaction.objectStore(EVENT_STORE).index("runId").getAll(record.value),
+    );
+    await transactionComplete(eventTransaction);
+    return events;
   }
 
   async readAll(): Promise<StudyEvent[]> {
@@ -120,18 +163,4 @@ export class IndexedDbStudyStore implements StudyEventStore {
     await transactionComplete(transaction);
   }
 
-  async allocateAttempt(
-    participantCode: string,
-    visitOrdinal: StudyVisitOrdinal,
-  ): Promise<number> {
-    const database = await this.database();
-    const transaction = database.transaction(META_STORE, "readwrite");
-    const store = transaction.objectStore(META_STORE);
-    const key = attemptKey(participantCode, visitOrdinal);
-    const current = await requestResult<StudyMetaRecord | undefined>(store.get(key));
-    const next = typeof current?.value === "number" ? current.value + 1 : 1;
-    store.put({ key, value: next } satisfies StudyMetaRecord);
-    await transactionComplete(transaction);
-    return next;
-  }
 }

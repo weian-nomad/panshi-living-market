@@ -6,6 +6,7 @@ on:
       - "contracts/**"
       - "docs/architecture/**"
       - "tools/contract-audit.rb"
+      - "tools/sealed-fact-audit.mjs"
       - ".github/workflows/contract-audit.yml"
   push:
     branches: [main]
@@ -13,6 +14,7 @@ on:
       - "contracts/**"
       - "docs/architecture/**"
       - "tools/contract-audit.rb"
+      - "tools/sealed-fact-audit.mjs"
       - ".github/workflows/contract-audit.yml"
 
 permissions:
@@ -26,4 +28,8 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .node-version
       - run: ruby tools/contract-audit.rb
+      - run: node tools/sealed-fact-audit.mjs

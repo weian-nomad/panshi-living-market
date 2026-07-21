@@ -37,6 +37,8 @@ function makeRun(
     attemptOrdinal?: number;
     runId?: string;
     occurredAt?: string;
+    appBuildId?: string;
+    consentVersion?: string;
   } = {},
 ): StudyEvent[] {
   const participantCode = options.participantCode ?? "P01";
@@ -57,8 +59,8 @@ function makeRun(
     occurredAt,
     sceneSecond: 0,
     type: "run_started",
-    consentVersion: STUDY_CONSENT_VERSION,
-    appBuildId: "test",
+    consentVersion: options.consentVersion ?? STUDY_CONSENT_VERSION,
+    appBuildId: options.appBuildId ?? "test",
   };
 
   return [
@@ -117,8 +119,11 @@ function fullCycleWithDuration(durationMs: number, startSceneSecond = 0): EventI
 }
 
 describe("study evaluator", () => {
-  it("normalizes only short anonymous participant codes", () => {
-    expect(normalizeParticipantCode(" p-01 ")).toBe("P-01");
+  it("accepts only the sealed anonymous cohort codes", () => {
+    expect(normalizeParticipantCode(" p01 ")).toBe("P01");
+    expect(normalizeParticipantCode("P24")).toBe("P24");
+    expect(normalizeParticipantCode("P00")).toBeNull();
+    expect(normalizeParticipantCode("P25")).toBeNull();
     expect(normalizeParticipantCode("x")).toBeNull();
     expect(normalizeParticipantCode("姓名 01")).toBeNull();
   });
@@ -126,6 +131,18 @@ describe("study evaluator", () => {
   it("requires a hold before a drag handoff", () => {
     expect(evaluateParticipant(makeRun([follow(100, "a"), handoff(500, "a", "b")])).completedHoldAndDrag).toBe(true);
     expect(evaluateParticipant(makeRun([follow(100, "a", "tap"), handoff(500, "a", "b")])).completedHoldAndDrag).toBe(false);
+  });
+
+  it("does not combine a hold and handoff across a reload interruption boundary", () => {
+    expect(
+      evaluateParticipant(
+        makeRun([
+          follow(100, "a"),
+          sample(200, 1, { visible: false, playing: false, focusedResidentId: null }),
+          handoff(500, "a", "b"),
+        ]),
+      ).completedHoldAndDrag,
+    ).toBe(false);
   });
 
   it("accepts one uninterrupted visible and playing ten-minute cycle", () => {
@@ -266,12 +283,13 @@ describe("study evaluator", () => {
     expect(result.passed).toBe(false);
   });
 
-  it("does not issue a verdict after the fixed cohort grows past 24 people", () => {
+  it("quarantines a run outside the fixed P01 to P24 cohort", () => {
     const events = Array.from({ length: 25 }, (_, index) =>
       makeRun([follow(100, "a")], { participantCode: `P${String(index + 1).padStart(2, "0")}` }),
     ).flat();
     const result = evaluateCohort(events);
-    expect(result.participantCount).toBe(25);
+    expect(result.participantCount).toBe(24);
+    expect(result.invalidRunCount).toBe(1);
     expect(result.readyForDecision).toBe(false);
     expect(result.passed).toBe(false);
   });
@@ -299,6 +317,49 @@ describe("study evaluator", () => {
     expect(result.passed).toBe(false);
   });
 
+  it("withholds the cohort verdict when valid runs mix sealed app builds", () => {
+    const events = Array.from({ length: 24 }, (_, index) =>
+      makeRun([], {
+        participantCode: `P${String(index + 1).padStart(2, "0")}`,
+        appBuildId: index === 23 ? "build-b" : "build-a",
+      }),
+    ).flat();
+    const result = evaluateCohort(events);
+    expect(result.appBuildIds).toEqual(["build-a", "build-b"]);
+    expect(result.readyForDecision).toBe(false);
+    expect(result.passed).toBe(false);
+  });
+
+  it("withholds the verdict when a participant visit has two otherwise valid runs", () => {
+    const cohort = Array.from({ length: 24 }, (_, index) =>
+      makeRun([], { participantCode: `P${String(index + 1).padStart(2, "0")}` }),
+    ).flat();
+    const duplicate = makeRun([], { participantCode: "P01", runId: "P01-duplicate" });
+    const result = evaluateCohort([...cohort, ...duplicate]);
+    expect(result.duplicateVisitCount).toBe(1);
+    expect(result.readyForDecision).toBe(false);
+    expect(result.passed).toBe(false);
+  });
+
+  it("withholds the cohort verdict when any participant has a quarantined run", () => {
+    const valid = Array.from({ length: 24 }, (_, index) =>
+      makeRun([], { participantCode: `P${String(index + 1).padStart(2, "0")}` }),
+    ).flat();
+    const invalid = makeRun([follow(100, "a")], {
+      participantCode: "P01",
+      attemptOrdinal: 2,
+      runId: "P01-invalid-retry",
+    });
+    const retryEvent = invalid[1];
+    if (!retryEvent) throw new Error("missing fixture event");
+    invalid[1] = { ...retryEvent, sequence: 3, eventId: `${retryEvent.runId}:000003` };
+
+    const result = evaluateCohort([...valid, ...invalid]);
+    expect(result.invalidRunCount).toBe(1);
+    expect(result.readyForDecision).toBe(false);
+    expect(result.passed).toBe(false);
+  });
+
   it("does not count a participant whose only run is invalid", () => {
     const valid = makeRun([follow(100, "a")], { participantCode: "P01" });
     const invalid = makeRun([follow(100, "b")], { participantCode: "P02" });
@@ -308,6 +369,7 @@ describe("study evaluator", () => {
 
     const result = evaluateCohort([...valid, ...invalid]);
     expect(result.participantCount).toBe(1);
+    expect(result.invalidRunCount).toBe(1);
     expect(result.participants.map((participant) => participant.participantCode)).toEqual(["P01"]);
   });
 
@@ -331,6 +393,7 @@ describe("study evaluator", () => {
     const events = makeRun([follow(100, "a"), handoff(500, "a", "b")]);
     const exported = createStudyExport(events, "2026-07-20T12:00:00.000Z");
     expect(exported.exportedAt).toBe("2026-07-20T12:00:00.000Z");
+    expect(exported.studyOrigin).toBe("https://world.panshi.app");
     expect(exported.thresholds).toEqual({
       participantCount: 24,
       holdAndDragCount: 20,
@@ -372,6 +435,10 @@ describe("study evaluator", () => {
       fullForegroundCycleCount: 10,
       returnedToTopResidentCount: 6,
       invalidVisitDayCount: 0,
+      invalidRunCount: 0,
+      duplicateVisitCount: 0,
+      appBuildIds: ["test"],
+      consentVersions: [STUDY_CONSENT_VERSION],
       readyForDecision: true,
       passed: true,
     });

@@ -1,5 +1,8 @@
+import { STUDY_ORIGIN } from "./studyRelease.ts";
+
 export const STUDY_SCHEMA_VERSION = 1 as const;
 export const STUDY_CONSENT_VERSION = "2026-07-20.v1";
+export const STUDY_EVALUATOR_REVISION = "v4-study-3" as const;
 export const STUDY_SAMPLE_INTERVAL_MS = 1_000;
 export const STUDY_MAX_SAMPLE_GAP_MS = 1_750;
 export const STUDY_MIN_FULL_CYCLE_MS = 598_000;
@@ -49,7 +52,7 @@ export type StudyHandoffCompleted = StudyEventBase & {
 
 export type StudyRunEnded = StudyEventBase & {
   type: "run_ended";
-  reason: "cycle_completed" | "page_hidden" | "unloaded" | "participant_ended";
+  reason: "cycle_completed" | "participant_ended";
 };
 
 export type StudyEvent =
@@ -76,6 +79,10 @@ export type StudyCohortResult = {
   fullForegroundCycleCount: number;
   returnedToTopResidentCount: number;
   invalidVisitDayCount: number;
+  invalidRunCount: number;
+  duplicateVisitCount: number;
+  appBuildIds: readonly string[];
+  consentVersions: readonly string[];
   readyForDecision: boolean;
   passed: boolean;
   participants: readonly StudyParticipantResult[];
@@ -84,7 +91,8 @@ export type StudyCohortResult = {
 export type StudyExport = {
   exportSchemaVersion: 1;
   studySchemaVersion: typeof STUDY_SCHEMA_VERSION;
-  evaluatorRevision: "v4-study-1";
+  evaluatorRevision: typeof STUDY_EVALUATOR_REVISION;
+  studyOrigin: typeof STUDY_ORIGIN;
   exportedAt: string;
   thresholds: {
     participantCount: 24;
@@ -98,7 +106,7 @@ export type StudyExport = {
 
 export function normalizeParticipantCode(value: string): string | null {
   const normalized = value.trim().toUpperCase();
-  return /^[A-Z0-9][A-Z0-9-]{1,15}$/.test(normalized) ? normalized : null;
+  return /^P(?:0[1-9]|1[0-9]|2[0-4])$/.test(normalized) ? normalized : null;
 }
 
 function compareEvents(left: StudyEvent, right: StudyEvent): number {
@@ -127,10 +135,13 @@ function isValidRun(events: readonly StudyEvent[]): boolean {
     !first ||
     first.type !== "run_started" ||
     first.sequence !== 0 ||
-    !normalizeParticipantCode(first.participantCode) ||
-    !Number.isInteger(first.attemptOrdinal) ||
-    first.attemptOrdinal < 1 ||
-    first.runId.length < 1
+    normalizeParticipantCode(first.participantCode) !== first.participantCode ||
+    first.attemptOrdinal !== 1 ||
+    first.runId.length < 1 ||
+    first.monotonicMs !== 0 ||
+    !Number.isFinite(Date.parse(first.occurredAt)) ||
+    first.consentVersion.trim().length < 1 ||
+    first.appBuildId.trim().length < 1
   ) {
     return false;
   }
@@ -148,11 +159,21 @@ function isValidRun(events: readonly StudyEvent[]): boolean {
       event.sequence !== index ||
       event.eventId !== `${first.runId}:${index.toString().padStart(6, "0")}` ||
       !Number.isFinite(event.monotonicMs) ||
+      event.monotonicMs < 0 ||
       event.monotonicMs < priorMonotonicMs ||
+      !Number.isFinite(Date.parse(event.occurredAt)) ||
       !Number.isInteger(event.sceneSecond) ||
       event.sceneSecond < 0 ||
       event.sceneSecond > 599 ||
       eventIds.has(event.eventId)
+    ) {
+      return false;
+    }
+    if (
+      event.type === "run_ended" &&
+      (index !== ordered.length - 1 ||
+        (event.visitOrdinal === 1 && event.reason !== "cycle_completed") ||
+        (event.visitOrdinal === 2 && event.reason !== "participant_ended"))
     ) {
       return false;
     }
@@ -292,22 +313,24 @@ export function evaluateParticipant(events: readonly StudyEvent[]): StudyPartici
   }
 
   validRuns.sort((left, right) => compareEvents(left[0]!, right[0]!));
-  const dayOneRuns = validRuns.filter((run) => run[0]?.visitOrdinal === 1);
-  const dayTwoRuns = validRuns.filter((run) => run[0]?.visitOrdinal === 2);
+  const dayOneRuns = validRuns.filter((run) => run[0]?.visitOrdinal === 1).slice(0, 1);
+  const dayTwoRuns = validRuns.filter((run) => run[0]?.visitOrdinal === 2).slice(0, 1);
 
   const completedHoldAndDrag = dayOneRuns.some((run) => {
-    const firstHold = run.find(
-      (event): event is StudyFollowStarted => event.type === "follow_started" && event.input === "hold",
-    );
-    return Boolean(
-      firstHold &&
-        run.some(
-          (event) =>
-            event.type === "handoff_completed" &&
-            event.input === "drag" &&
-            event.sequence > firstHold.sequence,
-        ),
-    );
+    let activeHold = false;
+    for (const event of run) {
+      if (
+        (event.type === "watch_sample" && (!event.visible || !event.playing)) ||
+        event.type === "run_ended"
+      ) {
+        activeHold = false;
+      } else if (event.type === "follow_started" && event.input === "hold") {
+        activeHold = true;
+      } else if (event.type === "handoff_completed" && activeHold) {
+        return true;
+      }
+    }
+    return false;
   });
 
   const completedFullForegroundCycle = dayOneRuns.some(runCompletesForegroundCycle);
@@ -371,7 +394,32 @@ export function evaluateCohort(events: readonly StudyEvent[]): StudyCohortResult
   const invalidVisitDayCount = participants.filter(
     (result) => result.dayTwoDateStatus === "wrong_day",
   ).length;
-  const readyForDecision = participants.length === 24 && invalidVisitDayCount === 0;
+  const allRuns = [...partitionRuns(events).values()];
+  const validRuns = allRuns.filter(isValidRun);
+  const invalidRunCount = allRuns.length - validRuns.length;
+  const validRunStarts = validRuns
+    .map((run) => [...run].sort((left, right) => left.sequence - right.sequence)[0])
+    .filter((event): event is StudyRunStarted => event?.type === "run_started");
+  const appBuildIds = [...new Set(validRunStarts.map((event) => event.appBuildId))].sort();
+  const consentVersions = [
+    ...new Set(validRunStarts.map((event) => event.consentVersion)),
+  ].sort();
+  const visitCounts = new Map<string, number>();
+  for (const event of validRunStarts) {
+    const key = `${event.appBuildId}\u0000${event.participantCode}\u0000${event.visitOrdinal}`;
+    visitCounts.set(key, (visitCounts.get(key) ?? 0) + 1);
+  }
+  const duplicateVisitCount = [...visitCounts.values()].reduce(
+    (count, occurrences) => count + Math.max(0, occurrences - 1),
+    0,
+  );
+  const readyForDecision =
+    participants.length === 24 &&
+    invalidVisitDayCount === 0 &&
+    invalidRunCount === 0 &&
+    duplicateVisitCount === 0 &&
+    appBuildIds.length === 1 &&
+    consentVersions.length === 1;
 
   return {
     participantCount: participants.length,
@@ -379,6 +427,10 @@ export function evaluateCohort(events: readonly StudyEvent[]): StudyCohortResult
     fullForegroundCycleCount,
     returnedToTopResidentCount,
     invalidVisitDayCount,
+    invalidRunCount,
+    duplicateVisitCount,
+    appBuildIds,
+    consentVersions,
     readyForDecision,
     passed:
       readyForDecision &&
@@ -393,7 +445,8 @@ export function createStudyExport(events: readonly StudyEvent[], exportedAt: str
   return {
     exportSchemaVersion: 1,
     studySchemaVersion: STUDY_SCHEMA_VERSION,
-    evaluatorRevision: "v4-study-1",
+    evaluatorRevision: STUDY_EVALUATOR_REVISION,
+    studyOrigin: STUDY_ORIGIN,
     exportedAt,
     thresholds: {
       participantCount: 24,

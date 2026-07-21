@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.panshi.app/contracts/sealed-facts/v1/schema.json",
+  "title": "Panshi sealed fact v1",
+  "description": "An immutable, source-backed market fact. It never contains character state, narrative, symbolism, win rates, forecasts or trading instructions.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "fact_id",
+    "schema_version",
+    "source",
+    "market_date_taipei",
+    "symbol",
+    "fact_type",
+    "payload",
+    "provenance",
+    "content_hash"
+  ],
+  "properties": {
+    "fact_id": {
+      "type": "string",
+      "pattern": "^sf_[a-z0-9][a-z0-9._-]{7,127}$"
+    },
+    "schema_version": {
+      "const": "sealed-fact/v1"
+    },
+    "source": {
+      "type": "string",
+      "description": "A public source name or stable internal source alias; never a credential or secret provider identifier.",
+      "pattern": "^[a-z0-9][a-z0-9._-]{1,63}$"
+    },
+    "market_date_taipei": {
+      "type": "string",
+      "format": "date"
+    },
+    "symbol": {
+      "type": "string",
+      "pattern": "^[A-Z0-9][A-Z0-9.:-]{0,31}$"
+    },
+    "fact_type": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{2,63}$"
+    },
+    "payload": {
+      "type": "object",
+      "description": "Source-shaped observed values only. No interpretation, prediction or recommendation fields.",
+      "minProperties": 1
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_locator", "retrieved_at", "observed_at"],
+      "properties": {
+        "source_locator": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "retrieved_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "license": {
+          "type": "string",
+          "maxLength": 256
+        }
+      }
+    },
+    "content_hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "supersedes": {
+      "type": "string",
+      "description": "The prior fact_id corrected by this append-only fact. The prior fact is never overwritten.",
+      "pattern": "^sf_[a-z0-9][a-z0-9._-]{7,127}$"
+    }
+  }
+}

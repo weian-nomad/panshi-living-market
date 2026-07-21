@@ -102,11 +102,21 @@ export function App({ studyRecorder }: { studyRecorder?: StudyRecorder } = {}) {
     if (!isPlaying) return;
 
     const interval = window.setInterval(() => {
-      setSeconds((current) => (current >= 599 ? 0 : current + 1));
+      setSeconds((current) => {
+        if (current < 599) return current + 1;
+        studyRecorder?.completeCycle(0, {
+          visible: document.visibilityState === "visible",
+          playing: playingRef.current,
+          focusedResidentId: residents.some((resident) => resident.id === focusIdRef.current)
+            ? focusIdRef.current
+            : null,
+        });
+        return 0;
+      });
     }, 1_000);
 
     return () => window.clearInterval(interval);
-  }, [isPlaying]);
+  }, [isPlaying, studyRecorder]);
 
   useEffect(() => {
     if (!studyRecorder) return;
@@ -132,8 +142,6 @@ export function App({ studyRecorder }: { studyRecorder?: StudyRecorder } = {}) {
     };
     const handlePageHide = () => {
       recordForcedInterruption();
-      studyRecorder.end(secondsRef.current, "unloaded");
-      void studyRecorder.flush();
     };
 
     sample();
