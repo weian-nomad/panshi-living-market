@@ -1,13 +1,13 @@
 # Device-only study release
 
-This image serves the sealed V4 study as static files. It has no application backend, analytics collector, server event database or request log. Study events remain in same-origin IndexedDB on the controlled phone.
+This image serves the sealed V4 study as static files. It has no application backend, analytics collector, server event database or origin request log. Study events remain in same-origin IndexedDB on the controlled phone. The edge access layer still processes connection metadata under the separate boundary documented in `docs/v4/study-mode.md`.
 
 Build from the repository root:
 
 ```bash
-VITE_STUDY_BUILD_ID=study-2026-07-21.1 pnpm --filter @panshi/web build
-docker build -f deploy/study/Dockerfile --build-arg RELEASE_REVISION="$(git rev-parse HEAD)" -t panshi-study:study-2026-07-21.1 .
-docker run --rm -p 8080:8080 panshi-study:study-2026-07-21.1
+VITE_STUDY_BUILD_ID=study-2026-07-21.3 pnpm --filter @panshi/web build
+docker build -f deploy/study/Dockerfile --build-arg RELEASE_REVISION="$(git rev-parse HEAD)" -t panshi-study:study-2026-07-21.3 .
+docker run --rm -p 8080:8080 panshi-study:study-2026-07-21.3
 deploy/study/smoke.sh http://127.0.0.1:8080
 ```
 

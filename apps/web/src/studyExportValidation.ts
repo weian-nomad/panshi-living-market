@@ -124,7 +124,7 @@ function parseEvent(value: unknown, index: number): StudyEvent {
     max: 16,
   });
   if (normalizeParticipantCode(participantCode) !== participantCode) {
-    fail(`${path}.participantCode`, "必須是已正規化的匿名代碼");
+    fail(`${path}.participantCode`, "必須是已正規化的研究代碼");
   }
 
   const visitOrdinal = integer(event.visitOrdinal, `${path}.visitOrdinal`, { min: 1, max: 2 });
@@ -261,7 +261,7 @@ export function verifyStudyExport(value: unknown): StudyExport {
   const events = payload.events.map(parseEvent);
   const result = evaluateCohort(events);
   if (result.duplicateVisitCount > 0) {
-    fail("export.events", "同一 build、匿名代碼與觀看次序只能有一個 run");
+    fail("export.events", "同一 build、研究代碼與觀看次序只能有一個 run");
   }
   if (!sameValue(payload.result, result)) {
     fail("export.result", "與原始事件重新計算的結果不一致");

@@ -149,8 +149,9 @@ function ParticipantStudy({
           </>
         }
       >
-        <p>這個版本只記錄開始、暫停、跟拍與切換人物的時間。</p>
-        <p>不收集姓名、聯絡方式、輸入內容或完整手勢路徑。紀錄只保存在這台裝置，供本次研究匯出。</p>
+        <p>應用只在這支研究手機上記錄開始、暫停、跟隨與交接時間；不記錄姓名、聯絡方式、輸入內容或完整手勢路徑。這些互動紀錄不會上傳。</p>
+        <p>研究代碼（P01–P24，不含姓名或聯絡方式）會出現在網址中；開啟頁面時，完整網址會經邊緣存取服務送達靜態網站伺服器。</p>
+        <p>邊緣服務會處理固定手機的 IP、瀏覽器資訊、開啟時間及操作員存取身分。參與者不需登入。本研究未啟用 HTTP 請求紀錄，靜態網站伺服器也不保存請求紀錄。存取驗證紀錄依方案最長保留 180 天，僅授權維運人員可查看。連線資料不進入研究匯出，也不與手機內研究資料合併。</p>
       </StudyMessage>
     );
   }
@@ -335,12 +336,12 @@ function ResearcherConsole() {
         <div className="research-panel__heading">
           <div>
             <p>受測連結</p>
-            <h2>設定匿名代碼與觀看次序</h2>
+            <h2>設定研究代碼與觀看次序</h2>
           </div>
         </div>
         <div className="research-link-builder">
           <label>
-            匿名代碼
+            研究代碼
             <input
               value={participantCodeInput}
               onChange={(event) => setParticipantCodeInput(event.target.value)}
@@ -369,7 +370,7 @@ function ResearcherConsole() {
         <div className="research-panel__heading">
           <div>
             <p>逐人結果</p>
-            <h2>{result.participantCount} 位匿名受測者</h2>
+            <h2>{result.participantCount} 位受測者</h2>
           </div>
           <button type="button" onClick={refresh}>重新讀取</button>
         </div>

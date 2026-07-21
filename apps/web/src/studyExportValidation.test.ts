@@ -22,7 +22,7 @@ function runStarted(overrides: Partial<StudyEvent> = {}): StudyEvent {
     sceneSecond: 0,
     type: "run_started",
     consentVersion: STUDY_CONSENT_VERSION,
-    appBuildId: "study-2026-07-21.1",
+    appBuildId: "study-2026-07-21.3",
     ...overrides,
   } as StudyEvent;
 }
@@ -94,7 +94,7 @@ describe("study export validation", () => {
       "2026-07-21T01:00:00.000Z",
     );
     expect(() => verifyStudyExport(exported)).toThrow(
-      "同一 build、匿名代碼與觀看次序只能有一個 run",
+      "同一 build、研究代碼與觀看次序只能有一個 run",
     );
   });
 

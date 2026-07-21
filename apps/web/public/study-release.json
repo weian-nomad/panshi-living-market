@@ -1,5 +1,6 @@
 {
-  "buildId": "study-2026-07-21.1",
+  "buildId": "study-2026-07-21.3",
+  "consentVersion": "2026-07-21.v3",
   "evaluatorRevision": "v4-study-3",
   "origin": "https://world.panshi.app",
   "dataMode": "device-only",
