@@ -11,6 +11,7 @@ import {
 } from "./study";
 import { StudyRecorder, StudyRunAlreadyCompletedError } from "./studyRecorder";
 import { isApprovedStudyRuntime, resolveStudyBuildId } from "./studyRelease";
+import { resolveStudyRoute, type ParticipantRoute } from "./studyRoutes";
 import { IndexedDbStudyStore } from "./studyStorage";
 
 const APP_BUILD_ID = resolveStudyBuildId(import.meta.env.VITE_STUDY_BUILD_ID, import.meta.env.DEV);
@@ -19,35 +20,6 @@ const STUDY_RUNTIME_APPROVED = isApprovedStudyRuntime({
   isSecureContext: window.isSecureContext,
   isDevelopment: import.meta.env.DEV,
 });
-
-type ParticipantRoute = {
-  kind: "participant";
-  participantCode: string;
-  visitOrdinal: StudyVisitOrdinal;
-};
-
-type StudyRoute =
-  | { kind: "standard" }
-  | ParticipantRoute
-  | { kind: "researcher" }
-  | { kind: "invalid"; message: string };
-
-function readStudyRoute(): StudyRoute {
-  const parameters = new URLSearchParams(window.location.search);
-  if (parameters.get("research") === "1") return { kind: "researcher" };
-  if (!parameters.has("study")) return { kind: "standard" };
-
-  const participantCode = normalizeParticipantCode(parameters.get("study") ?? "");
-  const visit = Number(parameters.get("visit"));
-  if (!participantCode) {
-    return { kind: "invalid", message: "研究代碼必須是 P01 至 P24。請向研究人員取得新的連結。" };
-  }
-  if (visit !== 1 && visit !== 2) {
-    return { kind: "invalid", message: "觀看次序缺少或不正確。請向研究人員取得新的連結。" };
-  }
-
-  return { kind: "participant", participantCode, visitOrdinal: visit };
-}
 
 function registerStudyServiceWorker() {
   if (!import.meta.env.PROD || !STUDY_RUNTIME_APPROVED || !("serviceWorker" in navigator)) return;
@@ -150,7 +122,7 @@ function ParticipantStudy({
         }
       >
         <p>應用只在這支研究手機上記錄開始、暫停、跟隨與交接時間；不記錄姓名、聯絡方式、輸入內容或完整手勢路徑。這些互動紀錄不會上傳。</p>
-        <p>研究代碼（P01–P24，不含姓名或聯絡方式）會出現在網址中。開啟頁面時，完整網址會經邊緣連線服務送達靜態網站伺服器。</p>
+        <p>研究代碼（P01 至 P24，不含姓名或聯絡方式）會出現在網址中。開啟頁面時，完整網址會經邊緣連線服務送達靜態網站伺服器。</p>
         <p>邊緣連線服務會處理連線裝置的 IP、瀏覽器資訊與開啟時間。開啟研究頁時不會進行身分驗證，參與者也不需登入。研究團隊不在應用或靜態網站伺服器保存 HTTP 請求紀錄，也不另行啟用或匯出 HTTP 請求日誌。服務供應商仍可能依其服務與隱私政策，為 TLS、濫用防護與故障排查處理必要連線資料。這些資料不進入研究匯出，也不與手機內研究資料合併。</p>
       </StudyMessage>
     );
@@ -250,7 +222,7 @@ function ResearcherConsole() {
       return;
     }
     const url = new URL(window.location.origin);
-    url.searchParams.set("study", participantCode);
+    url.pathname = `/study/${participantCode}`;
     url.searchParams.set("visit", String(visitOrdinal));
     try {
       await navigator.clipboard.writeText(url.toString());
@@ -420,7 +392,7 @@ function ResearcherConsole() {
 }
 
 export function StudyRoot() {
-  const route = useMemo(readStudyRoute, []);
+  const route = useMemo(() => resolveStudyRoute(new URL(window.location.href)), []);
 
   useEffect(() => {
     if (route.kind === "participant" || route.kind === "researcher") {
@@ -454,13 +426,6 @@ export function StudyRoot() {
     return (
       <StudyMessage eyebrow="連結無法使用" title="無法開始這次觀看">
         <p>{route.message}</p>
-      </StudyMessage>
-    );
-  }
-  if (import.meta.env.PROD) {
-    return (
-      <StudyMessage eyebrow="受控研究階段" title="這裡不是研究入口">
-        <p>本研究僅在一支受控手機上進行。只有研究人員提供的連結會開啟研究模式；此頁不會建立研究紀錄。</p>
       </StudyMessage>
     );
   }

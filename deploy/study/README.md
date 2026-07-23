@@ -5,9 +5,9 @@ This image serves the sealed V4 study as static files. It has no application bac
 Build from the repository root:
 
 ```bash
-VITE_STUDY_BUILD_ID=study-2026-07-21.4 pnpm --filter @panshi/web build
-docker build -f deploy/study/Dockerfile --build-arg RELEASE_REVISION="$(git rev-parse HEAD)" -t panshi-study:study-2026-07-21.4 .
-docker run --rm -p 8080:8080 panshi-study:study-2026-07-21.4
+VITE_STUDY_BUILD_ID=study-2026-07-23.5 pnpm --filter @panshi/web build
+docker build -f deploy/study/Dockerfile --build-arg RELEASE_REVISION="$(git rev-parse HEAD)" -t panshi-study:study-2026-07-23.5 .
+docker run --rm -p 8080:8080 panshi-study:study-2026-07-23.5
 deploy/study/smoke.sh http://127.0.0.1:8080
 ```
 
@@ -15,7 +15,7 @@ Release gates:
 
 1. Build, checks, tests, export verification and this smoke test pass on the same commit.
 2. `world.panshi.app` is the only production origin; TLS is valid and HTTP redirects to HTTPS at the edge.
-3. The root remains unlisted and `noindex`. Do not add analytics, a sitemap or a public navigation entry during research.
+3. The public world remains `noindex` during research. Do not add analytics or a sitemap during this release.
 4. Verify one first-load-online then offline reopen on the fixed phone.
 5. Verify hold, drag handoff, a ten-minute foreground run and the Taipei next-day rule on that phone.
 6. Export twice, verify both JSON files on another controlled device, compare SHA-256, then preserve the service-worker release for the full cohort.

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-const releaseId = "study-2026-07-21.4";
+const releaseId = "study-2026-07-23.5";
 const consentVersion = "2026-07-21.v4";
 const evaluatorRevision = "v4-study-4";
 const origin = "https://world.panshi.app";
@@ -36,7 +36,7 @@ assert.ok(contents.evaluator.includes(consentVersion), "consent version drifted"
 assert.ok(contents.application.includes(origin), "application origin drifted");
 assert.ok(contents.document.includes(`<link rel="canonical" href="${origin}/"`), "canonical origin drifted");
 assert.ok(contents.document.includes('name="robots" content="noindex, nofollow, noarchive"'), "noindex missing");
-assert.ok(contents.worker.includes("panshi-v4-study-2026-07-21-4"), "worker cache release drifted");
+assert.ok(contents.worker.includes("panshi-v4-study-2026-07-23-5"), "worker cache release drifted");
 assert.ok(contents.consent.includes("完整網址會經邊緣連線服務送達靜態網站伺服器"), "edge URL transit consent missing");
 assert.ok(contents.consent.includes("開啟研究頁時不會進行身分驗證"), "public access consent missing");
 assert.ok(contents.consent.includes("也不另行啟用或匯出 HTTP 請求日誌"), "edge logging consent missing");

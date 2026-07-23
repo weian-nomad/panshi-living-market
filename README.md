@@ -72,10 +72,10 @@ pnpm --filter @panshi/web dev
 封存正式研究 build 時必須指定整批受測者共用的 build ID：
 
 ```bash
-VITE_STUDY_BUILD_ID=study-2026-07-21.4 pnpm --filter @panshi/web build
+VITE_STUDY_BUILD_ID=study-2026-07-23.5 pnpm --filter @panshi/web build
 ```
 
-production build 未指定這個 build ID，或指定不同值，建置會直接失敗。正式根路徑只顯示封閉研究訊息；研究入口仍會在寫入前再次核對封存版本。
+production build 未指定這個 build ID，或指定不同值，建置會直接失敗。正式根路徑直接開啟公共世界；受測連結與研究控制台使用獨立路徑，並在寫入前再次核對封存版本。
 
 開啟後會播放 2026-07-17 的封存場景。按住一位居民進入跟拍，按住不放並拖向另一位居民或公告即可交接；點按與下方三個按鈕提供相同的替代操作。
 

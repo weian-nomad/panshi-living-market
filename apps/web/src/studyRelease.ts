@@ -1,4 +1,4 @@
-export const SEALED_STUDY_BUILD_ID = "study-2026-07-21.4" as const;
+export const SEALED_STUDY_BUILD_ID = "study-2026-07-23.5" as const;
 export const STUDY_ORIGIN = "https://world.panshi.app" as const;
 
 export function resolveStudyBuildId(value: string | undefined, isDevelopment: boolean): string | null {
