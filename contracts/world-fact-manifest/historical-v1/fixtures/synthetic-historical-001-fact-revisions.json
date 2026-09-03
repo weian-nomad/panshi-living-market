@@ -1,0 +1,177 @@
+[
+  {
+    "factRevisionId": "fact-hist-001-momentum-s1",
+    "manifestId": "wfm_hist_001_s1",
+    "worldPublishedAt": "2026-03-02T08:45:00+08:00",
+    "platformReceivedAt": "2026-03-02T08:47:00+08:00",
+    "observedAt": "2026-03-02T08:40:00+08:00",
+    "sourceRevision": "synthetic-hist-rev-0001",
+    "rightsScope": "interaction_and_outcome",
+    "truthClass": "fictional_setting",
+    "provenanceClass": "synthetic_fixture",
+    "payload": {
+      "kind": "market_momentum_signal",
+      "instrumentLabel": "PSZS-DEMO",
+      "summaryZhHant": "開盤前試撮委買量能連續放大，指向 PSZS-DEMO 早盤快速上漲 4.8%。",
+      "sessionMoveBasisPoints": 480
+    }
+  },
+  {
+    "factRevisionId": "fact-hist-001-counter-inventory",
+    "manifestId": "wfm_hist_001_s1",
+    "worldPublishedAt": "2026-03-02T10:15:00+08:00",
+    "platformReceivedAt": "2026-03-02T10:20:00+08:00",
+    "observedAt": "2026-03-02T10:05:00+08:00",
+    "sourceRevision": "synthetic-hist-rev-0002",
+    "rightsScope": "interaction_and_outcome",
+    "truthClass": "fictional_setting",
+    "provenanceClass": "synthetic_fixture",
+    "payload": {
+      "kind": "peer_group_inventory_days",
+      "instrumentLabel": "PSZS-DEMO",
+      "summaryZhHant": "PSZS-DEMO 同業群組平均存貨天數上升至 64.5 天，較上一可比期間增加 8.2 天。",
+      "peerGroupLabel": "PSZS-DEMO 同業群組",
+      "inventoryDaysFixed6": 64500000,
+      "inventoryDaysChangeFixed6": 8200000
+    }
+  },
+  {
+    "factRevisionId": "fact-hist-001-price-s1",
+    "manifestId": "wfm_hist_001_s1",
+    "worldPublishedAt": "2026-03-02T13:30:00+08:00",
+    "platformReceivedAt": "2026-03-02T13:30:00+08:00",
+    "observedAt": "2026-03-02T13:30:00+08:00",
+    "sourceRevision": "synthetic-hist-rev-0003",
+    "rightsScope": "interaction_and_outcome",
+    "truthClass": "fictional_setting",
+    "provenanceClass": "synthetic_fixture",
+    "payload": {
+      "kind": "sealed_close_price",
+      "instrumentLabel": "PSZS-DEMO",
+      "summaryZhHant": "PSZS-DEMO 在 session-hist-001-s1 收盤 96.00 元，該時段 finality 已接受。",
+      "currency": "TWD",
+      "minorUnitScale": 100,
+      "sealedClosePriceMinorUnitsFixed6": 9600000000,
+      "marketSessionFinalityState": "accepted"
+    }
+  },
+  {
+    "factRevisionId": "fact-hist-001-price-s2",
+    "manifestId": "wfm_hist_001_s2",
+    "worldPublishedAt": "2026-03-03T13:30:00+08:00",
+    "platformReceivedAt": "2026-03-03T13:30:00+08:00",
+    "observedAt": "2026-03-03T13:30:00+08:00",
+    "sourceRevision": "synthetic-hist-rev-0004",
+    "rightsScope": "interaction_and_outcome",
+    "truthClass": "fictional_setting",
+    "provenanceClass": "synthetic_fixture",
+    "payload": {
+      "kind": "sealed_close_price",
+      "instrumentLabel": "PSZS-DEMO",
+      "summaryZhHant": "PSZS-DEMO 在 session-hist-001-s2 收盤 100.00 元，該時段 finality 已接受。",
+      "currency": "TWD",
+      "minorUnitScale": 100,
+      "sealedClosePriceMinorUnitsFixed6": 10000000000,
+      "marketSessionFinalityState": "accepted"
+    }
+  },
+  {
+    "factRevisionId": "fact-hist-001-price-s3",
+    "manifestId": "wfm_hist_001_s3",
+    "worldPublishedAt": "2026-03-05T13:30:00+08:00",
+    "platformReceivedAt": "2026-03-05T13:30:00+08:00",
+    "observedAt": "2026-03-05T13:30:00+08:00",
+    "sourceRevision": "synthetic-hist-rev-0005",
+    "rightsScope": "interaction_and_outcome",
+    "truthClass": "fictional_setting",
+    "provenanceClass": "synthetic_fixture",
+    "payload": {
+      "kind": "sealed_close_price",
+      "instrumentLabel": "PSZS-DEMO",
+      "summaryZhHant": "PSZS-DEMO 在 session-hist-001-s3 收盤 93.50 元，該時段 finality 已接受。",
+      "currency": "TWD",
+      "minorUnitScale": 100,
+      "sealedClosePriceMinorUnitsFixed6": 9350000000,
+      "marketSessionFinalityState": "accepted"
+    }
+  },
+  {
+    "factRevisionId": "fact-hist-001-correction-s4",
+    "manifestId": "wfm_hist_001_s4",
+    "worldPublishedAt": "2026-03-10T11:20:00+08:00",
+    "platformReceivedAt": "2026-03-10T11:25:00+08:00",
+    "observedAt": "2026-03-10T11:05:00+08:00",
+    "sourceRevision": "synthetic-hist-rev-0006",
+    "supersedesFactRevisionId": "fact-hist-001-momentum-s1",
+    "rightsScope": "interaction_and_outcome",
+    "truthClass": "fictional_setting",
+    "provenanceClass": "synthetic_fixture",
+    "payload": {
+      "kind": "issuer_correction_notice",
+      "instrumentLabel": "PSZS-DEMO",
+      "summaryZhHant": "發行人更正 2026-03-02 早盤量能說明：該段買進來自單一法人調倉，不構成需求面動能。",
+      "correctsFactRevisionId": "fact-hist-001-momentum-s1"
+    }
+  },
+  {
+    "factRevisionId": "fact-hist-001-price-s4",
+    "manifestId": "wfm_hist_001_s4",
+    "worldPublishedAt": "2026-03-10T13:30:00+08:00",
+    "platformReceivedAt": "2026-03-10T13:30:00+08:00",
+    "observedAt": "2026-03-10T13:30:00+08:00",
+    "sourceRevision": "synthetic-hist-rev-0007",
+    "rightsScope": "interaction_and_outcome",
+    "truthClass": "fictional_setting",
+    "provenanceClass": "synthetic_fixture",
+    "payload": {
+      "kind": "sealed_close_price",
+      "instrumentLabel": "PSZS-DEMO",
+      "summaryZhHant": "PSZS-DEMO 在 session-hist-001-s4 收盤 91.60 元，該時段 finality 已接受。",
+      "currency": "TWD",
+      "minorUnitScale": 100,
+      "sealedClosePriceMinorUnitsFixed6": 9160000000,
+      "marketSessionFinalityState": "accepted"
+    }
+  },
+  {
+    "factRevisionId": "fact-hist-001-price-s5",
+    "manifestId": "wfm_hist_001_s5",
+    "worldPublishedAt": "2026-03-17T13:30:00+08:00",
+    "platformReceivedAt": "2026-03-17T13:30:00+08:00",
+    "observedAt": "2026-03-17T13:30:00+08:00",
+    "sourceRevision": "synthetic-hist-rev-0008",
+    "rightsScope": "interaction_and_outcome",
+    "truthClass": "fictional_setting",
+    "provenanceClass": "synthetic_fixture",
+    "payload": {
+      "kind": "sealed_close_price",
+      "instrumentLabel": "PSZS-DEMO",
+      "summaryZhHant": "PSZS-DEMO 在 session-hist-001-s5 收盤 88.20 元，該時段 finality 已接受。",
+      "currency": "TWD",
+      "minorUnitScale": 100,
+      "sealedClosePriceMinorUnitsFixed6": 8820000000,
+      "marketSessionFinalityState": "accepted"
+    }
+  },
+  {
+    "factRevisionId": "fact-hist-001-price-s6",
+    "manifestId": "wfm_hist_001_s6",
+    "worldPublishedAt": "2026-03-18T08:30:00+08:00",
+    "platformReceivedAt": "2026-03-18T08:32:00+08:00",
+    "observedAt": "2026-03-17T13:30:00+08:00",
+    "sourceRevision": "synthetic-hist-rev-0009",
+    "rightsScope": "interaction",
+    "truthClass": "fictional_setting",
+    "provenanceClass": "synthetic_fixture",
+    "payload": {
+      "kind": "sealed_close_price",
+      "instrumentLabel": "PSZS-DEMO",
+      "summaryZhHant": "session-hist-001-s6 仍在盤中，finality 尚未接受；本筆是前一交易日收盤 88.20 元的結轉參考價，不是本時段收盤。",
+      "currency": "TWD",
+      "minorUnitScale": 100,
+      "sealedClosePriceMinorUnitsFixed6": 8820000000,
+      "marketSessionFinalityState": "pending",
+      "carriedForwardFromFactRevisionId": "fact-hist-001-price-s5"
+    }
+  }
+]

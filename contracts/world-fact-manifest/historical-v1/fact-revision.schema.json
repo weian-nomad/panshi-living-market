@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.panshi.app/contracts/world-fact-manifest/historical-v1/fact-revision.schema.json",
+  "title": "Panshi world fact revision historical v1",
+  "description": "One fact revision referenced by a WorldFactManifestHistoricalV1's interactionFactRevisionIds or outcomeEvidenceRevisionIds. Carries the same six world-time and rights fields as ../v1/fact-revision.schema.json (world_published_at, platform_received_at, observed_at, source_revision, supersedes_fact_id?, rights_scope), renamed to the camelCase style the manifest envelope and the public-v2 projections already use, plus the three fields historical mode adds: the owning manifestId, the truthClass/provenanceClass labels every synthetic claim must carry, and the sealed payload itself (a repo-owned synthetic fixture mirrors its own object, so the payload lives here rather than behind an upstream artifact fetch). This schema is never referenced by schema.json directly — the manifest only carries ID lists; fixtures load this schema separately to validate the accompanying fact revision records.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "factRevisionId",
+    "manifestId",
+    "worldPublishedAt",
+    "platformReceivedAt",
+    "observedAt",
+    "sourceRevision",
+    "rightsScope",
+    "truthClass",
+    "provenanceClass",
+    "payload"
+  ],
+  "properties": {
+    "factRevisionId": {
+      "type": "string",
+      "description": "Immutable identifier of this fact revision. Corrections append a new factRevisionId with supersedesFactRevisionId; they never overwrite. Historical-mode revisions live in this repository's own synthetic fact- namespace (the same namespace as the canonical event fixtures' fact-v5-golden-001), not the upstream sealed-facts sf_ namespace, because no upstream sealed fact is involved.",
+      "pattern": "^fact-[a-z0-9][a-z0-9._-]{7,127}$"
+    },
+    "manifestId": {
+      "type": "string",
+      "description": "The historical manifest that first sealed this revision, i.e. the session it originates in. Later sessions may reference the same revision id in their own allowlists; that does not change this field.",
+      "pattern": "^wfm_[a-z0-9][a-z0-9._-]{7,127}$"
+    },
+    "worldPublishedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the fact was published into the world (e.g. exchange/company disclosure timestamp)."
+    },
+    "platformReceivedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the platform received/ingested the fact. available_at = max(worldPublishedAt, platformReceivedAt)."
+    },
+    "observedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the underlying source observation occurred, per the sealed-facts v1 provenance.observed_at convention."
+    },
+    "sourceRevision": {
+      "type": "string",
+      "description": "The source's own revision tag for this fact observation. Opaque to consumers.",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "supersedesFactRevisionId": {
+      "type": "string",
+      "description": "Optional: the prior factRevisionId this revision corrects. The prior revision is never overwritten, matching the sealed-facts v1 supersedes rule.",
+      "pattern": "^fact-[a-z0-9][a-z0-9._-]{7,127}$"
+    },
+    "rightsScope": {
+      "type": "string",
+      "description": "Which allowlist(s) this revision is cleared for. \"interaction\" or \"outcome\" restrict the revision to one physically separate allowlist only; \"interaction_and_outcome\" means it is eligible for both, but each pipeline must still resolve it through its own list's explicit ref.",
+      "enum": ["interaction", "outcome", "interaction_and_outcome"]
+    },
+    "truthClass": {
+      "const": "fictional_setting",
+      "description": "docs/v5/product-constitution.md 「角色資料的五種身分」. A synthetic historical fixture is 虛構設定, never 真實資料; real_fact is unrepresentable here by construction, so no projection can ever quote one of these prices as a real market fact."
+    },
+    "provenanceClass": {
+      "const": "synthetic_fixture",
+      "description": "This revision was generated inside this repository. It is not mirrored from, derived from, or licensed by any external market data source."
+    },
+    "payload": {
+      "type": "object",
+      "description": "The sealed content of this revision. Every numeric field is an integer in a declared fixed-point or basis-point scale; floating-point literals are not permitted anywhere in this contract.",
+      "additionalProperties": false,
+      "required": ["kind", "instrumentLabel", "summaryZhHant"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "sealed_close_price",
+            "market_momentum_signal",
+            "peer_group_inventory_days",
+            "issuer_correction_notice"
+          ]
+        },
+        "instrumentLabel": {
+          "type": "string",
+          "description": "Fictional instrument this revision is about. Never a real listed security.",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "summaryZhHant": {
+          "type": "string",
+          "description": "Unquoted, structured Traditional Chinese statement of what the fact says. Never a character's words — character utterances are sealed separately as UtteranceArtifact.",
+          "minLength": 1,
+          "maxLength": 400
+        },
+        "currency": {
+          "const": "TWD",
+          "description": "Required by kind sealed_close_price."
+        },
+        "minorUnitScale": {
+          "type": "integer",
+          "description": "Minor units per major unit for currency (TWD: 100). Required by kind sealed_close_price."
+        },
+        "sealedClosePriceMinorUnitsFixed6": {
+          "type": "integer",
+          "description": "Sealed session close, in currency minor units further scaled by 1,000,000 — the same sealedPriceMinorUnitsFixed6 convention as contracts/openapi/public-v2.yaml. Required by kind sealed_close_price."
+        },
+        "marketSessionFinalityState": {
+          "type": "string",
+          "enum": ["accepted", "pending"],
+          "description": "Whether MarketSessionFinalityAccepted has been recorded for this revision's session. A revision that is not \"accepted\" may never appear in any manifest's outcomeEvidenceRevisionIds. Required by kind sealed_close_price."
+        },
+        "carriedForwardFromFactRevisionId": {
+          "type": "string",
+          "description": "Set when a pending session has no close of its own yet and the last accepted close is being carried forward as the as-of mark. Its presence is what makes the carried-forward number auditable instead of a silently reused price.",
+          "pattern": "^fact-[a-z0-9][a-z0-9._-]{7,127}$"
+        },
+        "sessionMoveBasisPoints": {
+          "type": "integer",
+          "description": "Signed move in basis points. Required by kind market_momentum_signal."
+        },
+        "peerGroupLabel": {
+          "type": "string",
+          "description": "Fictional peer group this observation covers. Required by kind peer_group_inventory_days.",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "inventoryDaysFixed6": {
+          "type": "integer",
+          "description": "Days of inventory scaled by 1,000,000. Required by kind peer_group_inventory_days."
+        },
+        "inventoryDaysChangeFixed6": {
+          "type": "integer",
+          "description": "Signed change in days of inventory versus the prior comparable period, scaled by 1,000,000. Required by kind peer_group_inventory_days."
+        },
+        "correctsFactRevisionId": {
+          "type": "string",
+          "description": "The revision this notice corrects. Required by kind issuer_correction_notice, and must equal supersedesFactRevisionId.",
+          "pattern": "^fact-[a-z0-9][a-z0-9._-]{7,127}$"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,177 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.panshi.app/contracts/world-fact-manifest/historical-v1/schema.json",
+  "title": "Panshi world fact manifest historical v1",
+  "description": "WorldFactManifestHistoricalV1: the sealed envelope for one historical-mode market session. This is the separate contractVersion/modeDomain pair that ../v1/schema.json points at when it says \"Historical-mode manifests are a separate contractVersion/modeDomain pair, not this schema\". Unlike the current-mode contract, a historical-mode manifest in this repo is NOT consumed from the upstream market-research repository: it is a repo-owned synthetic fixture, which is why every historical manifest carries provenanceClass \"synthetic_fixture\" and truthClass \"fictional_setting\" and may never be labelled real_fact. Top-level field set and required list are otherwise exactly the current-mode WorldFactManifestV1 shape from docs/v5/system-design.md §6.2. The manifest itself only carries revision ID allowlists; the referenced fact revision records live in the sibling fact-revision.schema.json.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "modeDomain",
+    "jurisdiction",
+    "provenanceClass",
+    "truthClass",
+    "manifestId",
+    "manifestHash",
+    "signatureKeyId",
+    "sealedAt",
+    "marketSessionId",
+    "marketDateTaipei",
+    "marketCalendarRevision",
+    "interactionCutoffAt",
+    "evidenceCutoffAt",
+    "finalityPolicyRevision",
+    "clockAuthorityRevision",
+    "rightsManifestId",
+    "licenseClass",
+    "rightsValidFrom",
+    "rightsValidUntil",
+    "permittedPurposes",
+    "interactionFactRevisionIds",
+    "interactionFactSetDigest",
+    "outcomeEvidenceRevisionIds",
+    "outcomeEvidenceSetDigest",
+    "objectUri",
+    "objectHash"
+  ],
+  "properties": {
+    "contractVersion": {
+      "const": "world-fact-manifest-historical/v1"
+    },
+    "modeDomain": {
+      "const": "historical",
+      "description": "This contract only covers historical-mode (replayed, already-closed session) manifests. The current-mode manifest is ../v1/schema.json."
+    },
+    "jurisdiction": {
+      "const": "TW"
+    },
+    "provenanceClass": {
+      "const": "synthetic_fixture",
+      "description": "Where this manifest's facts come from. A historical-mode manifest in this repository is generated inside this repository as a self-contained fixture; it never mirrors a licensed upstream market feed, so this is the only permitted value. See README.md §Why synthetic, never real_fact."
+    },
+    "truthClass": {
+      "const": "fictional_setting",
+      "description": "The single truth_class every claim sealed by this manifest carries (docs/v5/product-constitution.md 「角色資料的五種身分」). Synthetic prices are fictional setting, not 真實資料; labelling them real_fact would be a false claim, so real_fact is unrepresentable in this contract."
+    },
+    "manifestId": {
+      "type": "string",
+      "description": "Immutable identifier of this sealed manifest.",
+      "pattern": "^wfm_[a-z0-9][a-z0-9._-]{7,127}$"
+    },
+    "manifestHash": {
+      "type": "string",
+      "description": "SHA-256 of the RFC 8785 JCS canonical UTF-8 bytes of this manifest object with the manifestHash and objectHash fields removed. Same convention as ../v1; see README.md §Digest convention.",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "signatureKeyId": {
+      "type": "string",
+      "description": "Identifier of the key that sealed this manifest. Never a secret value, only a key reference.",
+      "pattern": "^[a-z0-9][a-z0-9._:-]{3,127}$"
+    },
+    "sealedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When this manifest was sealed. Not a world-time boundary by itself."
+    },
+    "marketSessionId": {
+      "type": "string",
+      "description": "Historical-mode sessions live in this repository's own synthetic session namespace (the same namespace as the canonical event fixtures' session-v5-golden-001), not the upstream mkts_ namespace the current-mode contract references.",
+      "pattern": "^session-[a-z0-9][a-z0-9._-]{7,127}$"
+    },
+    "marketDateTaipei": {
+      "type": "string",
+      "format": "date",
+      "description": "Asia/Taipei market calendar day, matching the sealed-facts v1 market_date_taipei convention."
+    },
+    "marketCalendarRevision": {
+      "type": "string",
+      "description": "Which calendar revision decided this session's trading days. Historical-mode fixtures use a contract-style versioned identifier, so this pattern additionally permits \"/\".",
+      "pattern": "^[a-z0-9][a-z0-9._/-]{1,127}$"
+    },
+    "interactionCutoffAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Upper bound for interaction (exposure/attention/appraisal/action) eligibility: available_at <= min(character_world_time, interactionCutoffAt, CognitionInputSealed.occurred_at). In historical mode this is the session open, so a fact first available intraday in session S only becomes interaction-eligible from session S+1's manifest."
+    },
+    "evidenceCutoffAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Upper bound for outcome/editorial evidence eligibility: available_at <= evidenceCutoffAt. Independent of interactionCutoffAt — neither substitutes for the other."
+    },
+    "finalityPolicyRevision": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{1,127}$"
+    },
+    "clockAuthorityRevision": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{1,127}$"
+    },
+    "rightsManifestId": {
+      "type": "string",
+      "pattern": "^rights_[a-z0-9][a-z0-9._-]{7,127}$"
+    },
+    "licenseClass": {
+      "type": "string",
+      "description": "Opaque, ingest-time gate value. A synthetic historical fixture carries no third-party licence, which the value itself must make explicit.",
+      "pattern": "^[a-z0-9][a-z0-9._-]{1,127}$"
+    },
+    "rightsValidFrom": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Ingest/bind gate only. Never substitutes for world time (system-design.md §6.2)."
+    },
+    "rightsValidUntil": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "Null means open-ended rights validity. Ingest/bind gate only, same caveat as rightsValidFrom."
+    },
+    "permittedPurposes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]{2,63}$"
+      }
+    },
+    "interactionFactRevisionIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "description": "Physically separate allowlist. May ONLY be used for exposure/attention/appraisal/action. A fact revision id may also appear in outcomeEvidenceRevisionIds, but each pipeline must resolve it through its own list's explicit ref — this is not one list reused.",
+      "items": {
+        "type": "string",
+        "pattern": "^fact-[a-z0-9][a-z0-9._-]{7,127}$"
+      }
+    },
+    "interactionFactSetDigest": {
+      "type": "string",
+      "description": "Digest over interactionFactRevisionIds. See README.md §Digest convention.",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "outcomeEvidenceRevisionIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "description": "Physically separate allowlist. May ONLY be used for paper outcome, correction, and post-close editorial. Empty for a session whose MarketSessionFinality has not been accepted — the fence is an absent allowlist entry, never a nulled placeholder.",
+      "items": {
+        "type": "string",
+        "pattern": "^fact-[a-z0-9][a-z0-9._-]{7,127}$"
+      }
+    },
+    "outcomeEvidenceSetDigest": {
+      "type": "string",
+      "description": "Digest over outcomeEvidenceRevisionIds. See README.md §Digest convention.",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "objectUri": {
+      "type": "string",
+      "format": "uri",
+      "description": "Location of the mirrored fact-revision bundle slice this manifest seals. Historical-mode fixtures are repo-owned, so this is an authority-less panshi-fixture: URI whose opaque path is a repository-relative path and whose fragment is this manifest's id. It must never contain a host component.",
+      "pattern": "^panshi-fixture:[a-z0-9][a-zA-Z0-9._/-]{1,255}#wfm_[a-z0-9][a-z0-9._-]{7,127}$"
+    },
+    "objectHash": {
+      "type": "string",
+      "description": "SHA-256 of the RFC 8785 JCS canonical UTF-8 bytes of this manifest's slice of the mirrored fact-revision bundle at objectUri. See README.md §Digest convention.",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}
