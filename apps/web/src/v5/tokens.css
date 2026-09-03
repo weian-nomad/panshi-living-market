@@ -1,0 +1,188 @@
+/*
+ * V5 視覺 token 唯一 CSS 正本。
+ *
+ * 色彩原值逐格照抄 `docs/v5/visual-system.md`「色彩」表，不得在任何畫面自行調色；
+ * 要改色先升該表版本並同步所有消費端。
+ *
+ * 字體只有兩套，且**兩者不得混用**（visual-system.md「持股與績效」節：
+ * 「市場數字使用固定網格，角色解釋使用紙頁。兩者不能混成一種字體或顏色。」）：
+ *   - `--font-data` / `.panshi-data`：時間、價格、版本、所有市場數字。開 tabular-nums。
+ *   - `--font-paper` / `.panshi-paper`：角色說法與人生誌長文。
+ * 同一個元素套上兩個 class，或在 `.panshi-paper` 裡塞裸數字，都算違規。
+ *
+ * Noto Serif TC / Noto Sans TC 尚未 self-host（visual-system.md 要求正式上線全部
+ * self-host 並保存授權），本切片一律退回系統 CJK fallback stack，禁止從 CDN 載字型。
+ *
+ * 動態時間數值不在這裡。唯一數值來源是 `motion.ts`；本檔只讀取由 JS 注入的
+ * `--panshi-fade` / `--panshi-reduced-fade`，注入前的 fallback 一律 0ms
+ *（fail closed：判不出來就不動，而不是猜一個看起來順眼的秒數）。
+ */
+
+:root {
+  /* 墨 —— 世界夜色與面板 */
+  --ink-1000: #090B0B;
+  --ink-900: #121513;
+  --ink-760: #232620;
+
+  /* 紙 —— 人生誌與長文 */
+  --paper-100: #F0E4CD;
+  --paper-260: #D4C3A2;
+
+  /* 氧化銅 —— 命盤、關係與時間痕跡（不得連到漲跌方向） */
+  --copper-500: #AD7747;
+
+  /* 冷色市場訊號 —— 新市場事實、來源與同步 */
+  --signal-420: #74AFC4;
+
+  /* 方向色 —— 只描述數字方向，不描述人的好壞 */
+  --vermilion-520: #B75E50;
+  --jade-520: #668F7B;
+  --amber-430: #C89A55;
+
+  /* 語意別名：讓元件不要直接把方向色寫死成情緒 */
+  --value-negative: var(--vermilion-520);
+  --value-positive: var(--jade-520);
+  --value-pending: var(--amber-430);
+  --surface-world: var(--ink-1000);
+  --surface-panel: var(--ink-900);
+  --surface-panel-2: var(--ink-760);
+  --surface-paper: var(--paper-100);
+  --rule-paper: var(--paper-260);
+
+  /* 質感上限（visual-system.md「色彩」節）：紙紋 6%、墨噪點 3%。
+     文字區不得套 multiply 紋理，見下方 .panshi-paper / .panshi-data。 */
+  --paper-grain-opacity-max: 0.06;
+  --ink-noise-opacity-max: 0.03;
+
+  /* 字體：兩套互斥字族 */
+  --font-data: "IBM Plex Mono", ui-monospace, monospace;
+  --font-paper: "Noto Serif TC", "Songti TC", "PingFang TC", serif;
+}
+
+/* 市場數字面：時間、價格、版本、數量、損益 */
+.panshi-data {
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: 0.01em;
+  /* 文字區不得套 multiply 紋理 */
+  mix-blend-mode: normal;
+  background-image: none;
+}
+
+/* 紙頁面：角色說法與人生誌長文 */
+.panshi-paper {
+  font-family: var(--font-paper);
+  font-variant-numeric: normal;
+  line-height: 1.75;
+  /* 文字區不得套 multiply 紋理 */
+  mix-blend-mode: normal;
+  background-image: none;
+}
+
+/* 紙紋／墨噪點只能鋪在非文字底層，且不得超過上限 */
+.panshi-grain-paper {
+  opacity: var(--paper-grain-opacity-max);
+  pointer-events: none;
+}
+
+.panshi-grain-ink {
+  opacity: var(--ink-noise-opacity-max);
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------------------ */
+/* 元件：資料身分標籤（experience-spec.md §9.10「小圖形加短詞，點開才看說明」） */
+/* ------------------------------------------------------------------------ */
+
+.panshi-truth-tag {
+  position: relative;
+  display: inline-block;
+}
+
+.panshi-truth-tag__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375em;
+  min-height: 44px;
+  padding: 0.25em 0.5em;
+  border: 1px solid var(--rule-paper);
+  border-radius: 2px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition-property: opacity, border-color, outline-color;
+  transition-duration: var(--panshi-fade, 0ms);
+}
+
+.panshi-truth-tag__toggle:hover {
+  border-color: var(--copper-500);
+}
+
+.panshi-truth-tag__toggle:focus-visible {
+  outline: 2px solid var(--signal-420);
+  outline-offset: 2px;
+}
+
+.panshi-truth-tag__glyph {
+  flex: none;
+  width: 12px;
+  height: 12px;
+}
+
+.panshi-truth-tag__popover {
+  display: block;
+  position: absolute;
+  z-index: 2;
+  inset-inline-start: 0;
+  inset-block-start: calc(100% + 6px);
+  width: max-content;
+  max-width: min(20rem, 80vw);
+  padding: 0.75rem 0.875rem;
+  border: 1px solid var(--rule-paper);
+  border-radius: 3px;
+  background: var(--surface-panel);
+  color: var(--paper-100);
+  transition-property: opacity;
+  transition-duration: var(--panshi-fade, 0ms);
+}
+
+.panshi-truth-tag__explanation {
+  display: block;
+  margin-block-end: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.panshi-truth-tag__meta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.125rem 0.75rem;
+  font-size: 0.75rem;
+  color: var(--paper-260);
+}
+
+.panshi-truth-tag__meta-key {
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Reduced motion（visual-system.md「Reduced motion」）                       */
+/* 取消縮放、景深、視差、漂移與星軌；只留淡入、描邊與狀態文字。               */
+/* 時間上限由 motion.ts 的 REDUCED_FADE_MAX_MS 注入 --panshi-reduced-fade。   */
+/* ------------------------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  .panshi-motion,
+  .panshi-motion *,
+  .panshi-truth-tag,
+  .panshi-truth-tag * {
+    animation: none !important;
+    scroll-behavior: auto !important;
+    transition-property: opacity, border-color, outline-color, color !important;
+    transition-duration: var(--panshi-reduced-fade, 0ms) !important;
+  }
+}

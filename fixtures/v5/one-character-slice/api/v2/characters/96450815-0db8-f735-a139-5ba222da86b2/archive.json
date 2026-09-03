@@ -1,0 +1,112 @@
+{
+  "archiveSchemaRevision": "character-archive/v1",
+  "characterId": "96450815-0db8-f735-a139-5ba222da86b2",
+  "dataState": "READY",
+  "longTermTensionSummary": "他說自己靠證據做事，卻連續三個交易時段沒有打開同一份反面資料。",
+  "projectionVersion": 97,
+  "recentHighlights": [
+    "模擬紀錄：1 個部位仍在，原始失效條件已發生，已實現虧損 4,720 元。",
+    "說法：引用的理由換過一次，新增支持事實 0 筆。",
+    "關係：他在前一個交易時段主動走回同組同事的座位旁。"
+  ],
+  "sections": [
+    {
+      "asOf": "2026-03-17T13:30:00+08:00",
+      "sectionKey": "paper",
+      "sectionPath": "/api/v2/characters/96450815-0db8-f735-a139-5ba222da86b2/archive/paper",
+      "summary": "目前 1 個部位（PSZS-DEMO），原始失效條件已發生。",
+      "viewerAudienceScope": "subscriber_archive",
+      "visibilityEpoch": 1
+    },
+    {
+      "asOf": "2026-03-17T13:30:00+08:00",
+      "sectionKey": "relations",
+      "sectionPath": null,
+      "summary": "同組同事一人。這個切片只封存了他一個人，所以這裡只記得下他自己的可觀察動作。",
+      "viewerAudienceScope": "subscriber_archive",
+      "visibilityEpoch": 1
+    },
+    {
+      "asOf": "2026-03-17T13:30:00+08:00",
+      "sectionKey": "chart",
+      "sectionPath": null,
+      "summary": "單一象徵主題「控制與認可」，已在 2026-03-05 收盤到期。",
+      "viewerAudienceScope": "subscriber_archive",
+      "visibilityEpoch": 1
+    },
+    {
+      "asOf": "2026-03-17T13:30:00+08:00",
+      "sectionKey": "traits",
+      "sectionPath": null,
+      "summary": "四軸偏好與血型只影響自述與社交語氣，對市場項的權重固定為 0。",
+      "viewerAudienceScope": "subscriber_archive",
+      "visibilityEpoch": 1
+    },
+    {
+      "asOf": "2026-03-17T13:30:00+08:00",
+      "sectionKey": "memories",
+      "sectionPath": null,
+      "summary": "七則已封存記憶，其中三則在第一個交易時段之前就存在。",
+      "viewerAudienceScope": "subscriber_archive",
+      "visibilityEpoch": 1
+    },
+    {
+      "asOf": "2026-03-17T13:30:00+08:00",
+      "sectionKey": "life",
+      "sectionPath": null,
+      "summary": "六個交易時段，五章已出版；今天還沒有結束。",
+      "viewerAudienceScope": "subscriber_archive",
+      "visibilityEpoch": 1
+    }
+  ],
+  "serverNow": "2026-03-18T10:30:00+08:00",
+  "sourceGlobalPosition": 97,
+  "sourceRevisionSet": [
+    {
+      "refId": "wfm_hist_001_s1",
+      "refKind": "world_fact_manifest",
+      "revision": 1
+    },
+    {
+      "refId": "wfm_hist_001_s2",
+      "refKind": "world_fact_manifest",
+      "revision": 2
+    },
+    {
+      "refId": "wfm_hist_001_s3",
+      "refKind": "world_fact_manifest",
+      "revision": 3
+    },
+    {
+      "refId": "wfm_hist_001_s4",
+      "refKind": "world_fact_manifest",
+      "revision": 4
+    },
+    {
+      "refId": "wfm_hist_001_s5",
+      "refKind": "world_fact_manifest",
+      "revision": 5
+    },
+    {
+      "refId": "wfm_hist_001_s6",
+      "refKind": "world_fact_manifest",
+      "revision": 6
+    },
+    {
+      "refId": "345fea46-1f2a-8bcd-c98c-29d944fec75a",
+      "refKind": "paper_account",
+      "revision": 3
+    },
+    {
+      "refId": "a243c129-0297-7b54-e16f-256452eab596",
+      "refKind": "paper_position",
+      "revision": 6
+    }
+  ],
+  "truthClasses": [
+    "fictional_setting",
+    "symbolic_interpretation",
+    "simulated_narrative"
+  ],
+  "visibilityEpoch": 1
+}

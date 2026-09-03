@@ -7,6 +7,7 @@
     "build": "tsc -b && vite build",
     "check": "tsc -b --pretty false",
     "dev": "vite --host 0.0.0.0",
+    "dev:world": "vite --host 127.0.0.1",
     "preview": "vite preview",
     "study:verify": "node tools/verify-study-export.mjs",
     "test": "vitest run"

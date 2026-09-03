@@ -1,0 +1,10 @@
+{
+  "characterId": "96450815-0db8-f735-a139-5ba222da86b2",
+  "routes": {
+    "/api/v2/characters/96450815-0db8-f735-a139-5ba222da86b2/archive": "v2/characters/96450815-0db8-f735-a139-5ba222da86b2/archive.json",
+    "/api/v2/characters/96450815-0db8-f735-a139-5ba222da86b2/archive/paper": "v2/characters/96450815-0db8-f735-a139-5ba222da86b2/archive/paper.json",
+    "/api/v2/characters/96450815-0db8-f735-a139-5ba222da86b2/close-up": "v2/characters/96450815-0db8-f735-a139-5ba222da86b2/close-up.json",
+    "/api/v2/characters/96450815-0db8-f735-a139-5ba222da86b2/life-journal": "v2/characters/96450815-0db8-f735-a139-5ba222da86b2/life-journal.json",
+    "/api/v2/world": "v2/world.json"
+  }
+}

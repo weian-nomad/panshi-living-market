@@ -1,0 +1,510 @@
+// 人物近景（experience-spec.md §7）。
+//
+// 近景不是資料卡，是一個短場景，固定六段構圖：
+//   1. 上方 55–60%：4:5 幾何近景 ＋ 一個持續微動作
+//   2. 姓名／年齡／職業 ＋ 當下動詞
+//   3. 一句尚未解決的矛盾
+//   4. 只與當下故事直接相關的一項後果碎片
+//   5. 主動作 `翻開今天的人生誌`
+//   6. 次動作 `回到世界`、`記住這個人`
+//
+// 揭露節奏（§7.2）：先看動作（`CLOSEUP_ACTION_LEAD_MS`），再出文字；名字先出、
+// 數值後出（`OUTCOME_REVEAL_MS`）。**每個紙上數字旁都必須有 as_of**，一律用
+// `formatAsOfIntraday()`，不自行推算日期。
+//
+// 資料身分**逐項**掛（AGENTS.md「Product invariants」：每一項對外可見的宣稱剛好一個
+// `truth_class`）：場景那一塊是 `fictional_setting`，後果碎片裡的紙上損益是
+// `simulated_narrative`（product-constitution.md 把紙上交易與故事投影歸在這一類，
+// 與 `ArchiveIndexScreen.tsx` 的 `SECTION_TRUTH_CLASS.paper` 同一格）。投影的
+// `truthClasses` 沒有宣告那一種身分時 fail closed：不掛標籤，也不改掛別的身分。
+//
+// 沒有模擬部位時改顯示工作／關係／記憶後果，不硬塞空績效（§7.2 最後一條）。
+// reduced motion 時取消微動作，改用描邊與狀態文字（visual-system.md）。
+// 「記住這個人」只寫 localStorage，不打後端（封測不接帳號流程）。
+
+import { useEffect, useState, useSyncExternalStore } from "react";
+
+import type {
+  CharacterCloseUp,
+  CharacterPoseState,
+  RecentConsequenceHighlight,
+  TruthClass,
+} from "../api/generated-v2/types.gen";
+import { TruthTag } from "./TruthTag";
+import {
+  DATA_UNAVAILABLE_LABEL,
+  claimTruthClass,
+  consequenceHighlightTruthClass,
+  declaredTruthClass,
+  formatAsOfIntraday,
+  percentFixed2ToString,
+  truthClassLabel,
+} from "./format";
+import { CLOSEUP_ACTION_LEAD_MS, OUTCOME_REVEAL_MS, WORLD_BREATH_MS } from "./motion";
+import { figureGeometry } from "./scene";
+
+/** 中性的可觀察姿態用語（public-v2.yaml：這組枚舉刻意不帶市場訊號）。 */
+const POSE_LABEL: Readonly<Record<CharacterPoseState, string>> = {
+  idle: "站著沒動",
+  walking: "在走動",
+  talking: "在說話",
+  examining: "在端詳一份資料",
+  interrupted: "動作被打斷",
+  avoiding: "避開了某個方向",
+  silent: "安靜著",
+};
+
+const PORTRAIT_WIDTH = 80;
+const PORTRAIT_HEIGHT = 100;
+
+/**
+ * 近景可以掛標籤的兩塊內容。標籤**逐項**掛，不是整頁一顆：
+ *
+ * - `scene`：姓名、年齡、職業、姿態與那句未解矛盾 ——`fictional_setting`。
+ * - `consequence`：後果碎片。內容是紙上部位或紙上承諾時是 `simulated_narrative`
+ *   （product-constitution.md「角色資料的五種身分」把紙上交易與故事投影歸在這一類，
+ *   `ArchiveIndexScreen.tsx` 的 `SECTION_TRUTH_CLASS.paper` 同一格）；只有在碎片
+ *   換成關係／工作／記憶時才是 `fictional_setting`。
+ */
+export type CloseUpBlockKey = "scene" | "consequence";
+
+/**
+ * 一塊近景內容**應該**是哪一種資料身分。身分表在 `format.ts` 的
+ * `CLAIM_TRUTH_CLASS`（product-constitution.md 的五種身分），本檔不自訂對應。
+ * 這只是身分歸屬；能不能真的掛標籤還要過 `declaredTruthClass()` 那一關。
+ */
+export function closeUpBlockTruthClass(
+  block: CloseUpBlockKey,
+  highlight: RecentConsequenceHighlight | undefined,
+): TruthClass {
+  return block === "scene"
+    ? claimTruthClass("character_scene")
+    : consequenceHighlightTruthClass(highlight?.kind);
+}
+
+const TRUTH_CLASS_EXPLANATION: Readonly<Record<TruthClass, string>> = {
+  real_fact: "已封存並可回溯到外部來源的事實。",
+  statistical_sample: "依分布取樣的統計結果，不是單一個案的事實。",
+  fictional_setting: "虛構設定：這個人、他的職業與人生事件都是這個世界自己的設定。",
+  symbolic_interpretation: "命盤與象徵的文化詮釋，只影響他的注意與解讀，不改動價格資料。",
+  simulated_narrative:
+    "由已封存事件編成的模擬敘事：他的紙上部位與損益，市場事實是 repo 內自有的合成歷史 fixture。",
+};
+
+const STYLES = `
+.v5-closeup { margin: 0 0 16px; }
+.v5-closeup__portrait {
+  position: relative;
+  width: 100%;
+  max-width: 26rem;
+  aspect-ratio: 4 / 5;
+  border: 1px solid var(--rule-paper);
+  background: var(--surface-panel);
+  overflow: hidden;
+}
+.v5-closeup__portrait svg { display: block; width: 100%; height: 100%; }
+.v5-closeup__pose {
+  margin: .35rem 0 .9rem;
+  font-size: .78rem;
+  color: var(--copper-500);
+}
+.v5-closeup__identity { margin: .9rem 0 .1rem; font-size: 1.15rem; font-weight: 500; }
+.v5-closeup__verb { margin: 0 0 .9rem; color: var(--copper-500); }
+.v5-closeup__tension {
+  margin: 0 0 1rem;
+  font-size: 1.02rem;
+  padding-inline-start: .75rem;
+  border-inline-start: 2px solid var(--copper-500);
+}
+.v5-closeup__consequence {
+  margin: 0 0 1rem;
+  padding: .6rem .75rem;
+  border: 1px solid var(--rule-paper);
+}
+.v5-closeup__figure { margin: 0; display: flex; flex-wrap: wrap; gap: .2rem .8rem; align-items: baseline; }
+.v5-closeup__asof { font-size: .76rem; color: var(--copper-500); }
+.v5-closeup__actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 1rem 0 0; }
+.v5-closeup__actions button {
+  min-height: 44px;
+  padding: .4em 1.1em;
+  border: 1px solid var(--copper-500);
+  border-radius: 2px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.v5-closeup__actions button[data-role="primary"] { border-width: 2px; font-weight: 500; }
+.v5-closeup__actions button:focus-visible { outline: 2px solid var(--signal-420); outline-offset: 2px; }
+.v5-closeup__note { margin: .8rem 0 0; font-size: .8rem; color: var(--copper-500); }
+@keyframes v5-closeup-glance {
+  0%, 78%, 100% { transform: translate(0, 0); }
+  86% { transform: translate(-.6%, -.9%); }
+}
+`;
+
+const REMEMBERED_STORAGE_KEY = "panshi.v5.remembered-characters";
+
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+
+function subscribeReducedMotion(onStoreChange: () => void): () => void {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return () => {};
+  const query = window.matchMedia(REDUCED_MOTION_QUERY);
+  query.addEventListener("change", onStoreChange);
+  return () => query.removeEventListener("change", onStoreChange);
+}
+
+function readReducedMotion(): boolean {
+  // 判不出來就當成使用者要求減少動態（fail closed 到最安靜的一邊）。
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return true;
+  return window.matchMedia(REDUCED_MOTION_QUERY).matches;
+}
+
+function readRemembered(): string[] {
+  try {
+    const raw = window.localStorage.getItem(REMEMBERED_STORAGE_KEY);
+    if (raw === null) return [];
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeRemembered(ids: readonly string[]): boolean {
+  try {
+    window.localStorage.setItem(REMEMBERED_STORAGE_KEY, JSON.stringify(ids));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function safeAsOf(iso: string): string {
+  try {
+    return formatAsOfIntraday(iso);
+  } catch {
+    return DATA_UNAVAILABLE_LABEL;
+  }
+}
+
+function safePercent(value: number): string {
+  try {
+    return percentFixed2ToString(value);
+  } catch {
+    return DATA_UNAVAILABLE_LABEL;
+  }
+}
+
+/** 4:5 幾何近景。無圖片資產：同一個 `figureGeometry` 放大，維持同一個人的比例。 */
+function Portrait({ reducedMotion }: { reducedMotion: boolean }) {
+  const geometry = figureGeometry(PORTRAIT_WIDTH / 2, PORTRAIT_HEIGHT - 6, PORTRAIT_HEIGHT * 0.86);
+
+  return (
+    <svg
+      viewBox={`0 0 ${PORTRAIT_WIDTH} ${PORTRAIT_HEIGHT}`}
+      preserveAspectRatio="xMidYMid meet"
+      role="presentation"
+    >
+      {/* 環境：一面暖紙牆光與一條氧化銅桌緣，維持與世界同一個空間語彙。 */}
+      <rect x="0" y="0" width={PORTRAIT_WIDTH} height={PORTRAIT_HEIGHT} fill="var(--ink-900)" />
+      <polygon
+        points={`14,0 46,0 58,${PORTRAIT_HEIGHT} 4,${PORTRAIT_HEIGHT}`}
+        fill="var(--paper-100)"
+        opacity="0.07"
+      />
+      <line
+        x1="0"
+        y1={PORTRAIT_HEIGHT - 18}
+        x2={PORTRAIT_WIDTH}
+        y2={PORTRAIT_HEIGHT - 22}
+        stroke="var(--copper-500)"
+        strokeWidth="0.4"
+        opacity="0.8"
+      />
+      <ellipse
+        cx={geometry.contact.cx}
+        cy={geometry.contact.cy}
+        rx={geometry.contact.rx}
+        ry={geometry.contact.ry}
+        fill="var(--ink-1000)"
+        opacity="0.6"
+      />
+      <polygon points={geometry.torso} fill="var(--paper-260)" opacity="0.92" />
+      {geometry.legs.map((leg, index) => (
+        <rect
+          key={`closeup-leg-${index}`}
+          x={leg.x}
+          y={leg.y}
+          width={leg.width}
+          height={leg.height}
+          fill="var(--ink-760)"
+        />
+      ))}
+      <circle
+        cx={geometry.head.cx}
+        cy={geometry.head.cy}
+        r={geometry.head.r}
+        fill="var(--paper-260)"
+        stroke={reducedMotion ? "var(--copper-500)" : "none"}
+        strokeWidth={reducedMotion ? 0.6 : 0}
+      />
+      {/* 持續微動作：手與紙張的偷瞄節奏。reduced motion 時不動，改用描邊與狀態文字。 */}
+      <g
+        className="panshi-motion"
+        style={
+          reducedMotion
+            ? undefined
+            : {
+                transformBox: "fill-box",
+                transformOrigin: "center",
+                animation: `v5-closeup-glance ${WORLD_BREATH_MS}ms ease-in-out infinite`,
+              }
+        }
+      >
+        <polyline
+          points={geometry.arm}
+          fill="none"
+          stroke="var(--paper-260)"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+        />
+        <rect
+          x={geometry.prop.x}
+          y={geometry.prop.y}
+          width={geometry.prop.width}
+          height={geometry.prop.height}
+          fill="var(--copper-500)"
+          stroke={reducedMotion ? "var(--paper-260)" : "none"}
+          strokeWidth={reducedMotion ? 0.4 : 0}
+        />
+      </g>
+    </svg>
+  );
+}
+
+/**
+ * 一顆逐項標籤。
+ *
+ * 投影沒有宣告這一塊該有的身分時 **fail closed：不掛標籤**，改寫一句可讀的缺漏說明。
+ * 不改掛別的身分、不沿用整頁的身分——那等於替一塊資料換一張假身分證。
+ */
+function BlockTruthTag({
+  block,
+  highlight,
+  declared,
+  asOfLabel,
+  versionLabel,
+}: {
+  block: CloseUpBlockKey;
+  highlight: RecentConsequenceHighlight | undefined;
+  declared: readonly TruthClass[];
+  asOfLabel: string;
+  versionLabel: string;
+}) {
+  const wanted = closeUpBlockTruthClass(block, highlight);
+  const truthClass = declaredTruthClass(declared, wanted);
+
+  if (truthClass === null) {
+    return (
+      <p className="v5-closeup__note panshi-paper">
+        {DATA_UNAVAILABLE_LABEL}：投影沒有宣告「{truthClassLabel(wanted)}
+        」這個資料身分，所以這裡不掛標籤。
+      </p>
+    );
+  }
+
+  return (
+    <TruthTag
+      truthClass={truthClass}
+      explanation={TRUTH_CLASS_EXPLANATION[truthClass]}
+      asOfLabel={asOfLabel}
+      versionLabel={versionLabel}
+    />
+  );
+}
+
+/** 一項後果碎片。紙上數字一律附 as_of；沒有紙上後果就換成工作／關係／記憶。 */
+function ConsequenceFragment({
+  highlight,
+  fallbackSummary,
+  showValues,
+  declared,
+  versionLabel,
+  serverNow,
+}: {
+  highlight: RecentConsequenceHighlight | undefined;
+  fallbackSummary: string | null;
+  showValues: boolean;
+  declared: readonly TruthClass[];
+  versionLabel: string;
+  serverNow: string;
+}) {
+  // 紙上碎片的資料時間是它自己的 as_of；其餘碎片沒有市場數字，用投影時間。
+  const asOfLabel =
+    highlight?.kind === "paper_position" ? safeAsOf(highlight.asOf) : safeAsOf(serverNow);
+
+  const tag = (
+    <BlockTruthTag
+      block="consequence"
+      highlight={highlight}
+      declared={declared}
+      asOfLabel={asOfLabel}
+      versionLabel={versionLabel}
+    />
+  );
+
+  if (!highlight) {
+    return (
+      <div className="v5-closeup__consequence">
+        <p className="panshi-paper">
+          {fallbackSummary ?? "他目前沒有模擬持倉。沒下手，也是今天的一部分。"}
+        </p>
+        {tag}
+      </div>
+    );
+  }
+
+  if (highlight.kind === "paper_position") {
+    return (
+      <div className="v5-closeup__consequence">
+        <p className="v5-closeup__figure">
+          <span className="panshi-paper">模擬損益</span>
+          <span className="panshi-data">
+            {showValues ? safePercent(highlight.unrealizedPnlPercentFixed2) : ""}
+          </span>
+          <span className="v5-closeup__asof panshi-data">{safeAsOf(highlight.asOf)}</span>
+        </p>
+        {tag}
+      </div>
+    );
+  }
+
+  return (
+    <div className="v5-closeup__consequence">
+      <p className="panshi-paper">{highlight.summary}</p>
+      {tag}
+    </div>
+  );
+}
+
+export type CloseUpScreenProps = {
+  closeUp: CharacterCloseUp;
+  onOpenJournal: () => void;
+  onBackToWorld: () => void;
+};
+
+export function CloseUpScreen({ closeUp, onOpenJournal, onBackToWorld }: CloseUpScreenProps) {
+  const reducedMotion = useSyncExternalStore(subscribeReducedMotion, readReducedMotion, () => true);
+  const [revealText, setRevealText] = useState(false);
+  const [revealValues, setRevealValues] = useState(false);
+  const [remembered, setRemembered] = useState(false);
+  const [rememberFailed, setRememberFailed] = useState(false);
+
+  useEffect(() => {
+    setRemembered(readRemembered().includes(closeUp.characterId));
+  }, [closeUp.characterId]);
+
+  useEffect(() => {
+    if (reducedMotion) {
+      // 不做鏡頭節奏時，文字與數值一起到位，避免內容看起來像卡住。
+      setRevealText(true);
+      setRevealValues(true);
+      return;
+    }
+    setRevealText(false);
+    setRevealValues(false);
+    const textTimer = window.setTimeout(() => setRevealText(true), CLOSEUP_ACTION_LEAD_MS);
+    const valueTimer = window.setTimeout(
+      () => setRevealValues(true),
+      CLOSEUP_ACTION_LEAD_MS + OUTCOME_REVEAL_MS,
+    );
+    return () => {
+      window.clearTimeout(textTimer);
+      window.clearTimeout(valueTimer);
+    };
+  }, [reducedMotion, closeUp.characterId]);
+
+  const fallbackSummary = closeUp.unresolvedCommitments[0]?.rationaleSummary ?? null;
+  const versionLabel = `projection v${closeUp.projectionVersion}`;
+
+  return (
+    <section className="v5-closeup" aria-label="角色近景">
+      <style>{STYLES}</style>
+
+      <div className="v5-closeup__portrait">
+        <Portrait reducedMotion={reducedMotion} />
+      </div>
+      <p className="v5-closeup__pose panshi-data">
+        {reducedMotion
+          ? `靜態畫面：他${POSE_LABEL[closeUp.poseState]}。`
+          : `他${POSE_LABEL[closeUp.poseState]}。`}
+      </p>
+
+      <h2 className="v5-closeup__identity">
+        {closeUp.displayName}，{closeUp.ageYears} 歲　{closeUp.occupationLabel}
+      </h2>
+      <p className="v5-closeup__verb panshi-paper">{closeUp.currentVerbPhrase}</p>
+
+      {revealText ? (
+        <>
+          <p className="v5-closeup__tension panshi-paper">{closeUp.unresolvedTensionSummary}</p>
+
+          {/* 場景本身（姓名、職業、姿態、那句矛盾）＝虛構設定。 */}
+          <BlockTruthTag
+            block="scene"
+            highlight={closeUp.recentConsequenceHighlight}
+            declared={closeUp.truthClasses}
+            asOfLabel={safeAsOf(closeUp.serverNow)}
+            versionLabel={versionLabel}
+          />
+
+          {/* 後果碎片自己帶標籤：紙上數字＝模擬敘事，不跟場景共用一顆。 */}
+          <ConsequenceFragment
+            highlight={closeUp.recentConsequenceHighlight}
+            fallbackSummary={fallbackSummary}
+            showValues={revealValues}
+            declared={closeUp.truthClasses}
+            versionLabel={versionLabel}
+            serverNow={closeUp.serverNow}
+          />
+        </>
+      ) : (
+        <p className="v5-closeup__pose panshi-paper">先看他在做什麼。</p>
+      )}
+
+      <div className="v5-closeup__actions">
+        <button type="button" data-role="primary" onClick={onOpenJournal}>
+          翻開今天的人生誌
+        </button>
+        <button type="button" onClick={onBackToWorld}>
+          回到世界
+        </button>
+        <button
+          type="button"
+          aria-pressed={remembered}
+          onClick={() => {
+            const next = remembered
+              ? readRemembered().filter((id) => id !== closeUp.characterId)
+              : [...new Set([...readRemembered(), closeUp.characterId])];
+            const ok = writeRemembered(next);
+            setRememberFailed(!ok);
+            if (ok) setRemembered(!remembered);
+          }}
+        >
+          記住這個人
+        </button>
+      </div>
+
+      {rememberFailed ? (
+        <p className="v5-closeup__note panshi-paper">
+          這台裝置不讓網頁保存紀錄，所以沒有記住。這只影響這台裝置，不影響他的人生。
+        </p>
+      ) : null}
+
+      <p className="v5-closeup__note panshi-paper">
+        「記住這個人」只存在這台裝置的瀏覽器裡，不會送到伺服器。
+      </p>
+    </section>
+  );
+}
