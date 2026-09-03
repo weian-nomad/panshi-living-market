@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.panshi.app/contracts/receipts/v1/introduction-ready-receipt-body.schema.json",
+  "title": "Panshi IntroductionReadyReceiptBodyV1",
+  "description": "TBody of IntroductionReadyReceiptV1 = CrossContextReceiptEnvelopeV1<IntroductionReadyReceiptBodyV1> (system-design.md §8.2, sealed in the same transaction that moves an Introduction into READY_FOR_ACTIVATION). The source spec prose lists these fields in snake_case (introduction_id, character_id, command_admission_body_digest, command_accepted_at, origin_digest, model_core_assignment_digest, asset_pack_digest, capacity_reservation_id, quota_window_id, policy_revision_set, rights_snapshot_refs, ready_at); this schema normalizes casing to camelCase for consistency with the other two receipt bodies in this contract family. This body is produced only after ALL age, real-person-similarity, content, rights, identity, asset, capacity, and schema business gates have already passed, and it never contains its own envelope's bodyDigest, signature, append position, event ID/hash, or any other provenance field.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "introductionId",
+    "characterId",
+    "commandAdmissionBodyDigest",
+    "commandAcceptedAt",
+    "originDigest",
+    "modelCoreAssignmentDigest",
+    "assetPackDigest",
+    "capacityReservationId",
+    "quotaWindowId",
+    "policyRevisionSet",
+    "rightsSnapshotRefs",
+    "readyAt"
+  ],
+  "properties": {
+    "introductionId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "camelCase of source spec's introduction_id. The durable Introduction state-machine ID this ready receipt belongs to."
+    },
+    "characterId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "camelCase of source spec's character_id. Only meaningful once CharacterOriginSealed has already fixed the character's life."
+    },
+    "commandAdmissionBodyDigest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "camelCase of source spec's command_admission_body_digest. The bodyDigest of the CommandAdmissionReceiptBodyV1 that admitted this introduction's AdmitAuthoringCommand; the sole cross-reference into that receipt (never re-fetched or re-derived)."
+    },
+    "commandAcceptedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "camelCase of source spec's command_accepted_at. Copied verbatim from the referenced CommandAdmissionReceiptBodyV1.commandAcceptedAt -- the single server DB-transaction time that determines this introduction's quota window and authoring-window membership. Never re-sampled at ready time."
+    },
+    "originDigest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "camelCase of source spec's origin_digest. Digest of the sealed CharacterOriginSealed origin blob."
+    },
+    "modelCoreAssignmentDigest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "camelCase of source spec's model_core_assignment_digest. Digest of the ModelCoreAssigned assignment record."
+    },
+    "assetPackDigest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "camelCase of source spec's asset_pack_digest. Digest of the qualified minimum CharacterAssetPack (identity master, avatar, safe crop, rig bundle, VoiceIdentityProfileV1, and their qualification record)."
+    },
+    "capacityReservationId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "camelCase of source spec's capacity_reservation_id. The population/continuity capacity reservation this introduction consumed to enter the birth/asset pipeline."
+    },
+    "quotaWindowId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "camelCase of source spec's quota_window_id. Echoes the same Asia/Taipei ISO quota window ID fixed by the referenced CommandAdmissionReceiptBodyV1; never recomputed."
+    },
+    "policyRevisionSet": {
+      "type": "array",
+      "description": "camelCase of source spec's policy_revision_set. Ordered, de-duplicated list of every policy revision identifier (age/real-person-similarity/content/rights/identity/asset/schema gates, etc.) that this introduction was validated against before reaching READY_FOR_ACTIVATION. The source spec lists only the bare field name; this schema documents the inferred shape (array of opaque revision identifier strings) rather than inventing new field names.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "rightsSnapshotRefs": {
+      "type": "array",
+      "description": "camelCase of source spec's rights_snapshot_refs. Ordered, de-duplicated list of immutable rights-snapshot artifact references consulted for this introduction. Inferred shape (array of opaque reference strings) documented here since the source spec lists only the bare field name.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "readyAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "camelCase of source spec's ready_at. The server DB-transaction time this introduction entered READY_FOR_ACTIVATION and this body was sealed. Not a wall-clock expiry."
+    }
+  }
+}

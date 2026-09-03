@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.panshi.app/contracts/receipts/v1/envelope.schema.json",
+  "title": "Panshi cross-context receipt envelope v1",
+  "description": "Generic, non-self-referential envelope shared by every cross-context receipt (system-design.md §5.3). TBody is a compile-time generic in TypeScript (CrossContextReceiptEnvelopeV1<TBody>); JSON Schema has no generics, so `body` is left unconstrained here (an empty subschema, i.e. accept-anything) and a concrete consumer narrows it to exactly one of the three body schemas in this directory by switching on the `bodySchema` value: `panshi.receipts.command-admission-receipt-body/v1` -> command-admission-receipt-body.schema.json, `panshi.receipts.introduction-ready-receipt-body/v1` -> introduction-ready-receipt-body.schema.json, `panshi.receipts.scene-seed-validated-receipt-body/v1` -> scene-seed-validated-receipt-body.schema.json. See README.md for the full digest/signature computation order.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "envelopeVersion",
+    "bodySchema",
+    "body",
+    "bodyDigest",
+    "signingKeyId",
+    "signature"
+  ],
+  "properties": {
+    "envelopeVersion": {
+      "const": "cross-context-receipt-envelope/v1"
+    },
+    "bodySchema": {
+      "type": "string",
+      "description": "Identifies which of the three body schemas `body` must validate against. Concrete consumers use this value to pick the right schema to narrow `body` with; it is also the exact `bodySchema` byte string folded into the bodyDigest computation (see README.md step 1-2).",
+      "enum": [
+        "panshi.receipts.command-admission-receipt-body/v1",
+        "panshi.receipts.introduction-ready-receipt-body/v1",
+        "panshi.receipts.scene-seed-validated-receipt-body/v1"
+      ]
+    },
+    "body": {
+      "description": "The TBody payload. Deterministic, map-free, float-free per system-design.md §5.3. Never contains its own envelope's bodyDigest, signature, append position, event ID/hash, or any other provenance field -- those live outside the envelope and are correlated only by bodyDigest. This schema intentionally applies no constraints here (accept any JSON value); validate `body` against the schema named by `bodySchema` for the real shape."
+    },
+    "bodyDigest": {
+      "type": "string",
+      "description": "sha256:<64 lowercase hex> of `HASH(\"panshi.cross-context-receipt/v1\" || bodySchema || body_bytes)`, where body_bytes = deterministic_encode(bodySchema, body) using RFC 8785 JSON Canonicalization Scheme (JCS) over the JSON form of `body`, exactly like the convention already established in contracts/sealed-facts/v1. This repository pins the abstract `HASH` in system-design.md §5.3 to SHA-256 for every receipt body in this contract family. bodyDigest is never itself folded into body_bytes -- see README.md for the full worked example.",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "signingKeyId": {
+      "type": "string",
+      "description": "Opaque identifier (and implicit version) of the signing key used to produce `signature`. Never a credential or secret value itself.",
+      "minLength": 1
+    },
+    "signature": {
+      "type": "string",
+      "description": "SIGN(signingKeyId, envelopeVersion || bodySchema || bodyDigest) per system-design.md §5.3. Opaque signature encoding (this contract does not pin an algorithm); real signing keys are not wired yet in this repository, so fixtures may carry a clearly-synthetic placeholder value here.",
+      "minLength": 1
+    }
+  }
+}

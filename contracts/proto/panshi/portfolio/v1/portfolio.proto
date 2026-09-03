@@ -1,0 +1,224 @@
+// V5 canonical Paper Portfolio wire contracts.
+//
+// docs/v5/system-design.md §9.1 fixes three non-overlapping aggregates:
+// PaperAccount (cash/reservation/double-entry journal/account invariants),
+// PaperOrder (requested terms/lifecycle/fill refs), and PaperPosition
+// (lots/quantity/cost basis/marks/position P&L/corporate actions/outcome).
+// No field below duplicates another aggregate's authoritative field --
+// e.g. PaperOrderFilledV1 does not carry cash or lot state, and
+// PaperAccountJournalPostedV1 does not carry order lifecycle or lots.
+//
+// All money/quantity/price fields are fixed-point integers (int64, six
+// implied decimal places, matching crates/decision-kernel::Fixed::SCALE =
+// 1_000_000) per docs/v5/system-design.md §3 ("Numeric") and §9.1 -- no
+// Protobuf floats anywhere in this file.
+syntax = "proto3";
+
+package panshi.portfolio.v1;
+
+// ---------------------------------------------------------------------------
+// PaperAccount
+// ---------------------------------------------------------------------------
+
+message PaperAccountOpenedV1 {
+  bytes paper_account_id = 1;
+  bytes character_id = 2;
+  string currency = 3; // "TWD"
+  string account_policy_revision = 4; // docs/v5/system-design.md §9.1 PaperAccountPolicy
+}
+
+message PaperCashInitializedV1 {
+  bytes paper_account_id = 1;
+  int64 initial_cash_fixed = 2; // NT$1,000,000 at Fixed::SCALE
+}
+
+enum JournalEntryKind {
+  JOURNAL_ENTRY_KIND_UNSPECIFIED = 0;
+  JOURNAL_ENTRY_KIND_CASH = 1;
+  JOURNAL_ENTRY_KIND_POSITION = 2; // scoped by security_id below
+  JOURNAL_ENTRY_KIND_FEE_EXPENSE = 3;
+  JOURNAL_ENTRY_KIND_TAX_EXPENSE = 4;
+  JOURNAL_ENTRY_KIND_REALIZED_PNL = 5;
+  JOURNAL_ENTRY_KIND_CORPORATE_ACTION = 6;
+}
+
+// One double-entry posting line. `amount_fixed` is signed; a balanced
+// transaction's postings sum to zero across every posting in the same
+// PaperAccountJournalPostedV1.postings list (docs/v5/character-story-engine
+// .md "Append-only 帳本").
+message JournalPostingV1 {
+  JournalEntryKind kind = 1;
+  string security_id = 2; // empty unless kind == POSITION
+  int64 amount_fixed = 3;
+}
+
+message PaperAccountJournalPostedV1 {
+  bytes paper_account_id = 1;
+  bytes fill_transaction_id = 2; // shared with the sibling PaperOrder/PaperPosition events in the same ApplyPaperFill transaction
+  repeated JournalPostingV1 postings = 3;
+  int64 cash_before_fixed = 4;
+  int64 cash_after_fixed = 5;
+  int64 reserved_cash_before_fixed = 6;
+  int64 reserved_cash_after_fixed = 7;
+  bytes paper_order_event_ref = 8; // the PaperOrderFilled/Rejected event this posting reconciles with, empty for corrections
+  bytes paper_position_event_ref = 9; // the PaperPositionOpened/Adjusted/Closed event, empty for account-only postings
+}
+
+message PaperAccountingCorrectionAppliedV1 {
+  bytes paper_account_id = 1;
+  bytes prior_journal_event_id = 2;
+  repeated JournalPostingV1 inverse_postings = 3;
+  repeated JournalPostingV1 forward_postings = 4;
+  string correction_source_fact_revision_id = 5;
+  bytes paper_position_adjusted_event_ref = 6;
+}
+
+// ---------------------------------------------------------------------------
+// PaperOrder
+// ---------------------------------------------------------------------------
+
+enum OrderSide {
+  ORDER_SIDE_UNSPECIFIED = 0;
+  ORDER_SIDE_BUY = 1;
+  ORDER_SIDE_SELL = 2;
+}
+
+enum OrderType {
+  ORDER_TYPE_UNSPECIFIED = 0;
+  ORDER_TYPE_MARKET_NEXT_ELIGIBLE_PRICE = 1;
+}
+
+message PaperOrderSubmittedV1 {
+  bytes paper_order_id = 1;
+  bytes paper_account_id = 2;
+  bytes autonomous_action_intent_event_ref = 3;
+  string security_id = 4;
+  OrderSide side = 5;
+  OrderType order_type = 6;
+  int64 quantity_fixed = 7;
+  int64 committed_at_unix_micros = 8;
+  int64 expires_at_unix_micros = 9;
+  string execution_ruleset_revision = 10;
+}
+
+enum OrderRejectionReason {
+  ORDER_REJECTION_REASON_UNSPECIFIED = 0;
+  ORDER_REJECTION_REASON_INSUFFICIENT_CASH = 1;
+  ORDER_REJECTION_REASON_INSUFFICIENT_POSITION = 2;
+  ORDER_REJECTION_REASON_POSITION_LIMIT_EXCEEDED = 3;
+  ORDER_REJECTION_REASON_MIN_CASH_RESERVE_VIOLATED = 4;
+  ORDER_REJECTION_REASON_MAX_CONCURRENT_POSITIONS_EXCEEDED = 5;
+}
+
+message PaperOrderRejectedV1 {
+  bytes paper_order_id = 1;
+  bytes paper_account_id = 2;
+  OrderRejectionReason reason = 3;
+}
+
+message PriceSourceRef {
+  string fact_manifest_id = 1;
+  string fact_revision_id = 2;
+  int64 sealed_price_fixed = 3;
+  int64 price_observed_at_unix_micros = 4;
+}
+
+message PaperOrderFilledV1 {
+  bytes fill_transaction_id = 1;
+  bytes paper_order_id = 2;
+  bytes paper_account_id = 3;
+  int64 filled_quantity_fixed = 4;
+  PriceSourceRef price_source = 5;
+  int64 fee_fixed = 6;
+  int64 tax_fixed = 7;
+  string execution_ruleset_revision = 8;
+}
+
+enum OrderExpiryReason {
+  ORDER_EXPIRY_REASON_UNSPECIFIED = 0;
+  ORDER_EXPIRY_REASON_NO_ELIGIBLE_PRICE = 1;
+  ORDER_EXPIRY_REASON_MARKET_SUSPENDED = 2;
+  ORDER_EXPIRY_REASON_EXPIRY_DEADLINE_REACHED = 3;
+}
+
+message PaperOrderExpiredV1 {
+  bytes paper_order_id = 1;
+  bytes paper_account_id = 2;
+  OrderExpiryReason reason = 3;
+}
+
+// ---------------------------------------------------------------------------
+// PaperPosition
+// ---------------------------------------------------------------------------
+
+message Lot {
+  bytes lot_id = 1;
+  int64 quantity_fixed = 2;
+  int64 cost_basis_fixed = 3; // per-unit, Fixed scale
+  int64 opened_at_unix_micros = 4;
+  bytes opening_fill_transaction_id = 5;
+}
+
+message PaperPositionOpenedV1 {
+  bytes paper_position_id = 1;
+  bytes paper_account_id = 2;
+  string security_id = 3;
+  Lot initial_lot = 4;
+  bytes fill_transaction_id = 5;
+}
+
+message PaperPositionAdjustedV1 {
+  bytes paper_position_id = 1;
+  bytes fill_transaction_id = 2; // or correction transaction id
+  repeated Lot lots_added = 3;
+  repeated bytes lot_ids_removed = 4;
+  int64 realized_pnl_delta_fixed = 5;
+  int64 unrealized_pnl_after_fixed = 6;
+}
+
+message PaperPositionClosedV1 {
+  bytes paper_position_id = 1;
+  bytes fill_transaction_id = 2;
+  int64 total_realized_pnl_fixed = 3;
+  int64 closed_at_unix_micros = 4;
+}
+
+message PaperMarkAppliedV1 {
+  bytes paper_position_id = 1;
+  PriceSourceRef mark_price_source = 2;
+  int64 unrealized_pnl_fixed = 3;
+  int64 marked_at_unix_micros = 4;
+}
+
+enum CorporateActionKind {
+  CORPORATE_ACTION_KIND_UNSPECIFIED = 0;
+  CORPORATE_ACTION_KIND_CASH_DIVIDEND = 1;
+  CORPORATE_ACTION_KIND_STOCK_SPLIT = 2;
+}
+
+message PaperCorporateActionAppliedV1 {
+  bytes paper_position_id = 1;
+  CorporateActionKind kind = 2;
+  string source_fact_revision_id = 3;
+  int64 cash_effect_fixed = 4; // routed to PaperAccountJournalPostedV1 in the same transaction
+  int64 quantity_multiplier_fixed = 5; // Fixed::ONE for no-op / dividend-only actions
+}
+
+enum OutcomeAttributionKind {
+  OUTCOME_ATTRIBUTION_KIND_UNSPECIFIED = 0;
+  OUTCOME_ATTRIBUTION_KIND_THESIS_HELD_PROFIT = 1;
+  OUTCOME_ATTRIBUTION_KIND_THESIS_HELD_LOSS = 2;
+  OUTCOME_ATTRIBUTION_KIND_THESIS_BROKEN_PROFIT = 3;
+  OUTCOME_ATTRIBUTION_KIND_THESIS_BROKEN_LOSS = 4;
+}
+
+message PaperOutcomeRecognizedV1 {
+  bytes paper_position_id = 1;
+  bytes paper_account_id = 2;
+  bytes paper_order_id = 3;
+  OutcomeAttributionKind attribution = 4;
+  bytes paper_account_version_ref = 5;
+  bytes paper_order_version_ref = 6;
+  bytes paper_position_version_ref = 7;
+  bytes paper_version_set_digest = 8;
+}

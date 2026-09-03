@@ -1,0 +1,164 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.panshi.app/contracts/world-fact-manifest/v1/schema.json",
+  "title": "Panshi world fact manifest v1",
+  "description": "WorldFactManifestV1: the sealed, signed envelope the upstream market-research repository publishes for one current-mode TW market session. This repo only consumes released manifests; it never derives one. This schema is the exact WorldFactManifestV1 TS shape from docs/v5/system-design.md §6.2 — no additional or missing top-level fields. The manifest itself only carries revision ID allowlists; the referenced fact revision records live in the sibling fact-revision.schema.json.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "modeDomain",
+    "jurisdiction",
+    "manifestId",
+    "manifestHash",
+    "signatureKeyId",
+    "sealedAt",
+    "marketSessionId",
+    "marketDateTaipei",
+    "marketCalendarRevision",
+    "interactionCutoffAt",
+    "evidenceCutoffAt",
+    "finalityPolicyRevision",
+    "clockAuthorityRevision",
+    "rightsManifestId",
+    "licenseClass",
+    "rightsValidFrom",
+    "rightsValidUntil",
+    "permittedPurposes",
+    "interactionFactRevisionIds",
+    "interactionFactSetDigest",
+    "outcomeEvidenceRevisionIds",
+    "outcomeEvidenceSetDigest",
+    "objectUri",
+    "objectHash"
+  ],
+  "properties": {
+    "contractVersion": {
+      "const": "world-fact-manifest/v1"
+    },
+    "modeDomain": {
+      "const": "current",
+      "description": "This contract only covers the current-mode (live TW session) manifest. Historical-mode manifests are a separate contractVersion/modeDomain pair, not this schema."
+    },
+    "jurisdiction": {
+      "const": "TW"
+    },
+    "manifestId": {
+      "type": "string",
+      "description": "Immutable identifier of this sealed manifest.",
+      "pattern": "^wfm_[a-z0-9][a-z0-9._-]{7,127}$"
+    },
+    "manifestHash": {
+      "type": "string",
+      "description": "SHA-256 of the RFC 8785 JCS canonical UTF-8 bytes of this manifest object with the manifestHash and objectHash fields removed. See README.md §Digest convention.",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "signatureKeyId": {
+      "type": "string",
+      "description": "Identifier of the upstream signing key that sealed this manifest. Never a secret value, only a key reference.",
+      "pattern": "^[a-z0-9][a-z0-9._:-]{3,127}$"
+    },
+    "sealedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the upstream repository sealed this manifest. Not a world-time boundary by itself."
+    },
+    "marketSessionId": {
+      "type": "string",
+      "pattern": "^mkts_[a-z0-9][a-z0-9._-]{7,127}$"
+    },
+    "marketDateTaipei": {
+      "type": "string",
+      "format": "date",
+      "description": "Asia/Taipei market calendar day, matching the sealed-facts v1 market_date_taipei convention."
+    },
+    "marketCalendarRevision": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{1,127}$"
+    },
+    "interactionCutoffAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Upper bound for interaction (exposure/attention/appraisal/action) eligibility: available_at <= min(character_world_time, interactionCutoffAt, CognitionInputSealed.occurred_at)."
+    },
+    "evidenceCutoffAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Upper bound for outcome/editorial evidence eligibility: available_at <= evidenceCutoffAt. Independent of interactionCutoffAt — neither substitutes for the other."
+    },
+    "finalityPolicyRevision": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{1,127}$"
+    },
+    "clockAuthorityRevision": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{1,127}$"
+    },
+    "rightsManifestId": {
+      "type": "string",
+      "pattern": "^rights_[a-z0-9][a-z0-9._-]{7,127}$"
+    },
+    "licenseClass": {
+      "type": "string",
+      "description": "Upstream-owned license taxonomy value. This repo treats it as an opaque, ingest-time gate value, not a semantic it interprets.",
+      "pattern": "^[a-z0-9][a-z0-9._-]{1,127}$"
+    },
+    "rightsValidFrom": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Ingest/bind gate only. Never substitutes for world time (system-design.md §6.2)."
+    },
+    "rightsValidUntil": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "Null means open-ended rights validity. Ingest/bind gate only, same caveat as rightsValidFrom."
+    },
+    "permittedPurposes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]{2,63}$"
+      }
+    },
+    "interactionFactRevisionIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "description": "Physically separate allowlist. May ONLY be used for exposure/attention/appraisal/action. A fact revision id may also appear in outcomeEvidenceRevisionIds, but each pipeline must resolve it through its own list's explicit ref — this is not one list reused.",
+      "items": {
+        "type": "string",
+        "pattern": "^sf_[a-z0-9][a-z0-9._-]{7,127}$"
+      }
+    },
+    "interactionFactSetDigest": {
+      "type": "string",
+      "description": "Digest over interactionFactRevisionIds. See README.md §Digest convention.",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "outcomeEvidenceRevisionIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "description": "Physically separate allowlist. May ONLY be used for paper outcome, correction, and post-close editorial.",
+      "items": {
+        "type": "string",
+        "pattern": "^sf_[a-z0-9][a-z0-9._-]{7,127}$"
+      }
+    },
+    "outcomeEvidenceSetDigest": {
+      "type": "string",
+      "description": "Digest over outcomeEvidenceRevisionIds. See README.md §Digest convention.",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "objectUri": {
+      "type": "string",
+      "format": "uri",
+      "description": "Location of the mirrored object bundle this manifest seals (this repo's own immutable mirror, not a live upstream query)."
+    },
+    "objectHash": {
+      "type": "string",
+      "description": "SHA-256 of the RFC 8785 JCS canonical UTF-8 bytes of the mirrored fact-revision bundle at objectUri. See README.md §Digest convention.",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}

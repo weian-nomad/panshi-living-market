@@ -1,0 +1,179 @@
+// V5 canonical envelope contract. This is a new major version beside
+// panshi.common.v1 (docs/v5/system-design.md §18.1: "keep the design, bump to
+// a new major version"); it does not change v1 semantics and v1 continues to
+// serve the legacy-v2 five-seat contracts unmodified.
+//
+// Field additions versus v1 follow docs/v5/system-design.md §5.1's event
+// envelope: truth_class, policy_revision_set, world_session_id, model
+// core/snapshot/prompt/adapter revisions, fact manifest/revision references,
+// and explicit rights_scope/data_class/visibility_epoch. No Protobuf maps and
+// no floating point are used anywhere in this file, per docs/v5/system-design
+// .md §3 ("Numeric") and §5.1.
+syntax = "proto3";
+
+package panshi.common.v2;
+
+// Historical (legacy-v2 replay-only) vs current (V5 live world) canonical
+// mode. Kept separate from panshi.common.v1.HistoricalMode because V5 events
+// are never HISTORICAL; the event-store's `mode_domain` column CHECK
+// constraint is widened (not replaced) to also allow "CURRENT" for rows
+// written with this domain.
+enum ModeDomain {
+  MODE_DOMAIN_UNSPECIFIED = 0;
+  MODE_DOMAIN_HISTORICAL = 1;
+  MODE_DOMAIN_CURRENT = 2;
+}
+
+// The five data identities every visible claim in V5 must declare
+// (docs/v5/product-constitution.md "角色資料的五種身分",
+// docs/v5/character-story-engine.md "共用語言").
+enum TruthClass {
+  TRUTH_CLASS_UNSPECIFIED = 0;
+  TRUTH_CLASS_REAL_FACT = 1;
+  TRUTH_CLASS_STATISTICAL_SAMPLE = 2;
+  TRUTH_CLASS_FICTIONAL_SETTING = 3;
+  TRUTH_CLASS_SYMBOLIC_INTERPRETATION = 4;
+  TRUTH_CLASS_SIMULATED_NARRATIVE = 5;
+}
+
+enum CommandDisposition {
+  COMMAND_DISPOSITION_UNSPECIFIED = 0;
+  COMMAND_DISPOSITION_COMMITTED = 1;
+  COMMAND_DISPOSITION_PENDING = 2;
+  COMMAND_DISPOSITION_DUPLICATE = 3;
+  COMMAND_DISPOSITION_REJECTED = 4;
+}
+
+message StreamRef {
+  string stream_type = 1;
+  bytes stream_id = 2;
+}
+
+message StreamPrecondition {
+  StreamRef stream = 1;
+  uint64 expected_version = 2;
+  uint64 ownership_epoch = 3;
+}
+
+message ActorRef {
+  string actor_type = 1;
+  bytes actor_id = 2;
+}
+
+// A single canonical fact reference: one revision of one manifest-mirrored
+// fact, scoped to the allowlist it was drawn from (see
+// docs/v5/system-design.md §6.2 -- interactionFactRevisionIds and
+// outcomeEvidenceRevisionIds are physically separate allowlists; this ref
+// records which one a given usage came from so a canonical event payload can
+// never blur the two).
+message FactRevisionRef {
+  enum Allowlist {
+    ALLOWLIST_UNSPECIFIED = 0;
+    ALLOWLIST_INTERACTION = 1;
+    ALLOWLIST_OUTCOME_EVIDENCE = 2;
+  }
+  string fact_manifest_id = 1;
+  string fact_revision_id = 2;
+  Allowlist allowlist = 3;
+}
+
+// V5 canonical command envelope. Mirrors panshi.common.v1.CommandEnvelope's
+// shape, extended with the fields docs/v5/system-design.md §5.1 requires of
+// every command: logical_cell_id/ownership_epoch (already present in v1),
+// deadline, and an explicit idempotency key carried alongside the wire
+// command (the event-store's AppendRequest carries command_owner/
+// idempotency_key/command_digest out-of-band in Rust today; this message is
+// the declared cross-service wire contract for the same fields).
+message CommandEnvelope {
+  bytes command_id = 1;
+  string command_type = 2;
+  string command_owner = 3;
+  StreamRef primary_target = 4;
+  repeated StreamPrecondition preconditions = 5;
+  bytes logical_cell_id = 6;
+  uint64 ownership_epoch = 7;
+  string idempotency_key = 8;
+  ModeDomain mode = 9;
+  ActorRef actor = 10;
+  int64 deadline_unix_micros = 11;
+  bytes payload = 12;
+  bytes trace_id = 13;
+  bytes request_hash = 14;
+}
+
+// V5 canonical event envelope (docs/v5/system-design.md §5.1). Every V5
+// canonical event's `payload` field carries a domain-owned, deterministically
+// encoded message from panshi.character.v1 / panshi.portfolio.v1 /
+// panshi.world.v1 / panshi.story.v1; this envelope carries the fields shared
+// by every event regardless of which of those packages produced it.
+message EventEnvelope {
+  bytes event_id = 1;
+  string event_type = 2;
+  uint32 schema_version = 3;
+  string stream_type = 4;
+  bytes stream_id = 5;
+  uint64 stream_version = 6;
+  bytes logical_cell_id = 7;
+  uint64 ownership_epoch = 8;
+  ModeDomain mode = 9;
+  bytes command_id = 10;
+  bytes causation_id = 11;
+  bytes correlation_id = 12;
+  bytes trace_id = 13;
+  ActorRef actor = 14;
+  int64 occurred_at_unix_micros = 15;
+  int64 recorded_at_unix_micros = 16;
+  TruthClass truth_class = 17;
+  repeated string policy_revision_set = 18;
+  bytes world_session_id = 19;
+  string model_core_id = 20;
+  optional string model_snapshot_revision = 21;
+  optional string prompt_revision = 22;
+  optional string adapter_revision = 23;
+  optional string fact_manifest_id = 24;
+  repeated string fact_revision_ids = 25;
+  bytes engine_artifact_digest = 26;
+  string rights_scope = 27;
+  string data_class = 28;
+  uint64 visibility_epoch = 29;
+  bytes payload_hash = 30;
+  bytes previous_event_hash = 31;
+  bytes payload = 32;
+}
+
+message CommandReceipt {
+  bytes command_id = 1;
+  CommandDisposition disposition = 2;
+  uint64 canonical_version = 3;
+  bool retryable = 4;
+  string reason_code = 5;
+  string status_resource = 6;
+}
+
+message ReplayPatch {
+  string patch_schema_revision = 1;
+  bytes forward_patch = 2;
+  bytes inverse_patch = 3;
+}
+
+message ImmutableSection {
+  string schema_revision = 1;
+  bytes content = 2;
+  bytes digest = 3;
+}
+
+// The generic, non-self-referential cross-context receipt envelope
+// (docs/v5/system-design.md §5.3). `body` carries the deterministically
+// encoded bytes of one of the three receipt bodies declared in
+// contracts/receipts/v1/*.schema.json; `body_schema` names which one.
+// `body_digest` and `signature` are computed over `body` and therefore must
+// never appear inside `body` itself -- see contracts/receipts/v1/README.md
+// for the exact three-step computation this envelope's fields correspond to.
+message CrossContextReceiptEnvelopeV1 {
+  string envelope_version = 1; // always "cross-context-receipt-envelope/v1"
+  string body_schema = 2;
+  bytes body = 3;
+  bytes body_digest = 4;
+  string signing_key_id = 5;
+  bytes signature = 6;
+}

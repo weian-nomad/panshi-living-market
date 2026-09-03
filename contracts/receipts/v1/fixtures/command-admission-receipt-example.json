@@ -1,0 +1,21 @@
+{
+  "envelopeVersion": "cross-context-receipt-envelope/v1",
+  "bodySchema": "panshi.receipts.command-admission-receipt-body/v1",
+  "body": {
+    "commandId": "cmd_9f2c9e1e9b6a4c8d8f6b0f3a2b7c4d10",
+    "commandKind": "resident_introduction",
+    "quotaKey": "resident_introduction",
+    "quotaWindowId": "quota-window_asia-taipei_2026-W30",
+    "quotaWindowStartsAt": "2026-07-19T16:00:00.000Z",
+    "quotaWindowEndsAt": "2026-07-26T16:00:00.000Z",
+    "commandAcceptedAt": "2026-07-22T03:14:07.000Z",
+    "entitlementRevision": "policy-bundle_beta-full-access_rev-7",
+    "authoringWindowStartsAt": "2026-06-30T16:00:00.000Z",
+    "authoringWindowEndExclusiveAt": "2026-08-31T16:00:00.000Z",
+    "idempotencyKeyDigest": "sha256:3c69b4ce9ead3737dc595a4e31f5b4dfc2d485ad9d7368a41b7f3f44773dd9a3",
+    "quotaReservationId": "quota-reservation_3d7a1f9c2e5b4680a6c9d0e1f2a3b4c5"
+  },
+  "bodyDigest": "sha256:c3745ff6c90d7f9924b319ca746b365396f8a4ab583ea6ac0715e9c15be3f16b",
+  "signingKeyId": "panshi-receipts-signing-key_not-yet-provisioned_v1",
+  "signature": "SYNTHETIC-PLACEHOLDER-SIGNATURE-not-cryptographically-valid-af310c9e"
+}

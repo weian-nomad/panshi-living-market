@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.panshi.app/contracts/receipts/v1/scene-seed-validated-receipt-body.schema.json",
+  "title": "Panshi SceneSeedValidatedReceiptBodyV1",
+  "description": "TBody of SceneSeedValidatedReceiptV1 = CrossContextReceiptEnvelopeV1<SceneSeedValidatedReceiptBodyV1> (system-design.md §12.2, sealed inside the single SERIALIZABLE `SealSceneSeedArtifact` transaction, alongside `SceneSeedValidated` and the normalized typed artifact candidate). Never contains its own envelope's bodyDigest, signature, append position, event ID/hash, domainAcceptedAt, or any other provenance field. The artifact this receipt accompanies cannot enter the scheduler or cognition yet.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "sceneSeedId",
+    "normalizedPayloadBodyDigest",
+    "commandAdmissionBodyDigest",
+    "quotaWindowId",
+    "policyRevisionSetDigest",
+    "templateRevision",
+    "rightsSnapshotDigest",
+    "deadlineAt"
+  ],
+  "properties": {
+    "sceneSeedId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The SceneSeed this validated receipt belongs to."
+    },
+    "normalizedPayloadBodyDigest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "Digest of the exact-bytes ValidatedSceneSeedPayloadV1 (the normalized, domainAcceptedAt-free candidate) sealed in the same SealSceneSeedArtifact transaction."
+    },
+    "commandAdmissionBodyDigest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "The bodyDigest of the CommandAdmissionReceiptBodyV1 that admitted this seed's originating scene_authorship command; the sole cross-reference Identity's QuotaConsumed step verifies against."
+    },
+    "quotaWindowId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Echoes the same Asia/Taipei ISO quota window ID fixed by the referenced CommandAdmissionReceiptBodyV1; never recomputed here."
+    },
+    "policyRevisionSetDigest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "Digest over the full set of policy revisions (moderation, scheduler, template, rights, etc.) this seed was validated against."
+    },
+    "templateRevision": {
+      "type": ["string", "null"],
+      "description": "The question_template_id's templateRevision consulted for a LEAVE_CANDIDATE_QUESTION seed, or null for ARRANGE_ENCOUNTER / PLACE_SEALED_PUBLIC_MATERIAL seeds that carry no template."
+    },
+    "rightsSnapshotDigest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "Digest of the immutable rights snapshot consulted for this seed (e.g. sealed public material rights, or public-location eligibility)."
+    },
+    "deadlineAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The world scheduling deadline for this seed after domain acceptance. Not a wall-clock expiry on the receipt itself and not a competing switch against Identity's QuotaConsumed acknowledgement."
+    }
+  }
+}

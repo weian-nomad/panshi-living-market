@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.panshi.app/contracts/world-fact-manifest/v1/fact-revision.schema.json",
+  "title": "Panshi world fact revision v1",
+  "description": "One fact revision referenced by a WorldFactManifestV1's interactionFactRevisionIds or outcomeEvidenceRevisionIds. Extends the existing sealed-facts/v1 fact_id namespace (this repo does not replace that primitive) with the world-time and rights metadata current-mode manifests need: world_published_at, platform_received_at, observed_at, source_revision, an optional supersedes_fact_id correction link, and rights_scope. This schema is never referenced by schema.json directly — the manifest only carries ID lists; fixtures load this schema separately to validate the accompanying fact revision records.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "fact_id",
+    "world_published_at",
+    "platform_received_at",
+    "observed_at",
+    "source_revision",
+    "rights_scope"
+  ],
+  "properties": {
+    "fact_id": {
+      "type": "string",
+      "description": "Same fact_id namespace as contracts/sealed-facts/v1 (immutable; corrections append a new fact_id with supersedes_fact_id, they never overwrite).",
+      "pattern": "^sf_[a-z0-9][a-z0-9._-]{7,127}$"
+    },
+    "world_published_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the fact was published into the world (e.g. exchange/company disclosure timestamp)."
+    },
+    "platform_received_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the upstream platform received/ingested the fact. available_at = max(world_published_at, platform_received_at)."
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the underlying source observation occurred, per the sealed-facts v1 provenance.observed_at convention."
+    },
+    "source_revision": {
+      "type": "string",
+      "description": "Upstream source's own revision tag for this fact observation. Opaque to this repo.",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "supersedes_fact_id": {
+      "type": "string",
+      "description": "Optional: the prior fact_id this revision corrects. The prior fact_id is never overwritten, matching the sealed-facts v1 supersedes rule.",
+      "pattern": "^sf_[a-z0-9][a-z0-9._-]{7,127}$"
+    },
+    "rights_scope": {
+      "type": "string",
+      "description": "Which allowlist(s) this revision is rights-cleared for. \"interaction\" or \"outcome\" restrict the revision to one physically separate allowlist only; \"interaction_and_outcome\" means the same fact revision is eligible for both, but each pipeline must still resolve it through its own list's explicit ref.",
+      "enum": ["interaction", "outcome", "interaction_and_outcome"]
+    }
+  }
+}

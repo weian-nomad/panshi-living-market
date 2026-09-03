@@ -1,3 +1,7 @@
+# legacy-v2: five-seat command/event transition map, audited by
+# tools/contract-audit.rb against docs/architecture/event-catalog.md. The
+# separate V5 artifact is docs/v5/contracts/command-transition-map.yaml,
+# audited by tools/command-map-audit.rb. See LEGACY-V2-RESEARCH-V4.md.
 schema_version: 1
 contract_revision: command-transition-v1.2.0
 source: docs/architecture/event-catalog.md

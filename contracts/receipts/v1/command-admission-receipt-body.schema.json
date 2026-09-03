@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.panshi.app/contracts/receipts/v1/command-admission-receipt-body.schema.json",
+  "title": "Panshi CommandAdmissionReceiptBodyV1",
+  "description": "TBody of CommandAdmissionReceiptV1 = CrossContextReceiptEnvelopeV1<CommandAdmissionReceiptBodyV1> (system-design.md §12, just above §12.1). Sealed by Identity/Entitlement inside the single SERIALIZABLE `AdmitAuthoringCommand` transaction that also writes `QuotaReserved`. Shared ingress time contract for both `resident_introduction` and `scene_authorship` quota-counted commands. This body never contains its own envelope's bodyDigest, signature, append position, event ID/hash, or any other provenance field -- only the envelope surrounding it does, and only outside body_bytes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "commandId",
+    "commandKind",
+    "quotaKey",
+    "quotaWindowId",
+    "quotaWindowStartsAt",
+    "quotaWindowEndsAt",
+    "commandAcceptedAt",
+    "entitlementRevision",
+    "authoringWindowStartsAt",
+    "authoringWindowEndExclusiveAt",
+    "idempotencyKeyDigest",
+    "quotaReservationId"
+  ],
+  "properties": {
+    "commandId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Opaque canonical command ID admitted by this transaction. A resend of the same subject/quotaKey/idempotency digest must echo this same commandId, never mint a new one."
+    },
+    "commandKind": {
+      "type": "string",
+      "enum": ["resident_introduction", "scene_authorship"]
+    },
+    "quotaKey": {
+      "type": "string",
+      "enum": ["resident_introduction", "scene_authorship"]
+    },
+    "quotaWindowId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Server-published Asia/Taipei ISO calendar-week window ID shared by both quota keys. Client never computes this."
+    },
+    "quotaWindowStartsAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Start-inclusive instant of the quota window (Asia/Taipei ISO week, Monday 00:00:00)."
+    },
+    "quotaWindowEndsAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "End-exclusive instant of the quota window (next Monday 00:00:00)."
+    },
+    "commandAcceptedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "THE ONLY MEANING: the server DB-transaction time at which Identity/Entitlement accepted this quota-counted command and wrote `QuotaReserved` in the same transaction. It is never client send time, HTTP arrival time, domain-validation-complete time, scheduled time, or execution time. It alone determines the Taipei ISO quota week and the beta authoring half-open window membership. A later `domainAcceptedAt` belongs to a different, domain-side artifact (e.g. SceneSeedAccepted's ValidatedSceneSeedPayloadV1) and never moves quota or window ownership. Resends of the same subject/quotaKey/idempotency digest must return this exact original value, never a recomputed one; receipt delivery arriving later never moves the window boundary."
+    },
+    "entitlementRevision": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The NormalizedEntitlement claim revision that was validated as legal for this command at commandAcceptedAt."
+    },
+    "authoringWindowStartsAt": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "Start-inclusive instant of the signed beta authoring half-open window this command was validated against, or null when the accepted entitlement carries no authoringWindow (e.g. non-beta plans)."
+    },
+    "authoringWindowEndExclusiveAt": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "End-exclusive instant of the signed beta authoring half-open window this command was validated against, or null when the accepted entitlement carries no authoringWindow."
+    },
+    "idempotencyKeyDigest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "sha256:<hex> digest of the caller-supplied idempotency key. Never the raw key or any subject/account identifier."
+    },
+    "quotaReservationId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The QuotaReserved reservation ID generated inside the same admission transaction, before bodyDigest is computed over this body."
+    }
+  }
+}

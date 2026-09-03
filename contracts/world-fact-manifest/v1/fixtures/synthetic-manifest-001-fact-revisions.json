@@ -1,0 +1,43 @@
+[
+  {
+    "fact_id": "sf_wf.zzzq.press_release.20260722.v1",
+    "world_published_at": "2026-07-22T00:30:00.000Z",
+    "platform_received_at": "2026-07-22T00:35:00.000Z",
+    "observed_at": "2026-07-22T00:25:00.000Z",
+    "source_revision": "src-rev-0007",
+    "rights_scope": "interaction_and_outcome"
+  },
+  {
+    "fact_id": "sf_wf.zzzq.intraday_quote.20260722t0200z.v1",
+    "world_published_at": "2026-07-22T02:00:00.000Z",
+    "platform_received_at": "2026-07-22T02:00:30.000Z",
+    "observed_at": "2026-07-22T02:00:00.000Z",
+    "source_revision": "src-rev-0012",
+    "rights_scope": "interaction"
+  },
+  {
+    "fact_id": "sf_wf.zzzq.daily_close.20260722.v1",
+    "world_published_at": "2026-07-22T05:32:00.000Z",
+    "platform_received_at": "2026-07-22T05:40:00.000Z",
+    "observed_at": "2026-07-22T05:30:00.000Z",
+    "source_revision": "src-rev-0018",
+    "rights_scope": "outcome"
+  },
+  {
+    "fact_id": "sf_wf.zzzq.post_close_filing.20260722.v1",
+    "world_published_at": "2026-07-22T09:00:00.000Z",
+    "platform_received_at": "2026-07-22T09:10:00.000Z",
+    "observed_at": "2026-07-22T08:55:00.000Z",
+    "source_revision": "src-rev-0025",
+    "rights_scope": "outcome"
+  },
+  {
+    "fact_id": "sf_wf.zzzq.daily_close.20260722.v2",
+    "world_published_at": "2026-07-22T10:00:00.000Z",
+    "platform_received_at": "2026-07-22T10:05:00.000Z",
+    "observed_at": "2026-07-22T09:55:00.000Z",
+    "source_revision": "src-rev-0031",
+    "supersedes_fact_id": "sf_wf.zzzq.daily_close.20260722.v1",
+    "rights_scope": "outcome"
+  }
+]

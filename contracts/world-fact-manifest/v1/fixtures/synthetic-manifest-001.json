@@ -1,0 +1,35 @@
+{
+  "contractVersion": "world-fact-manifest/v1",
+  "modeDomain": "current",
+  "jurisdiction": "TW",
+  "manifestId": "wfm_20260722-tw-0001",
+  "manifestHash": "sha256:81f40f600575a6cf010c245b5de820b477db8971caf9bee094db55ca1b9fd031",
+  "signatureKeyId": "panshi-market-signing.2026-07",
+  "sealedAt": "2026-07-22T14:10:00.000Z",
+  "marketSessionId": "mkts_20260722-tw-regular",
+  "marketDateTaipei": "2026-07-22",
+  "marketCalendarRevision": "tw-calendar.2026.rev3",
+  "interactionCutoffAt": "2026-07-22T05:35:00.000Z",
+  "evidenceCutoffAt": "2026-07-22T14:00:00.000Z",
+  "finalityPolicyRevision": "finality-policy.2026.rev2",
+  "clockAuthorityRevision": "clock-authority.2026.rev1",
+  "rightsManifestId": "rights_tw-current-market.2026-07",
+  "licenseClass": "tw-current-market-standard",
+  "rightsValidFrom": "2026-07-22T00:00:00.000Z",
+  "rightsValidUntil": null,
+  "permittedPurposes": ["character_interaction", "paper_trading_outcome", "post_close_editorial"],
+  "interactionFactRevisionIds": [
+    "sf_wf.zzzq.press_release.20260722.v1",
+    "sf_wf.zzzq.intraday_quote.20260722t0200z.v1"
+  ],
+  "interactionFactSetDigest": "sha256:35e66a131de1086fb2e7282c7a12c9a9c1bacec12010ea6d7842ab9f0b53e209",
+  "outcomeEvidenceRevisionIds": [
+    "sf_wf.zzzq.press_release.20260722.v1",
+    "sf_wf.zzzq.daily_close.20260722.v1",
+    "sf_wf.zzzq.post_close_filing.20260722.v1",
+    "sf_wf.zzzq.daily_close.20260722.v2"
+  ],
+  "outcomeEvidenceSetDigest": "sha256:5675f3a7b407edc7636f15bd236c7e067599899694a0ae1cea7490559f85891d",
+  "objectUri": "panshi-mirror://world-fact-manifest/v1/wfm_20260722-tw-0001",
+  "objectHash": "sha256:b6a6f7a708b9745ef15ce2b4151709698d2658650084182f9461e5ff5d3e163e"
+}

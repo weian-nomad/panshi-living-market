@@ -1,0 +1,92 @@
+// V5 canonical World Clock/Scene and Market Evidence Gateway wire contracts.
+//
+// Scope note (Phase 1-2 of IMPLEMENTATION-HANDOFF.md): this file covers only
+// what the one-character golden episode needs -- accepting one synthetic
+// sealed WorldFactManifestV1 (contracts/world-fact-manifest/v1/schema.json is
+// the cross-repo JSON contract this mirrors into an internal canonical
+// event), and exposing that fact to one character in one scene. It does not
+// yet cover WorldCell/Scene/Presence/EncounterWindow/SceneSeed (multi-
+// character scene scheduling is Phase 3 per docs/v5/system-design.md §19).
+syntax = "proto3";
+
+package panshi.world.v1;
+
+// Mirrors the fields of WorldFactManifestV1
+// (contracts/world-fact-manifest/v1/schema.json) that this repo's canonical
+// event payload needs to carry once a manifest passes ingest verification
+// (docs/v5/system-design.md §6.3: RECEIVED -> ... -> MIRRORED ->
+// AVAILABLE_TO_WORLD). This repo does not re-derive or recompute the
+// upstream manifest's own hash/signature; it stores them as received.
+message FactManifestAcceptedV1 {
+  string manifest_id = 1;
+  bytes manifest_hash = 2;
+  string market_session_id = 3;
+  string market_date_taipei = 4; // ISO 8601 date
+  int64 interaction_cutoff_unix_micros = 5;
+  int64 evidence_cutoff_unix_micros = 6;
+  string rights_manifest_id = 7;
+  repeated string interaction_fact_revision_ids = 8;
+  bytes interaction_fact_set_digest = 9;
+  repeated string outcome_evidence_revision_ids = 10;
+  bytes outcome_evidence_set_digest = 11;
+}
+
+message MarketSessionFinalityAcceptedV1 {
+  string market_session_id = 1;
+  string market_date_taipei = 2;
+  string finality_policy_revision = 3;
+  int64 accepted_at_unix_micros = 4;
+}
+
+// A fact becoming visible in the world, ahead of any specific character's
+// exposure -- docs/v5/system-design.md §2.1 canonical story chain step 2.
+message FactBecameVisibleV1 {
+  string manifest_id = 1;
+  string fact_revision_id = 2;
+  bytes world_session_id = 3;
+  int64 available_at_unix_micros = 4; // max(world_published_at, platform_received_at)
+}
+
+message CharacterExposureScheduledV1 {
+  bytes character_id = 1;
+  string fact_revision_id = 2;
+  bytes world_session_id = 3;
+  int64 scheduled_at_unix_micros = 4;
+}
+
+message CharacterEnteredSceneV1 {
+  bytes character_id = 1;
+  string scene_id = 2;
+  bytes world_session_id = 3;
+  int64 entered_at_unix_micros = 4;
+}
+
+message CharacterLeftSceneV1 {
+  bytes character_id = 1;
+  string scene_id = 2;
+  bytes world_session_id = 3;
+  int64 left_at_unix_micros = 4;
+}
+
+message WorldSessionOpenedV1 {
+  bytes world_session_id = 1;
+  string market_date_taipei = 2;
+  string clock_authority_revision = 3;
+}
+
+message WorldSessionClosedV1 {
+  bytes world_session_id = 1;
+  int64 closed_at_unix_micros = 2;
+}
+
+message WorldTickCommittedV1 {
+  bytes world_session_id = 1;
+  bytes world_tick_id = 2;
+  int64 tick_at_unix_micros = 3;
+  enum TickSource {
+    TICK_SOURCE_UNSPECIFIED = 0;
+    TICK_SOURCE_SCHEDULED = 1;
+    TICK_SOURCE_EVENT = 2;
+  }
+  TickSource source = 4;
+}

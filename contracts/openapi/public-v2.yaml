@@ -1,0 +1,1569 @@
+openapi: 3.1.0
+info:
+  title: Panshi Living Market Public API (V5)
+  version: 2.0.0
+  description: |
+    V5 (《盤勢・眾生》) public read-side API surface, scoped to the Phase 2
+    one-character vertical slice described in `docs/v5/system-design.md`
+    §11.3 and `docs/v5/experience-spec.md` §13. This file is a deliberate
+    subset of the full V5 route set that exists on paper in those documents;
+    it does not attempt to cover the entire V5 surface yet.
+
+    - Canonical public origin: `https://panshi.app` (apex only; `www`
+      redirects to apex with a 308). Every route in this file is a
+      same-origin `/api/v2/*` (or `/events/v2/*`) path served behind the
+      edge gateway described in `system-design.md` §3.1. The web client
+      never calls a different origin for these resources.
+    - This file coexists with, and never replaces or extends,
+      `contracts/openapi/public-v1.yaml` (the historical five-seat `/v1/*`
+      game contract). `/api/v2/*` is an entirely separate surface with its
+      own major version.
+    - Explicitly out of scope for this file/phase (see `system-design.md`
+      §11.3 for the full V5 read-API table): introductions
+      (`POST /api/v2/introductions`, `GET /api/v2/introductions`),
+      scene-seeds (`/api/v2/scene-seeds`), entitlement
+      (`GET /api/v2/me/entitlement`), moments/story-chapters
+      (`GET /api/v2/moments`, `GET /api/v2/story-chapters/{id}`), viewer
+      library (`GET /api/v2/me/library`, follows, reminders, clips,
+      story-rolls), and search (`GET /api/v2/search`).
+    - Also not yet built here (same §11.3 table, later phases): model-core
+      catalog, price catalog, market-fact lookup, utterance audio
+      renditions, account settings/export/delete, generic command status,
+      and the remaining deep-archive sections beyond the index and
+      `archive/paper` — namely `archive/relations`, `archive/chart`,
+      `archive/traits`, and `archive/memories`.
+  license:
+    name: Proprietary
+    identifier: LicenseRef-Proprietary
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+servers:
+  - url: https://panshi.app
+    description: Canonical public origin; same-origin /api/v2/* and /events/v2/*.
+security:
+  - {}
+  - bearerAuth: []
+tags:
+  - name: World
+    description: Public world snapshot and the realtime world event stream.
+  - name: Characters
+    description: >-
+      Per-character public read projections: close-up, life journal, and
+      deep archive.
+  - name: Realtime
+    description: >-
+      Server-sent event streams that signal projection changes only; never
+      an authoritative payload.
+paths:
+  /api/v2/world:
+    get:
+      summary: Get the public world snapshot
+      description: >-
+        Scene, character positions, market clock, story hooks, and data
+        state for the persistent public world. See
+        `docs/v5/experience-spec.md` §5 and `docs/v5/system-design.md` §7.
+      operationId: getWorldSnapshot
+      tags: [World]
+      responses:
+        '200':
+          description: Current public world snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorldSnapshot'
+        '404':
+          description: No published world snapshot exists yet.
+          $ref: '#/components/responses/NotFound'
+  /api/v2/characters/{id}/close-up:
+    parameters:
+      - $ref: '#/components/parameters/CharacterId'
+    get:
+      summary: Get a character's public close-up
+      description: >-
+        Current observable state, current attention, public claims, and
+        unresolved commitments for one character. See
+        `docs/v5/experience-spec.md` §7. Always resolved at the
+        `public_current` audience scope; it does not vary by entitlement.
+      operationId: getCharacterCloseUp
+      tags: [Characters]
+      responses:
+        '200':
+          description: >-
+            Character close-up, or a tombstone projection if the character
+            has been withdrawn.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterCloseUpResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v2/characters/{id}/life-journal:
+    parameters:
+      - $ref: '#/components/parameters/CharacterId'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Limit'
+    get:
+      summary: Get one page of a character's canonical life journal
+      description: >-
+        Cursor-based canonical chronological chapters. Each entry carries
+        only in-chapter consequence summaries and `/archive/*` refs — never
+        the full life curve, ledger, relationship graph, or memory index.
+        See `docs/v5/experience-spec.md` §8 and
+        `docs/v5/system-design.md` §11.3's audience table.
+      operationId: getCharacterLifeJournal
+      tags: [Characters]
+      responses:
+        '200':
+          description: >-
+            One page of life-journal entries, or a tombstone projection if
+            the character has been withdrawn.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterLifeJournalResponse'
+        '400':
+          description: Malformed or expired cursor.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v2/characters/{id}/archive:
+    parameters:
+      - $ref: '#/components/parameters/CharacterId'
+    get:
+      summary: Get a character's deep-archive index
+      description: >-
+        Deep-archive index and per-section entitlement/as-of/visibility.
+        Section payloads are never inlined here — each section's full
+        content is served by its own dedicated endpoint (only
+        `archive/paper` is built in this phase; see the top-level
+        `info.description` for what is not yet built). See
+        `docs/v5/experience-spec.md` §9.1.
+      operationId: getCharacterArchiveIndex
+      tags: [Characters]
+      responses:
+        '200':
+          description: >-
+            Deep-archive index, or a tombstone projection if the character
+            has been withdrawn.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterArchiveIndexResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v2/characters/{id}/archive/paper:
+    parameters:
+      - $ref: '#/components/parameters/CharacterId'
+    get:
+      summary: Get a character's public paper-trading archive
+      description: >-
+        Paper account summary, orders/positions/lots, realized and
+        unrealized P&L, historical action/fill records, the three-aggregate
+        exact version set, `asOf`, and data revisions — restricted to
+        whatever has already passed the public market-time fence. Same-day
+        ticker-specific action, direction, quantity, confidence, and fill
+        are structurally absent from every `historicalActionFills[].
+        dailyActionDisclosure` until `MarketSessionFinalityAccepted` is
+        recorded for that trading day; see
+        `docs/v5/market-safety.md` ("盤中與盤後揭露") and
+        `docs/v5/system-design.md` §9 and §11.2–§11.3.
+      operationId: getCharacterPaperArchive
+      tags: [Characters]
+      responses:
+        '200':
+          description: >-
+            Public paper-trading archive projection, or a tombstone
+            projection if the character has been withdrawn.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterPaperArchiveResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /events/v2/world:
+    get:
+      summary: Subscribe to the public world event stream (SSE)
+      description: |
+        Server-sent event stream for world ticks, scene changes, publicly
+        visible character events, and projection checkpoints. OpenAPI 3.1
+        cannot fully express a multiplexed SSE stream; this path item
+        documents the message shape and semantics rather than a literal
+        single request/response exchange. The `text/event-stream` schema
+        below describes the JSON payload carried in each frame's `data:`
+        field.
+
+        Edge mapping: the public path `/events/v2/world` is mapped by the
+        edge gateway to the internal SSE router path `/v2/world/stream`
+        (see `docs/v5/system-design.md` §11.3). That internal path is never
+        part of the public contract: it must not appear in the generated
+        TypeScript client, in any error payload, or in any share URL. It is
+        named here only as an architecture note for engineers reading this
+        file, exactly as `system-design.md` itself documents the mapping.
+
+        Truth semantics: every frame only signals "resource changed" via
+        `eventKind` and `resourceRef`. Clients must treat the SSE payload
+        as a hint, never as truth — after receiving a frame, re-`GET` the
+        referenced public projection endpoint (for example
+        `GET /api/v2/world` or `GET /api/v2/characters/{id}/close-up`)
+        before rendering anything. Clients must not derive dialogue,
+        position, holdings, or market state from a timer or from the SSE
+        payload itself (`docs/v5/system-design.md` §11.4).
+
+        Reconnect: send the last received `checkpointCursor` as the
+        `Last-Event-ID` header (or the SSE `id:` field, which carries the
+        same cursor) when reconnecting. The stream resumes by replaying
+        checkpoints from that cursor forward; it does not replay from the
+        beginning of world time.
+      operationId: streamWorldEvents
+      tags: [Realtime]
+      parameters:
+        - $ref: '#/components/parameters/LastEventId'
+      responses:
+        '200':
+          description: >-
+            Open SSE stream. Each frame's `data:` payload is one
+            `WorldStreamEventEnvelope`.
+          content:
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/WorldStreamEventEnvelope'
+        '400':
+          description: Malformed or expired `Last-Event-ID` reconnect cursor.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    CharacterId:
+      name: id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Uuid'
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 512
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 50
+        default: 20
+    LastEventId:
+      name: Last-Event-ID
+      in: header
+      required: false
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 512
+  responses:
+    NotFound:
+      description: Unknown or inaccessible resource.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    Uuid:
+      type: string
+      format: uuid
+    Version:
+      type: integer
+      format: int64
+      minimum: 0
+    Digest:
+      type: string
+      description: Lowercase hex-encoded SHA-256 digest.
+      pattern: '^[a-f0-9]{64}$'
+    TruthClass:
+      type: string
+      enum:
+        - real_fact
+        - statistical_sample
+        - fictional_setting
+        - symbolic_interpretation
+        - simulated_narrative
+    DataState:
+      type: string
+      description: >-
+        Cross-cutting projection freshness/availability state (see
+        `docs/v5/system-design.md` §11.3).
+      enum:
+        - READY
+        - STALE
+        - HELD
+        - CORRECTED
+        - WITHDRAWN
+    AudienceScope:
+      type: string
+      description: >-
+        Versioned audience contract from `docs/v5/system-design.md` §11.3.
+        `canonical_restricted` is never the applied scope of a successful
+        response body — it means the resource cannot be queried at all.
+      enum:
+        - public_current
+        - free_archive
+        - subscriber_archive
+        - canonical_restricted
+    MarketSessionPhase:
+      type: string
+      description: >-
+        Public-world time-of-day segment from
+        `docs/v5/experience-spec.md` §5.3.
+      enum:
+        - pre_market
+        - in_session
+        - after_session
+        - night
+        - non_trading_day
+    CharacterPoseState:
+      type: string
+      description: >-
+        Neutral, non-market-signaling posture. See
+        `docs/v5/market-safety.md` ("盤中可公開") for why these are
+        deliberately neutral rather than transaction-shaped.
+      enum:
+        - idle
+        - walking
+        - talking
+        - examining
+        - interrupted
+        - avoiding
+        - silent
+    SceneLayer:
+      type: string
+      description: Foreground/midground/background activity layer (experience-spec §5.1).
+      enum:
+        - foreground
+        - midground
+        - background
+    DetailTier:
+      type: string
+      description: Rendering level of detail budget (experience-spec §5.1).
+      enum:
+        - high_detail
+        - edge_silhouette
+    ArchiveSectionKey:
+      type: string
+      description: >-
+        The fixed set of deep-archive sections from
+        `docs/v5/system-design.md` §11.3. Only `paper` has a dedicated
+        endpoint in this phase; the others are indexed for
+        entitlement/as-of/visibility but have no route in this file yet.
+      enum:
+        - paper
+        - relations
+        - chart
+        - traits
+        - memories
+        - life
+    V2ReasonCode:
+      type: string
+      enum:
+        - UNKNOWN_RESOURCE
+        - VISIBILITY_HELD
+        - WITHDRAWN
+        - RIGHTS_REVOKED
+        - PROJECTION_LAGGING
+        - CANONICAL_RESTRICTED
+        - MALFORMED_CURSOR
+    PaperPositionStatus:
+      type: string
+      enum:
+        - open
+        - closed
+        - pending
+    PaperActionKind:
+      type: string
+      description: Canonical paper-intent action set (system-design.md §9.2).
+      enum:
+        - BUY
+        - SELL
+        - HOLD
+        - NO_ACTION
+    PaperDirection:
+      type: string
+      enum:
+        - no_action
+        - upside
+        - downside
+    InvalidationCondition:
+      type: string
+      enum:
+        - not_yet_occurred
+        - occurred
+        - unknown_at_the_time
+    MarketSessionFinalityState:
+      type: string
+      description: Whether `MarketSessionFinalityAccepted` has landed for a trading day.
+      enum:
+        - pending
+        - accepted
+    DataRevisionKind:
+      type: string
+      enum:
+        - fact_correction
+        - accounting_correction
+        - position_adjustment
+    Problem:
+      type: object
+      additionalProperties: false
+      required: [type, title, status, reasonCode, traceId]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+        title:
+          type: string
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        reasonCode:
+          $ref: '#/components/schemas/V2ReasonCode'
+        traceId:
+          type: string
+          minLength: 16
+          maxLength: 64
+    SourceRevisionRef:
+      type: object
+      description: >-
+        One canonical aggregate/fact ref and the exact revision this
+        projection was computed from. Part of the generic
+        `sourceRevisionSet` required on every projection response; see
+        `PaperVersionSet` for the fully-typed triple-aggregate version set
+        used specifically by `/archive/paper`.
+      additionalProperties: false
+      required: [refId, refKind, revision]
+      properties:
+        refId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        refKind:
+          type: string
+          minLength: 1
+          maxLength: 64
+        revision:
+          $ref: '#/components/schemas/Version'
+    PaperVersionSet:
+      type: object
+      description: >-
+        The three-aggregate exact version set from
+        `docs/v5/system-design.md` §9.1. `paperOrderRefs`/
+        `paperOrderVersions` and `paperPositionRefs`/`paperPositionVersions`
+        are parallel arrays of equal length, pairwise ordered by stable
+        aggregate ID byte order, with no duplicates. Any input or
+        projection that only carries `paperAccountVersion` without the
+        order/position arrays is not a valid version set.
+      additionalProperties: false
+      required:
+        - paperAccountRef
+        - paperAccountVersion
+        - paperOrderRefs
+        - paperOrderVersions
+        - paperPositionRefs
+        - paperPositionVersions
+        - paperVersionSetDigest
+      properties:
+        paperAccountRef:
+          $ref: '#/components/schemas/Uuid'
+        paperAccountVersion:
+          $ref: '#/components/schemas/Version'
+        paperOrderRefs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Uuid'
+        paperOrderVersions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Version'
+        paperPositionRefs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Uuid'
+        paperPositionVersions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Version'
+        paperVersionSetDigest:
+          $ref: '#/components/schemas/Digest'
+    CharacterUtterance:
+      type: object
+      description: >-
+        An immutable, server-resolved `UtteranceArtifactV1` reference plus
+        its verbatim canonical bytes. Never paired with a second freeform
+        "summary of what they said" string field (system-design.md §11.1,
+        §11.4).
+      additionalProperties: false
+      required: [utteranceArtifactId, canonicalTextSha256, canonicalTextUtf8]
+      properties:
+        utteranceArtifactId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        canonicalTextSha256:
+          $ref: '#/components/schemas/Digest'
+        canonicalTextUtf8:
+          type: string
+          minLength: 1
+    CharacterNarrationOrSummary:
+      description: >-
+        A later self-narration that is either a verbatim, artifact-backed
+        quote (when a visible `UtteranceArtifactV1` exists) or an
+        unquoted structured summary (the documented fallback shape from
+        `docs/v5/experience-spec.md` §8.4 — never both, and never a
+        system-authored quote).
+      oneOf:
+        - type: object
+          additionalProperties: false
+          required: [kind, utteranceArtifactId, canonicalTextSha256, canonicalTextUtf8]
+          properties:
+            kind:
+              type: string
+              const: utterance
+            utteranceArtifactId:
+              type: string
+              minLength: 1
+              maxLength: 128
+            canonicalTextSha256:
+              $ref: '#/components/schemas/Digest'
+            canonicalTextUtf8:
+              type: string
+              minLength: 1
+        - type: object
+          additionalProperties: false
+          required: [kind, summaryText]
+          properties:
+            kind:
+              type: string
+              const: summary
+            summaryText:
+              type: string
+              minLength: 1
+    WithdrawnCharacterProjection:
+      type: object
+      description: >-
+        Stable-deep-link tombstone projection returned in place of a full
+        character projection once `CharacterContinuityClassChanged` has
+        moved a character to `WITHDRAWN` (system-design.md §3.1, §7.2.1).
+        Existing public URLs never silently point at a different character
+        or a different story.
+      additionalProperties: false
+      required:
+        - projectionVersion
+        - sourceGlobalPosition
+        - serverNow
+        - dataState
+        - visibilityEpoch
+        - truthClasses
+        - sourceRevisionSet
+        - characterId
+        - tombstoneReasonLabel
+      properties:
+        projectionVersion:
+          $ref: '#/components/schemas/Version'
+        sourceGlobalPosition:
+          $ref: '#/components/schemas/Version'
+        serverNow:
+          type: string
+          format: date-time
+        dataState:
+          type: string
+          const: WITHDRAWN
+        visibilityEpoch:
+          $ref: '#/components/schemas/Version'
+        truthClasses:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/TruthClass'
+        sourceRevisionSet:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceRevisionRef'
+        characterId:
+          $ref: '#/components/schemas/Uuid'
+        tombstoneReasonLabel:
+          type: string
+          description: >-
+            Policy-safe, non-diagnostic label. Never includes
+            `canonical_restricted` audit detail.
+          minLength: 1
+          maxLength: 160
+    AttentionTarget:
+      type: object
+      additionalProperties: false
+      required: [targetKind, label]
+      properties:
+        targetKind:
+          type: string
+          enum: [person, object, event, unknown]
+        label:
+          type: string
+          minLength: 1
+          maxLength: 120
+    UnresolvedCommitment:
+      type: object
+      additionalProperties: false
+      required: [commitmentId, rationaleSummary, sealedAt, stillOpen]
+      properties:
+        commitmentId:
+          $ref: '#/components/schemas/Uuid'
+        rationaleSummary:
+          type: string
+          description: Unquoted structured summary, never a system-authored quote.
+          minLength: 1
+          maxLength: 400
+        sealedAt:
+          type: string
+          format: date-time
+        stillOpen:
+          type: boolean
+    PaperPositionConsequenceHighlight:
+      type: object
+      additionalProperties: false
+      required: [kind, positionArchiveRef, unrealizedPnlPercentFixed2, asOf]
+      properties:
+        kind:
+          type: string
+          const: paper_position
+        positionArchiveRef:
+          $ref: '#/components/schemas/Uuid'
+        unrealizedPnlPercentFixed2:
+          type: integer
+          description: >-
+            Signed percentage scaled by 100 (2 implied decimal places);
+            e.g. -840 represents -8.40%.
+        asOf:
+          type: string
+          format: date-time
+          description: >-
+            Always shown next to any paper figure (experience-spec §7.2);
+            during a trading session this is the previous session's close.
+    RelationshipConsequenceHighlight:
+      type: object
+      additionalProperties: false
+      required: [kind, dyadArchiveRef, summary]
+      properties:
+        kind:
+          type: string
+          const: relationship
+        dyadArchiveRef:
+          $ref: '#/components/schemas/Uuid'
+        summary:
+          type: string
+          minLength: 1
+          maxLength: 200
+    OccupationConsequenceHighlight:
+      type: object
+      additionalProperties: false
+      required: [kind, summary]
+      properties:
+        kind:
+          type: string
+          const: occupation
+        summary:
+          type: string
+          minLength: 1
+          maxLength: 200
+    MemoryConsequenceHighlight:
+      type: object
+      additionalProperties: false
+      required: [kind, summary]
+      properties:
+        kind:
+          type: string
+          const: memory
+        summary:
+          type: string
+          minLength: 1
+          maxLength: 200
+    RecentConsequenceHighlight:
+      description: >-
+        At most one consequence fragment, shown only when it is this
+        scene's consequence; never a forced-empty performance figure
+        (experience-spec §7.1–§7.2). Absent from `CharacterCloseUp` when
+        there is nothing to show.
+      oneOf:
+        - $ref: '#/components/schemas/PaperPositionConsequenceHighlight'
+        - $ref: '#/components/schemas/RelationshipConsequenceHighlight'
+        - $ref: '#/components/schemas/OccupationConsequenceHighlight'
+        - $ref: '#/components/schemas/MemoryConsequenceHighlight'
+    WorldMarketClock:
+      type: object
+      additionalProperties: false
+      required: [marketDate, sessionPhase, asOfTradingDate, nextBoundaryAt]
+      properties:
+        marketDate:
+          type: string
+          format: date
+          description: Asia/Taipei market date (system-design.md §7.1).
+        sessionPhase:
+          $ref: '#/components/schemas/MarketSessionPhase'
+        asOfTradingDate:
+          description: >-
+            Previous finalized trading date backing any paper figures
+            currently visible in the world; `null` when none exists yet.
+          oneOf:
+            - type: string
+              format: date
+            - type: 'null'
+        nextBoundaryAt:
+          type: string
+          format: date-time
+          description: Next versioned `DeadlineScheduled` boundary (system-design.md §7.1).
+    WorldSceneState:
+      type: object
+      additionalProperties: false
+      required: [sceneId, activePriorityEventRefs]
+      properties:
+        sceneId:
+          $ref: '#/components/schemas/Uuid'
+        activePriorityEventRefs:
+          type: array
+          minItems: 0
+          maxItems: 2
+          description: >-
+            At most two events with clear audiovisual priority at once
+            (experience-spec §5.2).
+          items:
+            $ref: '#/components/schemas/Uuid'
+    CharacterWorldPosition:
+      type: object
+      additionalProperties: false
+      required:
+        - characterId
+        - worldX
+        - worldY
+        - poseState
+        - focusHint
+        - zOrder
+        - sceneLayer
+        - detailTier
+        - sourceEventRefs
+      properties:
+        characterId:
+          $ref: '#/components/schemas/Uuid'
+        worldX:
+          type: integer
+          description: World-space grid coordinate.
+        worldY:
+          type: integer
+          description: World-space grid coordinate.
+        poseState:
+          $ref: '#/components/schemas/CharacterPoseState'
+        focusHint:
+          description: What/who the character is currently attending to, if known.
+          oneOf:
+            - type: string
+              minLength: 1
+              maxLength: 120
+            - type: 'null'
+        zOrder:
+          type: integer
+        sceneLayer:
+          $ref: '#/components/schemas/SceneLayer'
+        detailTier:
+          $ref: '#/components/schemas/DetailTier'
+        sourceEventRefs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Uuid'
+    WorldStoryHookRef:
+      type: object
+      description: >-
+        Lightweight public pointer into a scene, never a ranked or
+        ticker-labeled recommendation (market-safety.md "今日五幕").
+      additionalProperties: false
+      required: [hookId, characterId, sceneRef, label]
+      properties:
+        hookId:
+          $ref: '#/components/schemas/Uuid'
+        characterId:
+          $ref: '#/components/schemas/Uuid'
+        sceneRef:
+          $ref: '#/components/schemas/Uuid'
+        label:
+          type: string
+          minLength: 1
+          maxLength: 120
+    WorldSnapshot:
+      type: object
+      additionalProperties: false
+      required:
+        - projectionVersion
+        - sourceGlobalPosition
+        - serverNow
+        - dataState
+        - visibilityEpoch
+        - truthClasses
+        - sourceRevisionSet
+        - marketClock
+        - worldTickId
+        - scene
+        - characterPositions
+        - storyHooks
+      properties:
+        projectionVersion:
+          $ref: '#/components/schemas/Version'
+        sourceGlobalPosition:
+          $ref: '#/components/schemas/Version'
+        serverNow:
+          type: string
+          format: date-time
+        dataState:
+          $ref: '#/components/schemas/DataState'
+        visibilityEpoch:
+          $ref: '#/components/schemas/Version'
+        truthClasses:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/TruthClass'
+        sourceRevisionSet:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceRevisionRef'
+        marketClock:
+          $ref: '#/components/schemas/WorldMarketClock'
+        worldTickId:
+          $ref: '#/components/schemas/Version'
+        scene:
+          $ref: '#/components/schemas/WorldSceneState'
+        characterPositions:
+          type: array
+          items:
+            $ref: '#/components/schemas/CharacterWorldPosition'
+        storyHooks:
+          type: array
+          minItems: 0
+          maxItems: 5
+          description: Mirrors the "今日五幕" 0–5 cap (experience-spec §5.4).
+          items:
+            $ref: '#/components/schemas/WorldStoryHookRef'
+    CharacterCloseUp:
+      type: object
+      additionalProperties: false
+      required:
+        - projectionVersion
+        - sourceGlobalPosition
+        - serverNow
+        - dataState
+        - visibilityEpoch
+        - truthClasses
+        - sourceRevisionSet
+        - characterId
+        - displayName
+        - ageYears
+        - occupationLabel
+        - sceneRef
+        - poseState
+        - currentVerbPhrase
+        - unresolvedTensionSummary
+        - unresolvedCommitments
+      properties:
+        projectionVersion:
+          $ref: '#/components/schemas/Version'
+        sourceGlobalPosition:
+          $ref: '#/components/schemas/Version'
+        serverNow:
+          type: string
+          format: date-time
+        dataState:
+          $ref: '#/components/schemas/DataState'
+        visibilityEpoch:
+          $ref: '#/components/schemas/Version'
+        truthClasses:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/TruthClass'
+        sourceRevisionSet:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceRevisionRef'
+        characterId:
+          $ref: '#/components/schemas/Uuid'
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 40
+        ageYears:
+          type: integer
+          minimum: 0
+          maximum: 130
+        occupationLabel:
+          type: string
+          minLength: 1
+          maxLength: 80
+        sceneRef:
+          $ref: '#/components/schemas/Uuid'
+        poseState:
+          $ref: '#/components/schemas/CharacterPoseState'
+        currentVerbPhrase:
+          type: string
+          description: e.g. "正在偷看他說不在意的價格" (experience-spec §7.1).
+          minLength: 1
+          maxLength: 120
+        currentAttention:
+          $ref: '#/components/schemas/AttentionTarget'
+        unresolvedTensionSummary:
+          type: string
+          description: The one unresolved-contradiction main sentence (experience-spec §7.1).
+          minLength: 1
+          maxLength: 200
+        publicClaim:
+          $ref: '#/components/schemas/CharacterUtterance'
+        selfAcknowledgement:
+          $ref: '#/components/schemas/CharacterUtterance'
+        recentConsequenceHighlight:
+          $ref: '#/components/schemas/RecentConsequenceHighlight'
+        unresolvedCommitments:
+          type: array
+          items:
+            $ref: '#/components/schemas/UnresolvedCommitment'
+    CharacterCloseUpResponse:
+      oneOf:
+        - $ref: '#/components/schemas/CharacterCloseUp'
+        - $ref: '#/components/schemas/WithdrawnCharacterProjection'
+    PaperConsequenceFragment:
+      type: object
+      additionalProperties: false
+      required:
+        - positionArchiveRef
+        - heldDays
+        - unrealizedPnlMinorUnits
+        - unrealizedPnlPercentFixed2
+        - asOf
+      properties:
+        positionArchiveRef:
+          $ref: '#/components/schemas/Uuid'
+        heldDays:
+          type: integer
+          minimum: 0
+        unrealizedPnlMinorUnits:
+          type: integer
+          description: Signed currency minor units.
+        unrealizedPnlPercentFixed2:
+          type: integer
+          description: Signed percentage scaled by 100 (2 implied decimal places).
+        asOf:
+          type: string
+          format: date-time
+    LifeJournalConsequence:
+      type: object
+      description: >-
+        "這個決定留下什麼" — present only when it answers a real character
+        consequence; never a forced-empty performance figure
+        (experience-spec §7.2, §8.4).
+      additionalProperties: false
+      properties:
+        paperConsequence:
+          $ref: '#/components/schemas/PaperConsequenceFragment'
+        nonPaperConsequenceSummary:
+          type: string
+          minLength: 1
+          maxLength: 300
+      anyOf:
+        - required: [paperConsequence]
+        - required: [nonPaperConsequenceSummary]
+    LifeJournalArchiveRefs:
+      type: object
+      description: >-
+        Only refs into `/archive/*` sections — never the full ledger,
+        relationship graph, or memory index inline (system-design.md
+        §11.3).
+      additionalProperties: false
+      required: [paperPositionRefs, relationshipDyadRefs, memoryRefs]
+      properties:
+        paperPositionRefs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Uuid'
+        relationshipDyadRefs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Uuid'
+        memoryRefs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Uuid'
+    LifeJournalEntry:
+      type: object
+      description: One canonical day-chapter, ordered per experience-spec §8.1.
+      additionalProperties: false
+      required:
+        - entryId
+        - chapterDate
+        - sceneSummary
+        - knownAtTheTimeSummary
+        - actionSummary
+        - consequence
+        - openQuestionSummary
+        - archiveRefs
+      properties:
+        entryId:
+          $ref: '#/components/schemas/Uuid'
+        chapterDate:
+          type: string
+          format: date
+        sceneSummary:
+          type: string
+          description: "今天他怎麼了"
+          minLength: 1
+          maxLength: 300
+        contemporaneousClaim:
+          description: "他當時怎麼說 — original self-statement, never rewritten after the fact; absent if nothing was said."
+          $ref: '#/components/schemas/CharacterUtterance'
+        knownAtTheTimeSummary:
+          type: string
+          description: "他其實知道什麼 — only material the character had actually encountered by then."
+          minLength: 1
+          maxLength: 400
+        missedFactsSummary:
+          type: string
+          description: "他漏掉了什麼 — only revealed after close or after the relevant data went public."
+          minLength: 1
+          maxLength: 400
+        actionSummary:
+          type: string
+          description: "他做了什麼 — structured summary of the paper action, wait, ask-for-help, concealment, or withdrawal."
+          minLength: 1
+          maxLength: 300
+        consequence:
+          $ref: '#/components/schemas/LifeJournalConsequence'
+        currentSelfNarration:
+          $ref: '#/components/schemas/CharacterNarrationOrSummary'
+        recurringPatternRef:
+          description: "老毛病又回來了 — present only once the same pattern has recurred at least twice."
+          $ref: '#/components/schemas/Uuid'
+        openQuestionSummary:
+          type: string
+          description: "還沒完 — the next unresolved question; never previews the outcome."
+          minLength: 1
+          maxLength: 200
+        archiveRefs:
+          $ref: '#/components/schemas/LifeJournalArchiveRefs'
+    LifeJournalPage:
+      type: object
+      additionalProperties: false
+      required:
+        - projectionVersion
+        - sourceGlobalPosition
+        - serverNow
+        - dataState
+        - visibilityEpoch
+        - truthClasses
+        - sourceRevisionSet
+        - characterId
+        - appliedAudienceScope
+        - entries
+        - nextCursor
+      properties:
+        projectionVersion:
+          $ref: '#/components/schemas/Version'
+        sourceGlobalPosition:
+          $ref: '#/components/schemas/Version'
+        serverNow:
+          type: string
+          format: date-time
+        dataState:
+          $ref: '#/components/schemas/DataState'
+        visibilityEpoch:
+          $ref: '#/components/schemas/Version'
+        truthClasses:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/TruthClass'
+        sourceRevisionSet:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceRevisionRef'
+        characterId:
+          $ref: '#/components/schemas/Uuid'
+        appliedAudienceScope:
+          $ref: '#/components/schemas/AudienceScope'
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/LifeJournalEntry'
+        nextCursor:
+          oneOf:
+            - type: string
+              minLength: 1
+              maxLength: 512
+            - type: 'null'
+    CharacterLifeJournalResponse:
+      oneOf:
+        - $ref: '#/components/schemas/LifeJournalPage'
+        - $ref: '#/components/schemas/WithdrawnCharacterProjection'
+    ArchiveSectionIndexEntry:
+      type: object
+      additionalProperties: false
+      required:
+        - sectionKey
+        - viewerAudienceScope
+        - summary
+        - asOf
+        - visibilityEpoch
+        - sectionPath
+      properties:
+        sectionKey:
+          $ref: '#/components/schemas/ArchiveSectionKey'
+        viewerAudienceScope:
+          description: >-
+            The audience scope actually applied for the requesting viewer
+            on this section (system-design.md §11.3 audience table).
+          $ref: '#/components/schemas/AudienceScope'
+        summary:
+          type: string
+          description: One-line index summary, e.g. "目前 2 個部位，其中 1 個理由已失效。"
+          minLength: 1
+          maxLength: 200
+        asOf:
+          type: string
+          format: date-time
+        visibilityEpoch:
+          $ref: '#/components/schemas/Version'
+        sectionPath:
+          description: >-
+            Same-origin path for this section's dedicated endpoint, or
+            `null` if it has none in this phase (see `ArchiveSectionKey`).
+          oneOf:
+            - type: string
+              pattern: '^/api/v2/characters/[0-9a-f-]{36}/archive/[a-z]+$'
+            - type: 'null'
+    CharacterArchiveIndex:
+      type: object
+      additionalProperties: false
+      required:
+        - projectionVersion
+        - sourceGlobalPosition
+        - serverNow
+        - dataState
+        - visibilityEpoch
+        - truthClasses
+        - sourceRevisionSet
+        - characterId
+        - archiveSchemaRevision
+        - longTermTensionSummary
+        - recentHighlights
+        - sections
+      properties:
+        projectionVersion:
+          $ref: '#/components/schemas/Version'
+        sourceGlobalPosition:
+          $ref: '#/components/schemas/Version'
+        serverNow:
+          type: string
+          format: date-time
+        dataState:
+          $ref: '#/components/schemas/DataState'
+        visibilityEpoch:
+          $ref: '#/components/schemas/Version'
+        truthClasses:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/TruthClass'
+        sourceRevisionSet:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceRevisionRef'
+        characterId:
+          $ref: '#/components/schemas/Uuid'
+        archiveSchemaRevision:
+          type: string
+          minLength: 1
+          maxLength: 64
+        longTermTensionSummary:
+          type: string
+          minLength: 1
+          maxLength: 200
+        recentHighlights:
+          type: array
+          minItems: 0
+          maxItems: 3
+          description: "最近留下的三件事 (experience-spec §9.1)."
+          items:
+            type: string
+            minLength: 1
+            maxLength: 200
+        sections:
+          type: array
+          minItems: 6
+          maxItems: 6
+          description: One entry per `ArchiveSectionKey` value.
+          items:
+            $ref: '#/components/schemas/ArchiveSectionIndexEntry'
+    CharacterArchiveIndexResponse:
+      oneOf:
+        - $ref: '#/components/schemas/CharacterArchiveIndex'
+        - $ref: '#/components/schemas/WithdrawnCharacterProjection'
+    PaperAccountPublicSummary:
+      type: object
+      description: >-
+        Public projection of `PaperAccount` authoritative fields only —
+        never order lifecycle, fill state, lots, or position P&L
+        (system-design.md §9.1).
+      additionalProperties: false
+      required:
+        - currency
+        - cashMinorUnits
+        - reservedCashMinorUnits
+        - initialCapitalMinorUnits
+        - correctionRefs
+        - asOf
+      properties:
+        currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        cashMinorUnits:
+          type: integer
+        reservedCashMinorUnits:
+          type: integer
+        initialCapitalMinorUnits:
+          type: integer
+          description: Baseline virtual principal (e.g. NT$1,000,000; system-design.md §9.1).
+        correctionRefs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Uuid'
+        asOf:
+          type: string
+          format: date-time
+    PaperLotPublic:
+      type: object
+      additionalProperties: false
+      required:
+        - lotId
+        - quantityFixed6
+        - sealedPriceMinorUnitsFixed6
+        - costBasisMinorUnits
+        - sealedPriceRevisionRef
+      properties:
+        lotId:
+          $ref: '#/components/schemas/Uuid'
+        quantityFixed6:
+          type: integer
+          description: Quantity scaled by 1,000,000 (integer fixed-point; never float).
+        sealedPriceMinorUnitsFixed6:
+          type: integer
+          description: >-
+            Per-unit sealed reference price in currency minor units,
+            further scaled by 1,000,000 for sub-minor-unit precision.
+        costBasisMinorUnits:
+          type: integer
+          description: Total lot cost basis in currency minor units.
+        sealedPriceRevisionRef:
+          $ref: '#/components/schemas/Digest'
+    PaperPositionPublic:
+      type: object
+      additionalProperties: false
+      required:
+        - positionId
+        - instrumentLabel
+        - status
+        - openedAt
+        - lastChangedAt
+        - closedAt
+        - lots
+        - realizedPnlMinorUnits
+        - unrealizedPnlMinorUnits
+        - unrealizedPnlPercentFixed2
+        - markAsOf
+        - invalidationCondition
+        - rationaleSummary
+        - influencedByCharacterRefs
+        - consequenceSummary
+      properties:
+        positionId:
+          $ref: '#/components/schemas/Uuid'
+        instrumentLabel:
+          type: string
+          description: Company name/ticker label only — never a recommendation badge.
+          minLength: 1
+          maxLength: 80
+        status:
+          $ref: '#/components/schemas/PaperPositionStatus'
+        openedAt:
+          type: string
+          format: date-time
+        lastChangedAt:
+          type: string
+          format: date-time
+        closedAt:
+          oneOf:
+            - type: string
+              format: date-time
+            - type: 'null'
+        lots:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaperLotPublic'
+        realizedPnlMinorUnits:
+          oneOf:
+            - type: integer
+            - type: 'null'
+        unrealizedPnlMinorUnits:
+          oneOf:
+            - type: integer
+            - type: 'null'
+        unrealizedPnlPercentFixed2:
+          oneOf:
+            - type: integer
+            - type: 'null'
+        markAsOf:
+          type: string
+          format: date-time
+        invalidationCondition:
+          $ref: '#/components/schemas/InvalidationCondition'
+        rationaleSummary:
+          type: string
+          description: Unquoted structured summary sealed at the time, never a quote.
+          minLength: 1
+          maxLength: 400
+        concurrentClaim:
+          description: "同時原話 — present only if a visible UtteranceArtifactV1 exists."
+          $ref: '#/components/schemas/CharacterUtterance'
+        currentNarration:
+          $ref: '#/components/schemas/CharacterNarrationOrSummary'
+        influencedByCharacterRefs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Uuid'
+        consequenceSummary:
+          type: string
+          minLength: 1
+          maxLength: 300
+    PaperDailyActionDisclosure:
+      type: object
+      description: >-
+        Same-day ticker-specific action, direction, quantity, confidence,
+        and fill. This object is structurally absent from
+        `PaperActionFillRecord` until `MarketSessionFinalityAccepted` is
+        recorded for that trading day — never present with nulled fields
+        (market-safety.md "當期交易時段不得公開" / "盤後才可公開").
+      additionalProperties: false
+      required:
+        - instrumentLabel
+        - action
+        - direction
+        - quantityFixed6
+        - confidencePercentFixed2
+        - fill
+        - rationaleSummary
+      properties:
+        instrumentLabel:
+          type: string
+          minLength: 1
+          maxLength: 80
+        action:
+          $ref: '#/components/schemas/PaperActionKind'
+        direction:
+          $ref: '#/components/schemas/PaperDirection'
+        quantityFixed6:
+          type: integer
+          description: Quantity scaled by 1,000,000.
+        confidencePercentFixed2:
+          type: integer
+          description: Signed percentage scaled by 100 (2 implied decimal places).
+        fill:
+          description: "`null` when the order expired unfilled (`PaperOrderExpired`)."
+          oneOf:
+            - type: object
+              additionalProperties: false
+              required: [sealedPriceMinorUnitsFixed6, sealedPriceRevisionRef, filledAt]
+              properties:
+                sealedPriceMinorUnitsFixed6:
+                  type: integer
+                sealedPriceRevisionRef:
+                  $ref: '#/components/schemas/Digest'
+                filledAt:
+                  type: string
+                  format: date-time
+            - type: 'null'
+        rationaleSummary:
+          type: string
+          description: Unquoted structured summary sealed before action, never a quote.
+          minLength: 1
+          maxLength: 400
+        concurrentClaim:
+          $ref: '#/components/schemas/CharacterUtterance'
+    PaperActionFillRecord:
+      type: object
+      description: >-
+        `dailyActionDisclosure` is an optional key that is only ever
+        serialized once `marketSessionFinalityState` is `accepted` for
+        this record's `tradingDate`; pre-finality responses omit the key
+        entirely rather than sending it nulled out.
+      additionalProperties: false
+      required:
+        - recordId
+        - positionRef
+        - tradingDate
+        - marketSessionFinalityState
+        - recordDataState
+      properties:
+        recordId:
+          $ref: '#/components/schemas/Uuid'
+        positionRef:
+          $ref: '#/components/schemas/Uuid'
+        tradingDate:
+          type: string
+          format: date
+          description: Asia/Taipei trading session date.
+        marketSessionFinalityState:
+          $ref: '#/components/schemas/MarketSessionFinalityState'
+        recordDataState:
+          $ref: '#/components/schemas/DataState'
+        dailyActionDisclosure:
+          $ref: '#/components/schemas/PaperDailyActionDisclosure'
+    DataRevisionNote:
+      type: object
+      additionalProperties: false
+      required: [revisionId, appliedAt, kind, affectedRefs, summary]
+      properties:
+        revisionId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        appliedAt:
+          type: string
+          format: date-time
+        kind:
+          $ref: '#/components/schemas/DataRevisionKind'
+        affectedRefs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Uuid'
+        summary:
+          type: string
+          minLength: 1
+          maxLength: 300
+    PaperArchiveProjection:
+      type: object
+      additionalProperties: false
+      required:
+        - projectionVersion
+        - sourceGlobalPosition
+        - serverNow
+        - dataState
+        - visibilityEpoch
+        - truthClasses
+        - sourceRevisionSet
+        - characterId
+        - appliedAudienceScope
+        - asOf
+        - paperVersionSet
+        - account
+        - positions
+        - historicalActionFills
+        - dataRevisions
+      properties:
+        projectionVersion:
+          $ref: '#/components/schemas/Version'
+        sourceGlobalPosition:
+          $ref: '#/components/schemas/Version'
+        serverNow:
+          type: string
+          format: date-time
+        dataState:
+          $ref: '#/components/schemas/DataState'
+        visibilityEpoch:
+          $ref: '#/components/schemas/Version'
+        truthClasses:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/TruthClass'
+        sourceRevisionSet:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceRevisionRef'
+        characterId:
+          $ref: '#/components/schemas/Uuid'
+        appliedAudienceScope:
+          $ref: '#/components/schemas/AudienceScope'
+        asOf:
+          type: string
+          format: date-time
+          description: >-
+            Explicit as-of for the whole projection; intraday this is
+            always the previous trading session's close
+            (experience-spec §7.2, §9.4).
+        paperVersionSet:
+          $ref: '#/components/schemas/PaperVersionSet'
+        account:
+          $ref: '#/components/schemas/PaperAccountPublicSummary'
+        positions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaperPositionPublic'
+        historicalActionFills:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaperActionFillRecord'
+        dataRevisions:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataRevisionNote'
+    CharacterPaperArchiveResponse:
+      oneOf:
+        - $ref: '#/components/schemas/PaperArchiveProjection'
+        - $ref: '#/components/schemas/WithdrawnCharacterProjection'
+    WorldStreamEventEnvelope:
+      type: object
+      description: >-
+        The JSON shape carried in each SSE frame's `data:` field for
+        `GET /events/v2/world`. This only signals "resource changed" —
+        never authoritative content; clients must re-`GET` `resourceRef`.
+      additionalProperties: false
+      required: [eventKind, resourceRef, checkpointCursor, visibilityEpoch, serverNow]
+      properties:
+        eventKind:
+          type: string
+          enum:
+            - world_tick
+            - scene_change
+            - character_event
+            - projection_checkpoint
+        resourceRef:
+          type: string
+          description: >-
+            Same-origin public path the client should re-`GET`, e.g.
+            `/api/v2/world` or `/api/v2/characters/{id}/close-up`. Never a
+            source of truth by itself.
+          minLength: 1
+          maxLength: 200
+        checkpointCursor:
+          type: string
+          description: >-
+            Reconnect cursor; resend as `Last-Event-ID` (or the SSE `id:`
+            field carries the same value) to resume from this checkpoint.
+          minLength: 1
+          maxLength: 512
+        visibilityEpoch:
+          $ref: '#/components/schemas/Version'
+        serverNow:
+          type: string
+          format: date-time

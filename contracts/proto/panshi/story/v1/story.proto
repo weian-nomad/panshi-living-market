@@ -1,0 +1,92 @@
+// V5 canonical Story Editorial wire contracts.
+//
+// docs/v5/system-design.md §11.1: a chapter first establishes a
+// StorySourceSet from already-canonical event/artifact references; the
+// generator can only render segments from that approved source set, and a
+// `character_claim` segment carries an UtteranceArtifact reference and hash,
+// never free text standing in for the character's own words.
+syntax = "proto3";
+
+package panshi.story.v1;
+
+import "panshi/common/v2/envelope.proto";
+
+message UtteranceArtifactRef {
+  bytes utterance_artifact_id = 1;
+  bytes canonical_text_sha256 = 2;
+}
+
+message StorySourceSetV1 {
+  bytes chapter_id = 1;
+  repeated bytes character_ids = 2;
+  repeated bytes source_event_ids = 3;
+  repeated UtteranceArtifactRef utterance_artifact_refs = 4;
+  bytes source_set_digest = 5;
+  repeated string market_fact_refs = 6;
+  int64 time_range_from_unix_micros = 7;
+  int64 time_range_to_unix_micros = 8;
+  uint64 visibility_epoch = 9;
+  string narrative_policy_revision = 10;
+}
+
+enum SegmentPerspective {
+  SEGMENT_PERSPECTIVE_UNSPECIFIED = 0;
+  SEGMENT_PERSPECTIVE_CHARACTER_CLAIM = 1;
+  SEGMENT_PERSPECTIVE_OBSERVABLE = 2;
+  SEGMENT_PERSPECTIVE_EDITORIAL_BRIDGE = 3;
+}
+
+// docs/v5/system-design.md §11.1's NarrativeSegment discriminated union,
+// expressed as a proto3 oneof. The CHARACTER_CLAIM variant has NO free-text
+// field at all -- only a resolvable artifact reference -- so a story model
+// cannot output character dialogue text even if prompted to. Only the
+// OBSERVABLE/EDITORIAL_BRIDGE variant carries generator-written `text`, and
+// it may never claim truth_class = SIMULATED_NARRATIVE for a claim it did
+// not attribute to an utterance artifact.
+message NarrativeSegmentV1 {
+  string segment_id = 1;
+
+  message CharacterClaim {
+    bytes utterance_artifact_id = 1;
+    bytes canonical_text_sha256 = 2;
+    repeated string source_refs = 3;
+  }
+
+  message ObservableOrEditorialBridge {
+    SegmentPerspective perspective = 1; // OBSERVABLE or EDITORIAL_BRIDGE only
+    panshi.common.v2.TruthClass truth_class = 2;
+    string text = 3;
+    repeated string source_refs = 4;
+  }
+
+  oneof variant {
+    CharacterClaim character_claim = 2;
+    ObservableOrEditorialBridge narrator_text = 3;
+  }
+}
+
+message StoryChapterComposedV1 {
+  bytes chapter_id = 1;
+  StorySourceSetV1 source_set = 2;
+  repeated NarrativeSegmentV1 segments = 3;
+  uint32 chapter_revision = 4;
+}
+
+message StoryChapterPublishedV1 {
+  bytes chapter_id = 1;
+  uint32 chapter_revision = 2;
+  bytes source_set_digest = 3;
+  uint64 visibility_epoch = 4;
+  int64 published_at_unix_micros = 5;
+}
+
+message StoryChapterSupersededV1 {
+  bytes chapter_id = 1;
+  uint32 prior_revision = 2;
+  uint32 new_revision = 3;
+}
+
+message StoryChapterWithdrawnV1 {
+  bytes chapter_id = 1;
+  string withdrawal_reason_code = 2;
+}

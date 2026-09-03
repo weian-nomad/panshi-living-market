@@ -1,3 +1,6 @@
+// legacy-v2: fixed five-seat desk/seat-plan wire messages. Not part of the V5
+// canonical contract set (common.v2/world.v1/character.v1/portfolio.v1/
+// story.v1). See LEGACY-V2-RESEARCH-V4.md and docs/v5/system-design.md §18.3.
 syntax = "proto3";
 
 package panshi.game.v1;

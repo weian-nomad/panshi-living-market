@@ -1,0 +1,320 @@
+// V5 canonical character/cognition/utterance/memory wire contracts.
+//
+// Scope note (Phase 1-2 of IMPLEMENTATION-HANDOFF.md): this file covers the
+// Character Origin, Character Life, Cognition/Decision, and Memory bounded
+// contexts only to the depth needed for the one-character canonical
+// vertical slice in docs/v5/system-design.md §19 Phase 2. It intentionally
+// does not yet cover Relationship (RelationshipDyad/EncounterMailbox --
+// Phase 3 per system-design.md §19) or the full Introduction saga wire
+// shapes (those are declared separately in contracts/receipts/v1/ and are
+// not exercised by the one-character slice, which has no second character to
+// introduce).
+//
+// Field shapes for CognitionAppraisalV1, SemanticSpeechActV1, and
+// UtteranceArtifactV1 are transcribed field-for-field from
+// docs/v5/character-story-engine.md ("思考核心" / "角色只說一次" sections) and
+// must not drift from that normative source without a new schema revision.
+syntax = "proto3";
+
+package panshi.character.v1;
+
+import "panshi/common/v2/envelope.proto";
+
+// ---------------------------------------------------------------------------
+// Character origin (immutable) and dynamic life state -- minimal fields
+// needed to seal one synthetic adult character and advance its dynamic state
+// across the golden episode. Full life-bible/natal-chart/four-axis fidelity
+// is intentionally out of scope for Phase 2; see docs/v5/character-story
+// -engine.md "正式狀態" for the complete eventual shape.
+// ---------------------------------------------------------------------------
+
+message FourAxisPreference {
+  int32 social_orientation_bp = 1; // -10000..10000, docs/v5/character-story-engine.md 四軸性格偏好
+  int32 information_orientation_bp = 2;
+  int32 decision_orientation_bp = 3;
+  int32 closure_orientation_bp = 4;
+}
+
+message CharacterOriginSealedV1 {
+  bytes character_id = 1;
+  string origin_seed_commitment = 2;
+  string generation_policy_revision = 3;
+  string statistical_pack_revision = 4;
+  string birth_date = 5; // ISO 8601 date, fictional
+  string birth_region = 6;
+  string occupation_group = 7;
+  string income_band = 8;
+  FourAxisPreference four_axis = 9;
+  string model_core_id = 10;
+  bytes origin_digest = 11;
+}
+
+message DynamicStateV1 {
+  int32 valence_bp = 1;
+  int32 arousal_bp = 2;
+  int32 stress_bp = 3;
+  int32 fatigue_bp = 4;
+  int32 confidence_bp = 5;
+  int32 fomo_bp = 6;
+  int32 uncertainty_load_bp = 7;
+}
+
+message CharacterStateAdvancedV1 {
+  bytes character_id = 1;
+  DynamicStateV1 prior_state = 2;
+  DynamicStateV1 next_state = 3;
+  repeated string trigger_source_event_ids = 4; // hex-encoded event ids
+  string state_policy_revision = 5;
+}
+
+// ---------------------------------------------------------------------------
+// Cognition / decision pipeline
+// ---------------------------------------------------------------------------
+
+message ObservedClueRegisteredV1 {
+  bytes character_id = 1;
+  bytes cognitive_episode_id = 2;
+  panshi.common.v2.FactRevisionRef fact_ref = 3;
+  int64 observed_at_unix_micros = 4;
+  string exposure_channel = 5;
+  enum ExposureDepth {
+    EXPOSURE_DEPTH_UNSPECIFIED = 0;
+    EXPOSURE_DEPTH_HEADLINE_ONLY = 1;
+    EXPOSURE_DEPTH_HEARD_SECONDHAND = 2;
+    EXPOSURE_DEPTH_FULL_READ = 3;
+  }
+  ExposureDepth exposure_depth = 6;
+}
+
+message CognitionInputSealedV1 {
+  bytes cognitive_episode_id = 1;
+  bytes character_id = 2;
+  repeated panshi.common.v2.FactRevisionRef interaction_fact_refs = 3;
+  repeated string admitted_memory_ids = 4;
+  bytes paper_account_ref = 5;
+  uint64 paper_account_version = 6;
+  int64 interaction_cutoff_unix_micros = 7;
+  int64 sealed_at_unix_micros = 8;
+  bytes input_digest = 9;
+}
+
+message FactAppraisal {
+  string fact_revision_id = 1;
+  int32 relevance_bp = 2;
+  int32 reliability_bp = 3;
+  int32 uncertainty_bp = 4;
+  repeated string supports_proposition_ids = 5;
+  repeated string challenges_proposition_ids = 6;
+}
+
+message InterpretationCandidate {
+  string proposition_id = 1;
+  repeated string support_fact_revision_ids = 2;
+  repeated string counter_fact_revision_ids = 3;
+  int32 uncertainty_bp = 4;
+}
+
+// docs/v5/character-story-engine.md "認知呼叫的輸出" -- the ONLY schema-valid
+// model output shape. No free-text/prose field exists anywhere in this
+// message on purpose: `additionalProperties: false` in the JSON-Schema
+// mirror of this contract and this fixed field set together are what makes
+// prose-injection structurally unrepresentable, not a runtime content filter.
+message CognitionAppraisalV1 {
+  string contract_version = 1; // "cognition-appraisal/v1"
+  repeated FactAppraisal fact_appraisals = 2;
+  repeated InterpretationCandidate interpretation_candidates = 3;
+  repeated string social_interpretation_codes = 4;
+  repeated string attention_proposal_refs = 5;
+}
+
+message CoreAppraisalAcceptedV1 {
+  bytes cognitive_episode_id = 1;
+  CognitionAppraisalV1 appraisal = 2;
+  string model_core_id = 3;
+  string model_snapshot_revision = 4;
+  string prompt_revision = 5;
+  string input_schema_revision = 6;
+  string output_schema_revision = 7;
+  bytes raw_output_digest = 8;
+}
+
+enum FallbackReasonCode {
+  FALLBACK_REASON_CODE_UNSPECIFIED = 0;
+  FALLBACK_REASON_CODE_TRANSPORT_TIMEOUT = 1;
+  FALLBACK_REASON_CODE_SCHEMA_INVALID = 2;
+  FALLBACK_REASON_CODE_REFERENCES_UNKNOWN_FACT = 3;
+  FALLBACK_REASON_CODE_POLICY_VIOLATION = 4;
+  FALLBACK_REASON_CODE_NO_NETWORK = 5;
+}
+
+// docs/v5/system-design.md §17 "Cognition 模型 timeout/schema invalid" --
+// this is the versioned, deterministic, no-network fallback path. It is
+// never a retry-until-better-result: exactly one fallback appraisal is
+// computed per episode and it is not re-derived once sealed.
+message CoreAppraisalFallbackUsedV1 {
+  bytes cognitive_episode_id = 1;
+  CognitionAppraisalV1 appraisal = 2; // deterministically derived, no model call
+  FallbackReasonCode reason_code = 3;
+  string fallback_policy_revision = 4;
+}
+
+message AttentionCommittedV1 {
+  bytes cognitive_episode_id = 1;
+  repeated string selected_fact_revision_ids = 2;
+  repeated string missed_high_salience_fact_revision_ids = 3;
+  string attention_policy_revision = 4;
+  bytes tie_break_seed_ref = 5;
+}
+
+enum ActionKind {
+  ACTION_KIND_UNSPECIFIED = 0;
+  ACTION_KIND_NO_ACTION = 1;
+  ACTION_KIND_READ_OR_VERIFY = 2;
+  ACTION_KIND_WAIT = 3;
+  ACTION_KIND_PAPER_BUY = 4;
+  ACTION_KIND_PAPER_SELL = 5;
+}
+
+message AutonomousActionIntentCommittedV1 {
+  bytes cognitive_episode_id = 1;
+  bytes character_id = 2;
+  bytes paper_account_ref = 3;
+  uint64 paper_account_version = 4;
+  ActionKind action = 5;
+  string security_id = 6; // empty for non-paper actions
+  int64 quantity_or_target_weight_fixed = 7; // Fixed::SCALE = 1_000_000
+  int64 committed_at_unix_micros = 8;
+  int64 expires_at_unix_micros = 9;
+  string thesis_revision = 10;
+  repeated string perceived_fact_revision_ids = 11;
+  int32 confidence_bp = 12;
+  string behavior_policy_revision = 13;
+  bytes first_utility_fixed_be = 14; // i128 big-endian, matches decision-kernel Fixed convention
+  bytes second_utility_fixed_be = 15;
+}
+
+enum SpeechActKind {
+  SPEECH_ACT_KIND_UNSPECIFIED = 0;
+  SPEECH_ACT_KIND_ASK = 1;
+  SPEECH_ACT_KIND_ASSERT = 2;
+  SPEECH_ACT_KIND_CHALLENGE = 3;
+  SPEECH_ACT_KIND_REPAIR = 4;
+  SPEECH_ACT_KIND_ADMIT = 5;
+  SPEECH_ACT_KIND_DECLINE = 6;
+  SPEECH_ACT_KIND_WITHHOLD = 7; // produces no utterance artifact
+}
+
+enum SurfaceKind {
+  SURFACE_KIND_UNSPECIFIED = 0;
+  SURFACE_KIND_PUBLIC_SPEECH = 1;
+  SURFACE_KIND_PUBLIC_WRITING = 2;
+  SURFACE_KIND_SELF_ACKNOWLEDGED = 3;
+}
+
+// docs/v5/character-story-engine.md "角色只說一次" -- SemanticSpeechActV1.
+message SemanticSpeechActCommittedV1 {
+  bytes semantic_speech_act_id = 1;
+  bytes character_id = 2;
+  bytes cognitive_episode_id = 3;
+  SpeechActKind act_kind = 4;
+  SurfaceKind surface_kind = 5;
+  repeated string proposition_refs = 6;
+  repeated string support_fact_revision_ids = 7;
+  repeated bytes recipient_character_ids = 8;
+  string audience_scope = 9;
+  int64 world_time_unix_micros = 10;
+  bytes source_state_digest = 11;
+  string behavior_policy_revision = 12;
+}
+
+enum GenerationMode {
+  GENERATION_MODE_UNSPECIFIED = 0;
+  GENERATION_MODE_MODEL = 1;
+  GENERATION_MODE_DETERMINISTIC_FALLBACK = 2;
+}
+
+enum SealingEventType {
+  SEALING_EVENT_TYPE_UNSPECIFIED = 0;
+  SEALING_EVENT_TYPE_PUBLIC_CLAIM_MADE = 1;
+  SEALING_EVENT_TYPE_SELF_ACKNOWLEDGEMENT_MADE = 2;
+}
+
+// docs/v5/character-story-engine.md "角色只說一次" -- UtteranceArtifactV1. A
+// character speaks at most once per semantic speech act: the unique
+// constraint is (semantic_speech_act_event_id, surface_kind), enforced at the
+// event-store layer by making that pair the stream identity for the
+// `UtteranceArtifact` aggregate (see the Rust wiring in
+// crates/character-domain). This message is sealed atomically with its
+// PublicClaimMade/SelfAcknowledgementMade event in one SealUtterance
+// transaction and is never rewritten; retractions/corrections create a NEW
+// artifact linked via retracts_utterance_artifact_id.
+message UtteranceArtifactV1 {
+  bytes utterance_artifact_id = 1;
+  bytes character_id = 2;
+  bytes semantic_speech_act_event_id = 3;
+  SealingEventType sealing_event_type = 4;
+  SurfaceKind surface_kind = 5;
+  string canonical_text_utf8 = 6; // NFC + LF normalized before hashing
+  bytes canonical_text_sha256 = 7;
+  string language_tag = 8;
+  panshi.common.v2.TruthClass truth_class = 9; // always TRUTH_CLASS_SIMULATED_NARRATIVE
+  repeated string proposition_refs = 10;
+  repeated string visible_fact_revision_ids = 11;
+  repeated bytes recipient_character_ids = 12;
+  string audience_scope = 13;
+  bytes cognitive_episode_id = 14;
+  bytes cognition_input_seal_event_id = 15;
+  bytes appraisal_event_id = 16;
+  bytes source_state_digest = 17;
+  int64 world_time_unix_micros = 18;
+  GenerationMode generation_mode = 19;
+  bytes utterance_request_id = 20;
+  optional string model_core_id = 21;
+  optional string model_snapshot_revision = 22;
+  optional string adapter_revision = 23;
+  optional string prompt_revision = 24;
+  string input_schema_revision = 25;
+  string output_schema_revision = 26;
+  optional string fallback_policy_revision = 27;
+  optional bytes raw_output_digest = 28;
+  string semantic_verifier_revision = 29;
+  string safety_policy_revision = 30;
+  bytes source_ref_set_digest = 31;
+  int64 sealed_at_unix_micros = 32;
+  optional bytes replies_to_utterance_artifact_id = 33;
+  optional bytes retracts_utterance_artifact_id = 34;
+}
+
+// ---------------------------------------------------------------------------
+// Memory (minimal: episodic memory formation only, needed for the one-
+// character golden episode's "memory update" step; MemoryReframed/Linked/
+// SalienceChanged/VisibilityChanged are declared in canonical-owner-map.yaml
+// but not yet wire-shaped here -- see the implementation report's gap list.)
+// ---------------------------------------------------------------------------
+
+enum MemoryKind {
+  MEMORY_KIND_UNSPECIFIED = 0;
+  MEMORY_KIND_EPISODIC = 1;
+  MEMORY_KIND_BELIEF = 2;
+  MEMORY_KIND_RELATIONSHIP = 3;
+  MEMORY_KIND_SELF_NARRATIVE = 4;
+}
+
+message MemoryFormedV1 {
+  bytes memory_id = 1;
+  bytes character_id = 2;
+  MemoryKind kind = 3;
+  repeated bytes source_event_ids = 4;
+  int64 formed_at_unix_micros = 5;
+  int32 salience_bp = 6;
+  int32 confidence_bp = 7;
+  int32 valence_bp = 8;
+  string decay_policy_revision = 9;
+  enum Visibility {
+    VISIBILITY_UNSPECIFIED = 0;
+    VISIBILITY_CANONICAL_RESTRICTED = 1;
+    VISIBILITY_SUBSCRIBER_ARCHIVE = 2;
+    VISIBILITY_PUBLIC_EDITION = 3;
+  }
+  Visibility visibility = 10;
+}
