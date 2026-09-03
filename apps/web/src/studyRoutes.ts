@@ -1,3 +1,6 @@
+// research-v4: sealed study route resolver (/study/:code, /research). V5's
+// production routes are /world, /people/:id, and its journal/archive
+// children; see LEGACY-V2-RESEARCH-V4.md.
 import { normalizeParticipantCode, type StudyVisitOrdinal } from "./study";
 
 export type ParticipantRoute = {

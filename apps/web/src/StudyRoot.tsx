@@ -1,3 +1,7 @@
+// research-v4: sealed public research/consent boundary wrapping the frozen
+// study release. Not the V5 production root; see LEGACY-V2-RESEARCH-V4.md
+// and docs/v5/system-design.md §18.3 ("StudyRoot as public landing" ->
+// remove from production route).
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { App } from "./App";

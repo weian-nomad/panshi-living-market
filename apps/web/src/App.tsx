@@ -1,3 +1,8 @@
+// research-v4: the sealed follow-camera study scene ("開盤廳"). Not the V5
+// production public world; see LEGACY-V2-RESEARCH-V4.md. Only the
+// follow-camera gesture/focus-state pattern is reused per
+// docs/v5/system-design.md §18.2 -- the fixed 0-599s timeline and hard-coded
+// scene contents are replaced by server canonical projections in V5.
 import {
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,

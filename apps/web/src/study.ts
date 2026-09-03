@@ -1,3 +1,5 @@
+// research-v4: sealed follow-camera study evaluator. Not part of the V5
+// production surface; see LEGACY-V2-RESEARCH-V4.md.
 import { STUDY_ORIGIN } from "./studyRelease.ts";
 
 export const STUDY_SCHEMA_VERSION = 1 as const;

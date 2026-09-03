@@ -1,3 +1,5 @@
+// research-v4: sealed study IndexedDB persistence, device-only. Not part of
+// the V5 production surface; see LEGACY-V2-RESEARCH-V4.md.
 import type { StudyEvent, StudyRunStarted } from "./study";
 
 const DATABASE_NAME = "panshi-v4-study";

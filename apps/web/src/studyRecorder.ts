@@ -1,3 +1,5 @@
+// research-v4: sealed study event recorder (IndexedDB, device-only). Not
+// production analytics; see LEGACY-V2-RESEARCH-V4.md.
 import {
   STUDY_CONSENT_VERSION,
   STUDY_SCHEMA_VERSION,

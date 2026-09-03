@@ -1,3 +1,8 @@
+// Reused as a V5 presentation primitive per docs/v5/system-design.md §18.2
+// ("world-space hit testing... kept as follow-camera/handoff primitive").
+// Not legacy: this file is expected to keep being used by V5 world/follow
+// surfaces, extended with pointer/keyboard/screen-reader tests.
+
 export type WorldPoint = {
   x: number;
   y: number;

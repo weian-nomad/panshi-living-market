@@ -1,3 +1,5 @@
+// research-v4: sealed study export validation. Not part of the V5 production
+// surface; see LEGACY-V2-RESEARCH-V4.md.
 import {
   evaluateCohort,
   normalizeParticipantCode,

@@ -1,3 +1,7 @@
+// research-v4: hard-coded 16-resident/3-ticker scene script for the sealed
+// study. V5 production scenes read server projections instead of a fixed
+// script; see LEGACY-V2-RESEARCH-V4.md and docs/v5/system-design.md §18.3.
+
 export type MarketPulse = {
   ticker: string;
   company: string;
