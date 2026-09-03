@@ -16,5 +16,5 @@ cargo build --locked -p panshi-simulator --target wasm32-wasip1
 target/debug/panshi-simulator --emit-output > "$temporary/native.pb"
 wasmtime -C cache=n target/wasm32-wasip1/debug/panshi-simulator.wasm --emit-output > "$temporary/wasi.pb"
 cmp "$temporary/native.pb" "$temporary/wasi.pb"
-cmp "$temporary/native.pb" fixtures/historical/episode-001/output.pb
+cmp "$temporary/native.pb" fixtures/legacy-v2/episode-001/output.pb
 echo "kernel parity passed: native, WASI, and sealed output.pb are byte-identical"

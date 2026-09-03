@@ -1,3 +1,6 @@
+//! `legacy-v2`: the frozen `RoundDesk` aggregate (five-seat round lifecycle).
+//! Not part of the V5 canonical domain; see `LEGACY-V2-RESEARCH-V4.md`.
+
 use crate::seat::SeatPlan;
 
 pub type AggregateId = [u8; 16];

@@ -15,7 +15,7 @@ fn main() {
     }
     if args.get(1).map(String::as_str) == Some("--write-golden") {
         let directory = args.get(2).map_or_else(
-            || PathBuf::from("fixtures/historical/episode-001"),
+            || PathBuf::from("fixtures/legacy-v2/episode-001"),
             PathBuf::from,
         );
         fs::create_dir_all(&directory).expect("create fixture directory");

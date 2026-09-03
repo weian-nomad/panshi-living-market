@@ -1,5 +1,11 @@
 #![forbid(unsafe_code)]
 
+//! `legacy-v2`: the five-seat DP／coverage／ranking scoring rules. V5 has no
+//! global performance ranking or "leek score"; only the fixed-point
+//! implementation *technique* is reused (see `crates/decision-kernel`'s new
+//! V5 module), not this ruleset. See `LEGACY-V2-RESEARCH-V4.md` and
+//! `docs/v5/system-design.md` §18.3.
+
 use panshi_decision_kernel::{Fixed, FixedError};
 
 const FOUR: Fixed = Fixed::from_raw(4_000_000);

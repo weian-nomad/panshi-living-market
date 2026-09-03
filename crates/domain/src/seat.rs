@@ -1,3 +1,6 @@
+//! `legacy-v2`: fixed five-seat desk identities and seat-plan aggregate. Not
+//! part of the V5 canonical domain; see `LEGACY-V2-RESEARCH-V4.md`.
+
 /// Fixed desk identities. Their order is canonical and also defines the
 /// one-pass clockwise peer-message ring.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]

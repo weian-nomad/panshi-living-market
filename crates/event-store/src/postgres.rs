@@ -63,7 +63,10 @@ fn request_json(request: &AppendRequest) -> Value {
             "streamId": uuid(event.stream_id),
             "logicalCellId": uuid(event.logical_cell_id),
             "ownershipEpoch": event.ownership_epoch,
-            "modeDomain": match event.mode_domain { ModeDomain::Historical => "HISTORICAL" },
+            "modeDomain": match event.mode_domain {
+                ModeDomain::Historical => "HISTORICAL",
+                ModeDomain::Current => "CURRENT",
+            },
             "causationId": uuid(event.causation_id),
             "correlationId": uuid(event.correlation_id),
             "traceId": event.trace_id,

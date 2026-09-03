@@ -730,6 +730,31 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
 
 [[package]]
+name = "panshi-character-domain"
+version = "0.1.0"
+dependencies = [
+ "panshi-decision-kernel",
+ "sha2 0.11.0",
+]
+
+[[package]]
+name = "panshi-character-episode"
+version = "0.1.0"
+dependencies = [
+ "panshi-character-domain",
+ "panshi-decision-kernel",
+ "panshi-event-store",
+ "panshi-paper-ledger",
+ "panshi-protocol",
+ "prost",
+ "serde_json",
+ "sha2 0.11.0",
+ "sqlx",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "panshi-decision-kernel"
 version = "0.1.0"
 dependencies = [
@@ -761,6 +786,13 @@ version = "0.1.0"
 [[package]]
 name = "panshi-loadgen"
 version = "0.1.0"
+
+[[package]]
+name = "panshi-paper-ledger"
+version = "0.1.0"
+dependencies = [
+ "panshi-decision-kernel",
+]
 
 [[package]]
 name = "panshi-projection-worker"

@@ -11,12 +11,48 @@ pub mod common {
     pub mod v1 {
         include!(concat!(env!("OUT_DIR"), "/panshi.common.v1.rs"));
     }
+
+    /// V5 canonical envelope contract, versioned beside `v1` -- see
+    /// `contracts/proto/panshi/common/v2/envelope.proto`. Does not change
+    /// `v1` semantics.
+    #[allow(clippy::doc_markdown, clippy::must_use_candidate)]
+    pub mod v2 {
+        include!(concat!(env!("OUT_DIR"), "/panshi.common.v2.rs"));
+    }
 }
 
 pub mod game {
     #[allow(clippy::doc_markdown, clippy::must_use_candidate)]
     pub mod v1 {
         include!(concat!(env!("OUT_DIR"), "/panshi.game.v1.rs"));
+    }
+}
+
+pub mod character {
+    #[allow(clippy::doc_markdown, clippy::must_use_candidate)]
+    pub mod v1 {
+        include!(concat!(env!("OUT_DIR"), "/panshi.character.v1.rs"));
+    }
+}
+
+pub mod portfolio {
+    #[allow(clippy::doc_markdown, clippy::must_use_candidate)]
+    pub mod v1 {
+        include!(concat!(env!("OUT_DIR"), "/panshi.portfolio.v1.rs"));
+    }
+}
+
+pub mod world {
+    #[allow(clippy::doc_markdown, clippy::must_use_candidate)]
+    pub mod v1 {
+        include!(concat!(env!("OUT_DIR"), "/panshi.world.v1.rs"));
+    }
+}
+
+pub mod story {
+    #[allow(clippy::doc_markdown, clippy::must_use_candidate)]
+    pub mod v1 {
+        include!(concat!(env!("OUT_DIR"), "/panshi.story.v1.rs"));
     }
 }
 
@@ -211,6 +247,7 @@ pub fn validate_decision_output_v1(
 mod tests {
     use super::{
         CanonicalDecodeError, DecisionWireError, canonical_bytes, canonical_digest,
+        character::v1::CognitionAppraisalV1,
         decode_canonical,
         game::v1::{CompanyActionInputV1, DecisionKernelInputV1, Placement, SeatDecisionInputV1},
         validate_decision_input_v1,
@@ -250,6 +287,41 @@ mod tests {
         bytes.extend([0xa0, 0x06, 0x01]);
         assert_eq!(
             decode_canonical::<Placement>(&bytes),
+            Err(CanonicalDecodeError::NonCanonicalBytes)
+        );
+    }
+
+    /// Golden failure set: prose injection into `CognitionAppraisalV1`
+    /// (`docs/v5/character-story-engine.md`: "Schema 使用
+    /// `additionalProperties: false`；模型不能輸出 `text`、`quote`、
+    /// `claim: string`... 或故事發布決定"). There is no `text`/`quote`/
+    /// `claim` field declared on this message at all -- a model response
+    /// carrying prose in an unknown field number is exactly the same wire
+    /// shape as any other unknown-field injection, and is rejected the same
+    /// way `Placement`'s injection test above is: `decode_canonical` refuses
+    /// any bytes that do not re-encode identically, so appended unknown
+    /// fields (whatever their content) can never round-trip.
+    #[test]
+    fn prose_injection_into_cognition_appraisal_is_rejected() {
+        let appraisal = CognitionAppraisalV1 {
+            contract_version: "cognition-appraisal/v1".to_owned(),
+            fact_appraisals: Vec::new(),
+            interpretation_candidates: Vec::new(),
+            social_interpretation_codes: Vec::new(),
+            attention_proposal_refs: Vec::new(),
+        };
+        let mut bytes = canonical_bytes(&appraisal);
+        // Field number 15, wire type 2 (length-delimited): tag byte is
+        // (15 << 3) | 2 = 0x7a, a single byte since it fits under 128 --
+        // simulates an attacker or a misbehaving model client appending a
+        // free-text "quote"/"communication_intent" field the schema never
+        // declared (this message has no field 15 at all).
+        let injected_text = b"the stock will definitely go up tomorrow";
+        bytes.push(0x7a);
+        bytes.push(u8::try_from(injected_text.len()).expect("short fixture string"));
+        bytes.extend(injected_text);
+        assert_eq!(
+            decode_canonical::<CognitionAppraisalV1>(&bytes),
             Err(CanonicalDecodeError::NonCanonicalBytes)
         );
     }

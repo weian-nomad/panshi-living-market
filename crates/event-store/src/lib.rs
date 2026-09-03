@@ -8,9 +8,15 @@
 pub type Id = [u8; 16];
 pub type Digest = [u8; 32];
 
+/// `docs/v5/system-design.md` §18.1 generalizes this from a `Historical`-only
+/// domain: `Current` is the V5 live-world mode. Adding this variant is
+/// additive -- the Postgres CHECK constraint on `mode_domain` is widened
+/// (`migrations/0002_v5_mode_domain_current.sql`), not replaced, so every
+/// legacy-v2 row's `HISTORICAL` value stays valid unchanged.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ModeDomain {
     Historical,
+    Current,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -146,6 +152,7 @@ pub fn validate_request(request: &AppendRequest) -> Result<(), AppendError> {
 }
 
 mod postgres;
+pub mod promotion_fence;
 
 pub use postgres::PostgresEventStore;
 

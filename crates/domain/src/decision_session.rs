@@ -1,3 +1,7 @@
+//! `legacy-v2`: the frozen five-seat `DecisionSession` batch aggregate. V5
+//! replaces this with per-character `CognitiveEpisode`; see
+//! `LEGACY-V2-RESEARCH-V4.md` and `docs/v5/system-design.md` §18.3.
+
 use crate::round_desk::{AggregateId, Digest, EventId, SealedSeatPlan};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

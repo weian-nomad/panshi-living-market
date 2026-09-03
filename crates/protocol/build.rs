@@ -7,6 +7,11 @@ fn main() {
         proto_root.join("panshi/common/v1/envelope.proto"),
         proto_root.join("panshi/game/v1/desk.proto"),
         proto_root.join("panshi/game/v1/decision.proto"),
+        proto_root.join("panshi/common/v2/envelope.proto"),
+        proto_root.join("panshi/character/v1/character.proto"),
+        proto_root.join("panshi/portfolio/v1/portfolio.proto"),
+        proto_root.join("panshi/world/v1/world.proto"),
+        proto_root.join("panshi/story/v1/story.proto"),
     ];
 
     for source in &sources {

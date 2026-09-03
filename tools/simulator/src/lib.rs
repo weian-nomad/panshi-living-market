@@ -215,8 +215,8 @@ mod tests {
     #[test]
     fn checked_in_protobuf_golden_bytes_match_the_native_kernel() {
         let expected = sealed_episode_001();
-        let input_bytes = include_bytes!("../../../fixtures/historical/episode-001/input.pb");
-        let output_bytes = include_bytes!("../../../fixtures/historical/episode-001/output.pb");
+        let input_bytes = include_bytes!("../../../fixtures/legacy-v2/episode-001/input.pb");
+        let output_bytes = include_bytes!("../../../fixtures/legacy-v2/episode-001/output.pb");
 
         decode_canonical::<DecisionKernelInputV1>(input_bytes).expect("canonical input fixture");
         decode_canonical::<DecisionKernelOutputV1>(output_bytes).expect("canonical output fixture");

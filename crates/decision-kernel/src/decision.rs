@@ -1,3 +1,9 @@
+//! `legacy-v2`: the five-seat action-policy kernel (`decide_five_seats`,
+//! `FiveSeatDecision`, `ALGORITHM_ID`). V5's per-character cognition/action
+//! kernel lives in `crate::character_action` and does not call into this
+//! module. Only the sibling `Fixed`/`utility` primitives are reused across
+//! both. See `LEGACY-V2-RESEARCH-V4.md` and `docs/v5/system-design.md` §18.1.
+
 use core::cmp::Ordering;
 
 use sha2::{Digest as _, Sha256};

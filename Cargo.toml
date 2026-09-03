@@ -5,6 +5,8 @@ members = [
   "crates/protocol",
   "crates/event-store",
   "crates/decision-kernel",
+  "crates/character-domain",
+  "crates/paper-ledger",
   "crates/scoring",
   "crates/rights",
   "services/game-core",
@@ -13,6 +15,7 @@ members = [
   "tools/replay",
   "tools/simulator",
   "tools/loadgen",
+  "tools/character-episode",
 ]
 
 [workspace.package]

@@ -5,7 +5,7 @@ require "digest"
 require "json"
 
 ROOT = File.expand_path("..", __dir__)
-fixture_dir = File.join(ROOT, "fixtures/historical/episode-001")
+fixture_dir = File.join(ROOT, "fixtures/legacy-v2/episode-001")
 manifest = JSON.parse(File.read(File.join(fixture_dir, "manifest.json")))
 input_path = File.join(fixture_dir, "decision-input.json")
 actions_path = File.join(fixture_dir, "expected-actions.json")
@@ -43,4 +43,4 @@ unless errors.empty?
   exit 1
 end
 
-puts "fixture audit passed: historical-episode-001 JSON and Protobuf are sealed and canonical"
+puts "fixture audit passed: legacy-v2/episode-001 JSON and Protobuf are sealed and canonical"
