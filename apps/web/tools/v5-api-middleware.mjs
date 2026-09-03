@@ -5,6 +5,13 @@
 // `fixtures/v5/one-character-slice/api/`, so the browser exercises the final
 // route paths and the final response shapes without a running service.
 //
+// It also owns the two document mount points, mirroring
+// `deploy/study/Caddyfile`:
+// - `/`, `/world`, `/people/*` -> the V5 slice shell (`world.html`).
+// - `/study*`, `/research*`    -> the sealed research-v4 study (`index.html`).
+// Anything else falls through to Vite, which runs with `appType: "mpa"` and
+// therefore 404s instead of dropping a stray path into either app.
+//
 // Fail-closed rules (docs/v5/product-constitution.md, AGENTS.md):
 // - A missing index, a missing route entry, or a missing file is a 404
 //   `application/problem+json`, never an empty object and never a placeholder
@@ -22,8 +29,17 @@ const FIXTURE_ROOT = path.resolve(HERE, "../../../fixtures/v5/one-character-slic
 const FIXTURE_INDEX = path.join(FIXTURE_ROOT, "index.json");
 
 const API_PREFIX = "/api/v2/";
-const SHELL_ENTRY = "/world.html";
-const SHELL_PREFIXES = ["/world", "/people"];
+
+// The V5 slice shell. `world.html` keeps its filename so the release image and
+// the dev server serve the same document at `/`.
+const WORLD_SHELL_ENTRY = "/world.html";
+// The sealed research-v4 study document. Its filename stays `index.html`
+// (pinned by `tools/study-release-audit.mjs` and by the sealed service worker);
+// only its public address moved to `/study`.
+const STUDY_SHELL_ENTRY = "/index.html";
+
+const WORLD_SHELL_PREFIXES = ["/world", "/people"];
+const STUDY_SHELL_PREFIXES = ["/study", "/research"];
 
 function requestPathname(rawUrl) {
   const url = rawUrl ?? "/";
@@ -38,14 +54,28 @@ function normalizePathname(pathname) {
   return pathname;
 }
 
-function isShellPath(pathname) {
-  const matchesPrefix = SHELL_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-  );
-  if (!matchesPrefix) return false;
-  // Anything with a file extension is a static asset request, not a route.
+function matchesPrefix(prefixes, pathname) {
+  return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
+// Anything with a file extension is a static asset request, not a route.
+// `/study-sw.js`, `/study-release.json` and `/manifest.webmanifest` therefore
+// stay real files instead of being rewritten into the study document.
+function looksLikeAsset(pathname) {
   const lastSegment = pathname.slice(pathname.lastIndexOf("/") + 1);
-  return !lastSegment.includes(".");
+  return lastSegment.includes(".");
+}
+
+/**
+ * The document a route path must be served from, or `null` when the path is
+ * not a route of either app (Vite then answers 404).
+ */
+export function resolveShellEntry(pathname) {
+  if (pathname === "/") return WORLD_SHELL_ENTRY;
+  if (looksLikeAsset(pathname)) return null;
+  if (matchesPrefix(WORLD_SHELL_PREFIXES, pathname)) return WORLD_SHELL_ENTRY;
+  if (matchesPrefix(STUDY_SHELL_PREFIXES, pathname)) return STUDY_SHELL_ENTRY;
+  return null;
 }
 
 // The requested path is deliberately not echoed back: the response must stay
@@ -138,8 +168,9 @@ function attach(server) {
       return;
     }
 
-    if (isShellPath(pathname)) {
-      req.url = SHELL_ENTRY;
+    const shellEntry = resolveShellEntry(pathname);
+    if (shellEntry) {
+      req.url = shellEntry;
     }
 
     next();
@@ -148,7 +179,8 @@ function attach(server) {
 
 /**
  * Vite plugin serving the V5 slice fixtures on the real public API paths and
- * falling back to the slice shell entry for world/people routes.
+ * routing document requests to the slice shell (`/`, `/world`, `/people/*`) or
+ * to the sealed study document (`/study*`, `/research*`).
  */
 export function v5ApiMiddleware() {
   return {

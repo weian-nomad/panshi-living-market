@@ -40,6 +40,27 @@ describe("v5 slice router", () => {
     }
   });
 
+  it("opens the public world at the bare origin", () => {
+    expect(parsePath("/")).toEqual({ kind: "world" });
+    expect(parsePath("/?from=share")).toEqual({ kind: "world" });
+    // `/world` stays the canonical address the shell pushes into history.
+    expect(routeToPath(parsePath("/"))).toBe("/world");
+  });
+
+  it("leaves the sealed research-v4 study outside the V5 router", () => {
+    const studyPaths = [
+      "/study",
+      "/study/",
+      "/study/P01",
+      "/study/P01?visit=1",
+      "/research",
+      "/index.html",
+    ];
+    for (const path of studyPaths) {
+      expect(parsePath(path)).toEqual({ kind: "notFound" });
+    }
+  });
+
   it("tolerates trailing slashes and query strings without inventing a route", () => {
     expect(parsePath("/world/")).toEqual({ kind: "world" });
     expect(parsePath("/world?from=shell")).toEqual({ kind: "world" });
@@ -59,8 +80,8 @@ describe("v5 slice router", () => {
 
   it("returns notFound for unknown paths instead of guessing", () => {
     const unknown = [
-      "/",
       "/index.html",
+      "/journal",
       "/worlds",
       "/people",
       "/people/",

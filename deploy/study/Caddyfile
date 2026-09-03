@@ -16,7 +16,9 @@
 		X-Frame-Options "DENY"
 	}
 
-	@mutable path / /index.html /study-sw.js /manifest.webmanifest /study-release.json
+	# Matchers here run before the rewrites below, so they list public paths,
+	# not document filenames only.
+	@mutable path / /world /world/* /people /people/* /world.html /study /study/* /research /research/* /index.html /study-sw.js /manifest.webmanifest /study-release.json
 	header @mutable Cache-Control "no-store"
 
 	@sealedAssets path /assets/* /art/* /icons/*
@@ -26,7 +28,20 @@
 		@health path /healthz
 		respond @health "ok" 200
 
-		try_files {path} /index.html
+		# The bare origin is the public world: a stranger who types the domain
+		# gets the V5 world shell, never the research shell.
+		@world path / /world /world/* /people /people/*
+		rewrite @world /world.html
+
+		# The sealed research-v4 study keeps its consent flow, its export and its
+		# service worker; only its public address moved off the root.
+		# `/study-sw.js` and `/study-release.json` carry a file extension and are
+		# not matched here, so they stay real files.
+		@study path /study /study/* /research /research/*
+		rewrite @study /index.html
+
+		# No SPA fallback: an unknown path is a 404, not a silent landing in
+		# whichever app happens to own `index.html`.
 		file_server
 	}
 }

@@ -39,6 +39,14 @@ function splitPath(pathname: string): string[] {
 export function parsePath(pathname: string): Route {
   const segments = splitPath(pathname);
 
+  // The bare origin is the public world: a stranger arriving at the root sees
+  // the world, not a not-found state and not the sealed research shell (which
+  // now lives at `/study`). `/world` stays the canonical address, so
+  // `routeToPath` keeps returning it.
+  if (segments.length === 0) {
+    return { kind: "world" };
+  }
+
   if (segments.length === 1 && segments[0] === "world") {
     return { kind: "world" };
   }

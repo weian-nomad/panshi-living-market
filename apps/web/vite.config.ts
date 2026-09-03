@@ -13,12 +13,24 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react(), v5ApiMiddleware()],
+    // No SPA fallback: an unknown path must 404 instead of silently landing in
+    // whichever app owns `index.html`. The two shells are addressed explicitly
+    // by `v5ApiMiddleware` (dev/preview) and by `deploy/study/Caddyfile`
+    // (release image).
+    appType: "mpa",
     server: {
       port: 4173,
     },
     build: {
       rollupOptions: {
-        // `study` is the sealed research-v4 entry; `world` is the V5 slice shell.
+        // Two documents, two public mount points:
+        // - `index.html` is the sealed research-v4 study, served at `/study*`
+        //   and `/research`. Its filename is pinned by
+        //   `tools/study-release-audit.mjs` and by the sealed service worker
+        //   (`public/study-sw.js` caches `/index.html`), so the document keeps
+        //   its name and only its public address moves.
+        // - `world.html` is the V5 slice shell, served at `/`, `/world` and
+        //   `/people/*`.
         input: {
           study: "index.html",
           world: "world.html",

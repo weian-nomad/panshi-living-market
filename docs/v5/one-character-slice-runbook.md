@@ -70,11 +70,17 @@ corepack pnpm --filter @panshi/web dev
 然後開：
 
 ```text
-http://127.0.0.1:4173/world
+http://127.0.0.1:4173/
 ```
+
+裸網址就是公共世界；`/world` 是同一畫面的正式位址（外殼往 history 推的也是它）。
 
 dev server 會把 `/api/v2/*` 對映到步驟 3 產生的 fixture，所以瀏覽器打的是**真的公開路徑**、
 拿的是**最終 API 形狀**。fixture 重新產生後不需要重啟 dev server。
+
+同一個 dev server 上還掛著封存的 research-v4 研究版，位址是 `/study`（受測連結
+`/study/P01?visit=1`）與 `/research`。它不再佔用根位址，內容、同意流程與匯出都沒有改。
+兩個 app 都不吃 SPA fallback：`/journal` 這種不存在的路徑回 404，不會掉進另一個 app。
 
 `corepack pnpm slice:dev` 是同一件事的捷徑，它會先提醒你跑 `slice:emit`。
 
@@ -205,7 +211,8 @@ cargo test -p panshi-character-episode     # 事件與投影的 Rust 測試
 
 | 症狀 | 通常原因 |
 | --- | --- |
-| `/world` 出現「找不到這個頁面」 | 網址打成別的 path；切片只有五個公開位址 |
+| `/` 或 `/world` 出現「找不到這個頁面」 | 網址打成別的 path；切片只有五個公開位址（根位址等同 `/world`） |
+| 打某個路徑回 404 空白頁 | 那個路徑不屬於切片也不屬於 `/study`；dev server 故意不做 SPA fallback |
 | 任何一頁顯示「這頁現在不可見」加 `UNKNOWN_RESOURCE` | fixture 還沒產生，回步驟 3 |
 | 顯示「回應缺少契約必填欄位」 | fixture 是舊版；重跑步驟 3 的兩條指令 |
 | 走查腳本說 dev server 沒就緒 | 4173 埠被佔用；先關掉既有的 dev server |
