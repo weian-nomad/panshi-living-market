@@ -1,5 +1,7 @@
 # Client truth and recovery contract
 
+> **V2／V4 技術基礎**：本文件保留既有 client truth 契約供沿用與遷移參考；現行產品的系統規格以 [V5 System Design](../v5/system-design.md)為準，兩者衝突時 V5 優先。
+
 _版本 1.0｜2026-07-20｜Figma 開畫前必須遵守_
 
 Client 只呈現 server projection，不能由倒數、本機草稿、動畫、推播或先前 response 推論 canonical truth。

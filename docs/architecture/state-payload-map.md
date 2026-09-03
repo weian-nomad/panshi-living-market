@@ -1,5 +1,7 @@
 # Aggregate state and payload map
 
+> **V2／V4 技術基礎**：本文件保留既有 state／payload 契約供沿用與遷移參考；現行產品的系統規格以 [V5 System Design](../v5/system-design.md)為準，兩者衝突時 V5 優先。
+
 _版本 1.2｜2026-07-20｜補充 [Event Catalog v1.3](./event-catalog.md)_
 
 本文件固定 aggregate ownership、state 與 event payload 的最小欄位；逐 command transition 見 [machine-readable map](../../contracts/policy/command-transition-map.yaml)。所有 payload 另受 event envelope、Protobuf schema、rights scope 與 data class 約束；表中不重複 envelope 已有欄位。

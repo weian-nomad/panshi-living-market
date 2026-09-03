@@ -1,5 +1,7 @@
 # V4 十分鐘互動原型
 
+> **SUPERSEDED｜2026-07-23：** 本文件只保留跟拍手勢、共享場景與十分鐘研究證據。跟拍是 V5 的鏡頭語法，不是完整產品；正式資訊架構與角色深度見 [`../v5/README.md`](../v5/README.md)。
+
 _對應 [`product-north-star.md`](./product-north-star.md)；只驗證產品形狀，不驗證完整市場或模型基礎設施_
 
 ![開盤廳 V4 空場景](../../apps/web/public/art/v4/layers/opening-hall-empty-v1.webp)

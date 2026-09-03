@@ -1,53 +1,54 @@
 # 盤勢・眾生
 
-真實台股是天氣，一群 AI 小人活在天氣裡；觀眾只能選擇跟著誰看，不能替任何人決定。
+真實台股每天替一群 AI 小人製造未知；你追著他們看，也看著他們追高、嘴硬、凹單、認錯，最後把每次輸贏活成人生。
 
-《盤勢・眾生》是一個與真實市場同步的互動實境節目。小人有自己的生活、命盤、記憶、關係與思考核心；觀眾在同一個持續運行的世界裡跟拍一個人，再因他的注意力把鏡頭交給另一個人。沒有角色卡牆、交易指令、每日官方主戲或唯一心理答案。
+《盤勢・眾生》是一個行情驅動的 AI 角色實境世界。成年虛構居民帶著性格、命盤、記憶、情緒、生活責任、關係與思考核心，在共同世界裡研究、交談、誤解和紙上交易。公共世界讓人遇見角色，跟拍讓人靠近，角色人生誌沿時序編排原話與直接後果摘要；完整命盤、關係、記憶、紙上持股、損益與交易歷史只由深層人生檔案保存。
 
-本 repo 是這個互動節目的獨立產品來源。它不接管盤勢研究產品的市場擷取、公司命盤研究或每日內容排程，只接收有來源、版本與 cutoff 的市場事件。
+持股與績效是角色的承擔證據，不是全世界的排名。本產品不提供全域績效榜、最佳模型榜、跟單訊號或買賣建議。
 
-## 目前狀態
+本 repo 是《盤勢・眾生》的獨立產品來源。它不接管 Panshi 市場研究產品的市場擷取、公司命盤研究或每日內容排程，只接收有來源、版本與 cutoff 的市場事件。
 
-V2 的五席排程與 V3 的觀象所／今日主戲方向都已否決。V4 不先凍結架構，也不先擴寫世界設定；目前唯一任務是用一個直向場景、16 位居民、三檔股票和一則已封存公告，驗證十分鐘的「跟拍」是否成立。
+## 現行產品基準
 
-現有 Rust、React、事件儲存與契約程式都是技術材料，不能反推 V4 產品。封測不串金流、不顯示廣告。第一個原型使用可核對的歷史市場片段，不偽裝直播，也不產生買賣建議。
+V5 是唯一正式產品基準。遇到衝突時，以[產品憲法](./docs/v5/product-constitution.md)為準，再依[V5 規格索引](./docs/v5/README.md)列出的順序裁決。
 
-V4 產品基準：
-
-- [產品北極星](./docs/v4/product-north-star.md)
-- [十分鐘互動原型](./docs/v4/interaction-prototype.md)
-- [兩輪 Pro 原型審查與 24 人測試閘門](./docs/v4/prototype-review-2026-07-20.md)
-- [24 人研究模式與固定裁決](./docs/v4/study-mode.md)
-- [研究 origin 與通過後網域分工](./docs/v4/origin-and-release-decision.md)
-- [相鄰產品研究](./docs/v4/research-reset.md)
+- [產品憲法](./docs/v5/product-constitution.md)
+- [市場內容與發布邊界](./docs/v5/market-safety.md)
+- [完整體驗與 User Journey](./docs/v5/experience-spec.md)
+- [角色與故事引擎](./docs/v5/character-story-engine.md)
+- [系統設計](./docs/v5/system-design.md)
+- [視覺與動態系統](./docs/v5/visual-system.md)
+- [交付計畫](./docs/v5/delivery-plan.md)
+- [全球競品求同存異與定價](./docs/v5/competitive-synthesis.md)
+- [V4 → V5 決策紀錄](./docs/v5/decision-record.md)
 - [跨產品契約](./docs/repository-boundary.md)
 
-V2、V3 歷史與技術材料，不得拿來定義 V4：
+V4 保留為跟拍手勢、共享場景與受控研究的歷史證據。它不能再決定正式產品的資訊架構、角色深度、商業模式或視覺方向。V2、V3 也只作歷史與技術參考。
 
-- [產品憲法](./docs/product-constitution.md)、[排席 User Journey](./docs/ux/user-journey.md)、[視覺系統](./docs/design/visual-system-brief.md)
-- [Architecture Constitution](./docs/architecture/architecture-constitution.md)、[event catalog](./docs/architecture/event-catalog.md)、[state／payload map](./docs/architecture/state-payload-map.md)
-- [command transition map](./contracts/policy/command-transition-map.yaml)、[client contract](./docs/architecture/client-contract.md)、[舊 backlog](./BACKLOG.md)
-- [Pre-code readiness](./docs/reviews/pre-code-readiness.md)、[vertical-slice gate](./docs/reviews/vertical-slice-gate-2026-07-20.md)、[舊競品研究](./docs/research/competitive-patterns.md)
-- [`docs/v3/`](./docs/v3/) 全部內容，包括觀象所、今日主戲、照拂時機、WorldNode 與五人房間。
+## 目前實作狀態
+
+現在可執行的 Web 程式仍是 legacy V4 跟拍研究切片，不代表 V5 已完成。現有 Rust、React、事件儲存、契約與研究程式可作技術材料；是否沿用，必須以 V5 系統設計與交付計畫重新裁決。
+
+封測使用 `beta_full_access`，不接金流、不顯示廣告，也不啟用試用倒數。V5 第一個可測街區必須同時包含公共世界、跟拍、角色近景、角色人生誌、紙上承擔與可愛成人 2.5D 角色，不能再把跟拍切片當成完整產品。
 
 ## 產品邊界
 
-| panshi.app 研究產品負責 | 本 repo 負責 |
+| Panshi 市場研究產品負責 | 本 repo 負責 |
 | --- | --- |
-| 市場與公司資料來源、授權、修訂 | 虛構角色與合成人口 |
+| 市場與公司資料來源、授權、修訂 | 虛構成年角色與合成人口 |
 | 公司命盤與象、證、界研究 | 注意、解讀、情緒、關係與思考核心引擎 |
-| 事實封存與市場事件 | 角色生活、模擬行動、後果與持續正史 |
-| 公司研究頁與每日內容來源 | 公開場景、跟拍視角、人物連續片段與分享 |
+| 事實封存與市場事件 | 角色生活、紙上行動、帳本、後果與持續正史 |
+| 公司研究頁與每日內容來源 | 公共世界、跟拍、角色人生誌、深層檔案與分享 |
 
-兩邊不共用資料庫、不直接 import application code，也不把 runtime 檔案當 API。需要共用的只有已發布、可驗證、向後相容的資料契約。
+兩個產品不共用資料庫、不直接 import application code，也不把 runtime 檔案當 API。需要共用的只有已發布、可驗證、向後相容的資料契約。
 
 ## 不做的事
 
-- 不讓玩家指定小人的買進、賣出、價格、部位或盤中改單。
-- 不提供自由聊天、照拂按鈕、資源 buff 或人格編輯。
-- 不以報酬替角色、玩家或模型標示智力與價值。
+- 不讓玩家指定角色買進、賣出、價格、部位或盤中改單。
+- 不提供自由 prompt、資源 buff、人格編輯或改寫人生的 reroll。
+- 不用報酬替角色、玩家或模型標示智力與價值。
 - 不把真人資料灌進角色，也不讓模型臨時上網拼人物背景。
-- 不讓付費提高勝率、提早取得市場事實或改寫角色情緒。
+- 不讓付費提高勝率、提早取得市場事實或改寫既有後果。
 - 不在公開 repo 保存憑證、私有資料、生成媒體、營運紀錄或未公開供應資訊。
 
 ## 本機驗證
@@ -63,22 +64,18 @@ cargo test --workspace --locked
 tools/verify-kernel-parity.sh
 ```
 
-啟動 V4 十分鐘跟拍原型：
+啟動目前的 legacy V4 跟拍研究切片：
 
 ```bash
 pnpm --filter @panshi/web dev
 ```
 
-封存正式研究 build 時必須指定整批受測者共用的 build ID：
+封存研究 build 時，仍須指定整批受測者共用的 build ID：
 
 ```bash
 VITE_STUDY_BUILD_ID=study-2026-07-23.5 pnpm --filter @panshi/web build
 ```
 
-production build 未指定這個 build ID，或指定不同值，建置會直接失敗。正式根路徑直接開啟公共世界；受測連結與研究控制台使用獨立路徑，並在寫入前再次核對封存版本。
+production build 未指定這個 build ID，或指定不同值，現有研究程式會直接建置失敗。這是 V4 研究證據鏈的限制，不是 V5 正式產品的部署契約。
 
-開啟後會播放 2026-07-17 的封存場景。按住一位居民進入跟拍，按住不放並拖向另一位居民或公告即可交接；點按與下方三個按鈕提供相同的替代操作。
-
-原創觀測桌插畫屬歷史資產，不再決定 V4 畫面。V4 以全螢幕共同場景、可跟拍的小人、灰藍自然光和冷色市場訊號重做視覺。
-
-現有 CI 仍核對 V2 的 commands、canonical events、OpenAPI、Protobuf、PostgreSQL 與 native／WASI fixtures。它只能證明舊技術材料沒有壞，不能代表 V4 產品或架構已通過。
+目前 CI 仍會核對部分 V2／V4 commands、canonical events、OpenAPI、Protobuf、PostgreSQL 與 native／WASI fixtures。通過只代表既有技術材料沒有壞，不代表 V5 產品或架構已完成。

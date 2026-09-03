@@ -1,6 +1,6 @@
 # 《盤勢・眾生》V3 視覺與動態系統
 
-> **REJECTED 2026-07-20:** 本視覺系統不再定義產品。V4 不使用黑金 dashboard、五席觀測桌或角色資料卡；現行畫面原則見 [`../v4/interaction-prototype.md`](../v4/interaction-prototype.md)。
+> **HISTORICAL｜2026-07-23：** 本視覺系統不再定義產品。現行方向是可愛成人 2.5D 公共世界與角色人生誌，見 [`../v5/visual-system.md`](../v5/visual-system.md)。
 
 _2026-07-20｜供 Figma、生成圖、前端動態與短影音共用_
 

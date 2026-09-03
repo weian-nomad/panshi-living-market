@@ -1,6 +1,6 @@
 # 排席 User Journey v2.1
 
-> **已被 V3 取代。** 這張旅程只保留作歷史紀錄；不得交給設計或工程。V3 旅程將由 [`docs/v3/product-reset.md`](../v3/product-reset.md) 重畫。
+> **HISTORICAL｜2026-07-23：** 本文件是 V2 五席排程旅程，不得交給設計或工程。現行體驗以 [`../v5/experience-spec.md`](../v5/experience-spec.md) 為準。
 
 _2026-07-20｜依[產品憲法 v2.1](../product-constitution.md)繪製_
 

@@ -1,5 +1,7 @@
 # Architecture Constitution
 
+> **V2／V4 技術基礎**：本文件保留既有架構契約供沿用與遷移參考；現行產品的系統規格以 [V5 System Design](../v5/system-design.md)為準，兩者衝突時 V5 優先。
+
 _版本 1.3｜2026-07-20｜由[產品憲法 v2.1](../product-constitution.md)推導_
 
 本文件固定第一個可執行版本就必須遵守的 domain、資料、決策與部署契約。beta 可以使用較小的實體拓撲，但不能使用之後需要換資料形狀、重寫重播或拆除跨模式共用的臨時架構。

@@ -1,0 +1,575 @@
+schema_version: panshi.canonical-owner-map/v1
+status: architecture_baseline
+as_of: "2026-07-23"
+
+sources:
+  - path: docs/v5/system-design.md
+    sections:
+      - "4. Bounded contexts"
+      - "5. Canonical aggregate 與事件所有權"
+  - path: docs/v5/character-story-engine.md
+    sections:
+      - "正式狀態"
+      - "正式事件"
+      - "自主紙上交易"
+      - "故事引擎"
+
+invariants:
+  canonical_aggregate_has_exactly_one_owner_context: true
+  canonical_event_name_has_exactly_one_owner_context: true
+  event_name_is_globally_unique_across_event_families: true
+  non_canonical_projection_may_not_accept_commands: true
+  non_canonical_projection_may_not_emit_canonical_events: true
+  non_canonical_projection_may_not_write_back_to_any_aggregate: true
+
+bounded_contexts:
+  governance_model_registry:
+    display_name: "Governance／Model Registry"
+    classification: canonical_write_context
+    responsibility: "核准 policy、model core contract、snapshot、prompt、schema、fallback 與 rollout。"
+    prohibited:
+      - "直接執行角色"
+      - "修改人物狀態"
+      - "發布故事"
+
+  market_evidence_gateway:
+    display_name: "Market Evidence Gateway"
+    classification: canonical_write_context
+    responsibility: "驗證跨 repository manifest、時間、權利、hash、correction 與 finality，並建立 immutable mirror。"
+    prohibited:
+      - "查詢上游資料庫"
+      - "自行補行情"
+      - "替來源事實做推論"
+
+  world_clock_scene:
+    display_name: "World Clock／Scene"
+    classification: canonical_write_context
+    responsibility: "擁有世界時間、交易日、場景位置、可見事實、相遇、SceneSeed 與 deadline。"
+    prohibited:
+      - "決定角色相信什麼"
+      - "替角色交易"
+      - "接受自由 prompt"
+
+  character_origin:
+    display_name: "Character Origin"
+    classification: canonical_write_context
+    responsibility: "擁有虛構出生、外觀與聲音 identity seed、人格與命盤 motif、初始人生背景、model-core assignment、asset readiness、continuity lifecycle 與引介就緒。"
+    prohibited:
+      - "使用真人背景"
+      - "使用真人聲紋"
+      - "重抽已出生角色"
+      - "按績效更換思考核心"
+      - "資產未核准即讓角色入場"
+
+  character_life:
+    display_name: "Character Life"
+    classification: canonical_write_context
+    responsibility: "擁有 needs、emotion、belief、commitment、sealed public claims、UtteranceArtifact 與 behavioral progression；continuity lifecycle 只由 Character Origin 的 Character 擁有。"
+    prohibited:
+      - "由模型直接 patch state"
+      - "由 projection 回寫人物"
+      - "第二次生成已封存的角色原話"
+      - "改寫已封存的角色原話"
+
+  cognition_decision:
+    display_name: "Cognition／Decision"
+    classification: canonical_write_context
+    responsibility: "封存當時可知 input，取得不含 prose 的 core appraisal，並提交 deterministic attention、relationship impulse、autonomous action intent 與 semantic speech act。"
+    prohibited:
+      - "讀取未來 fact"
+      - "重試到較有利的輸出"
+      - "直接修改紙上帳本"
+      - "輸出角色台詞或任何 final prose"
+
+  relationship:
+    display_name: "Relationship"
+    classification: canonical_write_context
+    responsibility: "擁有 RelationshipDyad 的雙向 trust、deference、obligation、resentment、distance 與共同事件。"
+    prohibited:
+      - "由單一 Character stream 覆寫另一方"
+
+  memory:
+    display_name: "Memory"
+    classification: canonical_write_context
+    responsibility: "擁有 episodic memory、角色對信念改變的記憶、recalled／reframed links、salience、confidence 與 visibility class；current belief 與 BeliefRevised 永遠由 Character Life 擁有。"
+    prohibited:
+      - "保存或公開 chain-of-thought"
+      - "任意刪除失敗記憶"
+      - "修改 current belief"
+
+  paper_portfolio:
+    display_name: "Paper Portfolio"
+    classification: canonical_write_context
+    responsibility: "PaperAccount 只擁有 cash、reservation、double-entry journal 與 account invariants；PaperOrder 只擁有 order lifecycle 與 fill refs；PaperPosition 只擁有 lots、quantity、cost basis、marks、position P&L、corporate-action effects 與 outcome。"
+    prohibited:
+      - "連接外部券商"
+      - "接受 client 下單"
+      - "用回測價格回填成交"
+      - "讓三個 aggregate 欄位重疊"
+
+  story_editorial:
+    display_name: "Story Editorial"
+    classification: canonical_write_context
+    responsibility: "從 canonical history 建立 story chapters、0–5 幕 daily edition、版本與 publication request；實際 audience visibility 由 Privacy／Visibility 擁有。"
+    prohibited:
+      - "改寫 canonical action"
+      - "作者化或改寫角色台詞"
+      - "補造心理真因"
+      - "只保留獲利故事"
+      - "由 client 臨時重排今日幕次"
+
+  viewer_library:
+    display_name: "Viewer Library"
+    classification: canonical_write_context
+    responsibility: "擁有 follow、saved clip、reminder、story roll 及其私人／公開可見性與 canonical source references。"
+    prohibited:
+      - "冒充官方正史"
+      - "複製或改寫角色台詞"
+      - "持有市場或人物 canonical state"
+
+  identity_entitlement:
+    display_name: "Identity／Entitlement"
+    classification: canonical_write_context
+    responsibility: "擁有 account、有效 entitlement、billing lifecycle、quota、IntroducerBond、export 與 deletion intent。"
+    prohibited:
+      - "由 payment webhook 直接修改角色"
+      - "用 expired billing row 直接判定前台權益"
+      - "讓廣告改變 domain outcome"
+
+  privacy_visibility:
+    display_name: "Privacy／Visibility"
+    classification: canonical_write_context
+    responsibility: "擁有 subject lifecycle fence、visibility scope、epoch、withdrawal 與 crypto-shred boundary。"
+    prohibited:
+      - "由 public worker 恢復已撤內容"
+      - "讓舊 epoch 重新發布"
+      - "給引介人獨家角色真相"
+
+  projection_search:
+    display_name: "Projection／Search"
+    classification: non_canonical_read_context
+    responsibility: "建立公共世界、近景、人生誌、深層檔案、portfolio、search、share-card 與 utterance audio rendition read models。"
+    authoritative_aggregates: []
+    prohibited:
+      - "成為 cutoff 真相源"
+      - "成為 entitlement 真相源"
+      - "成為持股真相源"
+      - "成為人物狀態真相源"
+      - "回寫任何 canonical aggregate"
+      - "摘要、翻譯或改寫 UtteranceArtifact 原話"
+      - "讓衍生音訊回寫人物或封存第二份 transcript"
+
+canonical_aggregates:
+  PolicyBundle:
+    owner_context: governance_model_registry
+  ModelCore:
+    owner_context: governance_model_registry
+  ModelSnapshot:
+    owner_context: governance_model_registry
+  PromptTemplate:
+    owner_context: governance_model_registry
+  RightsPolicy:
+    owner_context: governance_model_registry
+
+  FactManifestMirror:
+    owner_context: market_evidence_gateway
+  FactRevisionChain:
+    owner_context: market_evidence_gateway
+  MarketSession:
+    owner_context: market_evidence_gateway
+
+  WorldCell:
+    owner_context: world_clock_scene
+  WorldSession:
+    owner_context: world_clock_scene
+  Scene:
+    owner_context: world_clock_scene
+  Presence:
+    owner_context: world_clock_scene
+  EncounterWindow:
+    owner_context: world_clock_scene
+  SceneSeed:
+    owner_context: world_clock_scene
+
+  Introduction:
+    owner_context: character_origin
+  Character:
+    owner_context: character_origin
+  CharacterAssetPack:
+    owner_context: character_origin
+
+  CharacterLife:
+    owner_context: character_life
+  UtteranceArtifact:
+    owner_context: character_life
+
+  CognitiveEpisode:
+    owner_context: cognition_decision
+
+  RelationshipDyad:
+    owner_context: relationship
+
+  MemoryLedger:
+    owner_context: memory
+
+  PaperAccount:
+    owner_context: paper_portfolio
+    authoritative_fields:
+      - currency
+      - cash
+      - reserved_cash
+      - double_entry_journal_postings
+      - account_balance_and_risk_invariants
+      - account_correction_refs
+  PaperOrder:
+    owner_context: paper_portfolio
+    authoritative_fields:
+      - requested_terms
+      - order_lifecycle
+      - fill_refs
+      - execution_ruleset_ref
+      - price_source_refs
+  PaperPosition:
+    owner_context: paper_portfolio
+    authoritative_fields:
+      - instrument_ref
+      - lots
+      - quantity
+      - cost_basis
+      - marks
+      - position_realized_pnl
+      - position_unrealized_pnl
+      - corporate_action_effects
+      - position_outcome
+
+  StoryChapter:
+    owner_context: story_editorial
+  DailyMomentsEdition:
+    owner_context: story_editorial
+
+  FollowSet:
+    owner_context: viewer_library
+  SavedClip:
+    owner_context: viewer_library
+  ReminderRule:
+    owner_context: viewer_library
+  StoryRoll:
+    owner_context: viewer_library
+
+  Account:
+    owner_context: identity_entitlement
+  Entitlement:
+    owner_context: identity_entitlement
+  QuotaLedger:
+    owner_context: identity_entitlement
+  BillingSubscription:
+    owner_context: identity_entitlement
+  IntroducerBond:
+    owner_context: identity_entitlement
+
+  SubjectLifecycleFence:
+    owner_context: privacy_visibility
+  VisibilityGrant:
+    owner_context: privacy_visibility
+
+canonical_event_families:
+  governance_model_registry:
+    owner_context: governance_model_registry
+    events:
+      - PolicyBundlePublished
+      - RightsPolicyPublished
+      - ModelCoreRegistered
+      - ModelSnapshotApproved
+      - ModelSnapshotDeprecated
+      - PromptTemplatePublished
+      - FallbackPolicyPublished
+
+  market_evidence_gateway:
+    owner_context: market_evidence_gateway
+    events:
+      - FactManifestAccepted
+      - FactRevisionMirrored
+      - FactManifestQuarantined
+      - FactRightsRevoked
+      - MarketSessionFinalityAccepted
+      - FactCorrectionObserved
+
+  world_clock_scene:
+    owner_context: world_clock_scene
+    events:
+      - WorldSessionOpened
+      - WorldTickCommitted
+      - DeadlineScheduled
+      - DeadlineFired
+      - FactBecameVisible
+      - CharacterExposureScheduled
+      - CharacterEnteredScene
+      - CharacterLeftScene
+      - EncounterWindowOpened
+      - EncounterResolved
+      - SceneSeedRequested
+      - SceneSeedValidated
+      - SceneSeedAccepted
+      - SceneSeedRejected
+      - SceneSeedDeferred
+      - SceneSeedScheduled
+      - SceneSeedPresented
+      - SceneSeedObserved
+      - SceneSeedIgnored
+      - SceneSeedExpired
+      - SceneSeedVoided
+      - SceneSeedWithdrawn
+      - WorldSessionClosed
+
+  character_origin:
+    owner_context: character_origin
+    events:
+      - IntroductionRequested
+      - IntroductionCancellationRequested
+      - IntroductionCancelledBeforeOrigin
+      - IntroductionCapacityReserved
+      - IntroductionCapacityWaitlisted
+      - IntroductionValidated
+      - CharacterOriginSealed
+      - ModelCoreAssigned
+      - CharacterAssetPackRequested
+      - CharacterAssetPackQualified
+      - CharacterAssetPackRejected
+      - IntroductionReadyForActivation
+      - IntroductionActivationAcknowledged
+      - CharacterIntroduced
+      - IntroductionFailed
+      - IntroductionCapacityReleased
+      - CharacterContinuityClassChanged
+
+  character_life:
+    owner_context: character_life
+    events:
+      - CharacterStateAdvanced
+      - NeedStateAdvanced
+      - EmotionStateAdvanced
+      - CommitmentRationaleSealed
+      - PublicClaimMade
+      - SelfAcknowledgementMade
+      - BeliefRevised
+      - BehaviorHypothesisAdvanced
+      - BehaviorMarkerActivated
+      - ThesisOpened
+      - ThesisRevised
+      - ThesisDriftDetected
+      - OutcomeAttributed
+      - LessonThreadAdvanced
+      - CharacterCorrectionLearned
+
+  cognition_decision:
+    owner_context: cognition_decision
+    events:
+      - CognitiveEpisodeOpened
+      - ObservedClueRegistered
+      - CognitionInputSealed
+      - CoreAppraisalAccepted
+      - CoreAppraisalFallbackUsed
+      - AttentionCommitted
+      - RelationshipImpulseCommitted
+      - AutonomousActionIntentCommitted
+      - SemanticSpeechActCommitted
+      - CognitiveEpisodeClosed
+
+  relationship:
+    owner_context: relationship
+    events:
+      - EncounterMailboxOpened
+      - EncounterMailboxAccepted
+      - EncounterMailboxExpired
+      - RelationshipEncounterCommitted
+      - RelationshipSignalObserved
+      - DirectedTrustChanged
+      - DirectedObligationChanged
+      - DirectedResentmentChanged
+      - RelationshipMilestoneReached
+      - RelationshipDyadOwnershipTransferred
+
+  memory:
+    owner_context: memory
+    events:
+      - MemoryFormed
+      - MemoryRecalled
+      - MemoryLinked
+      - MemoryReframed
+      - MemorySalienceChanged
+      - MemoryVisibilityChanged
+
+  paper_portfolio:
+    owner_context: paper_portfolio
+    aggregate_event_routes:
+      PaperAccount:
+        - PaperAccountOpened
+        - PaperCashInitialized
+        - PaperAccountJournalPosted
+        - PaperAccountingCorrectionApplied
+      PaperOrder:
+        - PaperOrderSubmitted
+        - PaperOrderRejected
+        - PaperOrderFilled
+        - PaperOrderExpired
+      PaperPosition:
+        - PaperPositionOpened
+        - PaperPositionAdjusted
+        - PaperPositionClosed
+        - PaperMarkApplied
+        - PaperCorporateActionApplied
+        - PaperOutcomeRecognized
+    events:
+      - PaperAccountOpened
+      - PaperCashInitialized
+      - PaperAccountJournalPosted
+      - PaperOrderSubmitted
+      - PaperOrderRejected
+      - PaperOrderFilled
+      - PaperOrderExpired
+      - PaperPositionOpened
+      - PaperPositionAdjusted
+      - PaperPositionClosed
+      - PaperMarkApplied
+      - PaperCorporateActionApplied
+      - PaperOutcomeRecognized
+      - PaperAccountingCorrectionApplied
+
+  story_editorial:
+    owner_context: story_editorial
+    events:
+      - StoryCandidateOpened
+      - StoryChapterComposed
+      - StoryChapterPublished
+      - StoryChapterSuperseded
+      - StoryChapterWithdrawn
+      - DailyMomentsEditionPublished
+      - DailyMomentsEditionSuperseded
+      - DailyMomentsEditionWithdrawn
+
+  viewer_library:
+    owner_context: viewer_library
+    events:
+      - CharacterFollowActivated
+      - CharacterFollowDeactivated
+      - SavedClipAdded
+      - SavedClipRemoved
+      - ReminderRuleChanged
+      - StoryRollCreated
+      - StoryRollItemsChanged
+      - StoryRollNoteRevised
+      - StoryRollPublished
+      - StoryRollVisibilityWithdrawn
+
+  identity_entitlement:
+    owner_context: identity_entitlement
+    events:
+      - EntitlementGranted
+      - EntitlementEnteredGrace
+      - EntitlementReplacedByFree
+      - QuotaReserved
+      - QuotaReservationReleased
+      - QuotaConsumed
+      - IntroducerBondCreated
+      - IntroducerBondStateChanged
+      - BillingSubscriptionStateChanged
+      - AccountExportPrepared
+      - AccountDeletionRequested
+      - AccountDeletionCompleted
+
+  privacy_visibility:
+    owner_context: privacy_visibility
+    events:
+      - SubjectLifecycleFenceAdvanced
+      - VisibilityEpochAdvanced
+      - SubjectVisibilityWithdrawn
+      - PublicVisibilityGranted
+      - SubscriberArchiveVisibilityGranted
+
+non_canonical_projections:
+  CharacterStateView:
+    owner_context: projection_search
+    canonical: false
+    kind: composite_read_model
+    source_aggregates:
+      - Character
+      - CharacterLife
+      - CognitiveEpisode
+      - MemoryLedger
+      - RelationshipDyad
+      - PaperAccount
+      - PaperOrder
+      - PaperPosition
+    may_accept_commands: false
+    may_write_back: false
+
+  StoryBeat:
+    owner_context: projection_search
+    canonical: false
+    kind: story_read_model
+    source_context: story_editorial
+    may_accept_commands: false
+    may_write_back: false
+
+  public_world:
+    owner_context: projection_search
+    canonical: false
+    kind: read_model
+    may_accept_commands: false
+    may_write_back: false
+
+  character_closeup:
+    owner_context: projection_search
+    canonical: false
+    kind: read_model
+    may_accept_commands: false
+    may_write_back: false
+
+  character_life_journal:
+    owner_context: projection_search
+    canonical: false
+    kind: read_model
+    may_accept_commands: false
+    may_write_back: false
+
+  character_deep_archive:
+    owner_context: projection_search
+    canonical: false
+    kind: read_model
+    may_accept_commands: false
+    may_write_back: false
+
+  portfolio:
+    owner_context: projection_search
+    canonical: false
+    kind: read_model
+    source_aggregates:
+      - PaperAccount
+      - PaperOrder
+      - PaperPosition
+    may_accept_commands: false
+    may_write_back: false
+
+  search:
+    owner_context: projection_search
+    canonical: false
+    kind: read_model
+    may_accept_commands: false
+    may_write_back: false
+
+  share_card:
+    owner_context: projection_search
+    canonical: false
+    kind: read_model
+    may_accept_commands: false
+    may_write_back: false
+
+  utterance_audio_rendition:
+    owner_context: projection_search
+    canonical: false
+    kind: content_addressed_media_projection
+    source_aggregate: UtteranceArtifact
+    may_accept_commands: false
+    may_write_back: false
+
+documentation_gaps: []

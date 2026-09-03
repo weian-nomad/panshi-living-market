@@ -1,5 +1,7 @@
 # Canonical command and event catalog
 
+> **V2／V4 技術基礎**：本文件保留既有 command／event 契約供沿用與遷移參考；現行產品的系統規格以 [V5 System Design](../v5/system-design.md)為準，兩者衝突時 V5 優先。
+
 _版本 1.3｜2026-07-20｜不得以「其他事件」省略第一版契約_
 
 逐 command 的 owner、target、合法來源狀態與輸出事件，以機器可讀的 [command transition map](../../contracts/policy/command-transition-map.yaml) 為準；event payload 見 [Aggregate state and payload map](./state-payload-map.md)。任何新增 command 或 canonical event 必須在同一 change 通過 contract audit。

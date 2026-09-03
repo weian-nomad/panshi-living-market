@@ -48,7 +48,9 @@ hash or stale precondition fails closed.
 
 ## Qualification
 
-- `fixtures/historical/episode-001/input.pb` and `output.pb` are checked-in
+- `fixtures/legacy-v2/episode-001/input.pb` and `output.pb` (relocated into the
+  explicit `legacy-v2` compatibility namespace by the V5 Phase 0 freeze; see
+  `LEGACY-V2-RESEARCH-V4.md`) are checked-in
   canonical bytes with pinned SHA-256 values.
 - The simulator regenerates the fixture from typed inputs and runs the kernel.
 - `tools/verify-kernel-parity.sh` compares native output, WASI output, and the

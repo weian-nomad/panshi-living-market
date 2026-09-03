@@ -1,6 +1,6 @@
 # 《盤勢・眾生》V3 產品重置判決
 
-> **REJECTED 2026-07-20:** 本方向已被 V4 否決。觀象所、今日主戲、照拂時機、五人房間與 WorldNode 不得再作為現行產品依據。現行基準見 [`../v4/product-north-star.md`](../v4/product-north-star.md)。
+> **HISTORICAL｜2026-07-23：** 本方向已否決。觀象所、今日主戲、照拂時機、五人房間與 WorldNode 不得再作為現行產品依據。V5 是唯一正式產品基準，見 [`../v5/product-constitution.md`](../v5/product-constitution.md)。
 
 _2026-07-20｜產品方向已凍結；取代 V2「五席排程遊戲」；技術實作尚未依本版重切_
 

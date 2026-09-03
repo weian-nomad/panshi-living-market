@@ -1,5 +1,7 @@
 # Pre-code readiness
 
+> **歷史審查紀錄（V2／V4）**：下方判決只適用當時架構；現行 V5 的動工順序、驗收門檻與 release blockers 以 [V5 交付計畫](../v5/delivery-plan.md)為準。
+
 _2026-07-20｜判決：`PRE-CODE MAXIMUM REACHED`_
 
 核心架構已到可動工前能合理固定的上限。目前沒有已知缺口會迫使團隊在擴張時重切 bounded context、aggregate ownership、canonical history、deterministic kernel、privacy isolation 或 cell-based scale path。

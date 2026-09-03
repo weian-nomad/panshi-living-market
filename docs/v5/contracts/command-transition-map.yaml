@@ -1,0 +1,1028 @@
+schema_version: panshi.command-transition-map/v1
+status: architecture_baseline
+as_of: "2026-07-23"
+
+source_of_truth_note: >
+  This artifact is additional to docs/v5/contracts/canonical-owner-map.yaml,
+  which remains authoritative for aggregate/event ownership. This file adds the
+  command layer: legal source states, idempotency scope, target aggregate and
+  emitted canonical events per V5 command. Every name in every `emits` list is a
+  canonical event that appears verbatim in canonical-owner-map.yaml's
+  canonical_event_families; every `target_aggregate` is a name declared in that
+  file's canonical_aggregates; every `owner_context` is a canonical_write_context
+  bounded context. Required by IMPLEMENTATION-HANDOFF.md item 2 ("Establish V5
+  contracts beside V1").
+
+derivation_notes:
+  - >
+    Most of the 143 canonical events map 1:1 to an imperative, verb-first
+    PascalCase command whose sole effect is that event. State-machine-heavy
+    contexts derive legal_source_states from the explicit diagrams in
+    system-design.md (§8.2 Introduction, §12.2 SceneSeed, §7.2.1 continuity,
+    §6.3 fact ingest) and from the fixed cognition/action/utterance sequence in
+    §8.4 and character-story-engine.md ("從事件到行為", "事件順序與重播").
+  - >
+    The ten named atomic multi-stream transactions in system-design.md §5.3
+    (AdmitAuthoringCommand, SealCharacterOrigin, CommitAutonomousPaperAction,
+    ApplyPaperFill, RecognizeOutcome, SealUtterance, SealSceneSeedArtifact,
+    AcceptSceneSeed, PublishStoryChapter, BeginAccountDeletion) keep those exact
+    names and emit their full prose-derived event set atomically. Two further
+    within-context multi-event transactions are modelled per §8.2 because the
+    spec co-commits their events in one transaction and inventing a standalone
+    capacity-release command would be false precision:
+    CancelIntroductionBeforeOrigin and FailIntroduction.
+  - >
+    Where an atomic transaction chooses exactly one of several alternative
+    events (e.g. a fill opens|adjusts|closes a position), all alternatives are
+    listed in `emits` for completeness and the exclusive-choice is stated in
+    `note`. No synthetic combined event names are used, so the emitted-event
+    exact-match audit resolves cleanly.
+  - >
+    legal_source_states uses "n/a — <reason>" wherever the source prose does not
+    define a multi-state lifecycle for that event (single-shot publish/registration,
+    classification changes, or condition-gated writes with no prior aggregate
+    state). This is deliberate honesty, not missing work.
+
+commands:
+  # =====================================================================
+  # governance_model_registry — policy / model registry (all single-shot)
+  # =====================================================================
+  - command: PublishPolicyBundle
+    owner_context: governance_model_registry
+    legal_source_states: ["n/a — governance publish; no explicit multi-state lifecycle in source docs"]
+    target_aggregate: PolicyBundle
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [PolicyBundlePublished]
+
+  - command: PublishRightsPolicy
+    owner_context: governance_model_registry
+    legal_source_states: ["n/a — governance publish; no explicit multi-state lifecycle in source docs"]
+    target_aggregate: RightsPolicy
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [RightsPolicyPublished]
+
+  - command: RegisterModelCore
+    owner_context: governance_model_registry
+    legal_source_states: ["n/a — registers a ModelCore behavior contract (§8.3); no prior canonical state"]
+    target_aggregate: ModelCore
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [ModelCoreRegistered]
+
+  - command: ApproveModelSnapshot
+    owner_context: governance_model_registry
+    legal_source_states: ["n/a — no prior canonical snapshot state; approval follows the §8.5 eight-step upgrade qualification and two-person approval"]
+    target_aggregate: ModelSnapshot
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [ModelSnapshotApproved]
+
+  - command: DeprecateModelSnapshot
+    owner_context: governance_model_registry
+    legal_source_states: ["ModelSnapshot previously ModelSnapshotApproved (active); deprecation keeps the same core_contract_revision unless behavior trade-offs changed (§8.5)"]
+    target_aggregate: ModelSnapshot
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [ModelSnapshotDeprecated]
+
+  - command: PublishPromptTemplate
+    owner_context: governance_model_registry
+    legal_source_states: ["n/a — governance publish; no explicit multi-state lifecycle in source docs"]
+    target_aggregate: PromptTemplate
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [PromptTemplatePublished]
+
+  - command: PublishFallbackPolicy
+    owner_context: governance_model_registry
+    legal_source_states: ["n/a — governance publish; no explicit multi-state lifecycle in source docs"]
+    target_aggregate: PolicyBundle
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [FallbackPolicyPublished]
+    note: "The owner map declares no dedicated FallbackPolicy aggregate; fallback policy revisions (§8.3 ModelCoreContract.fallbackPolicyRevision, §8.4) are governed under the PolicyBundle aggregate."
+
+  # =====================================================================
+  # market_evidence_gateway — sealed-fact ingest (§6.3 ingest state machine)
+  # =====================================================================
+  - command: AcceptFactManifest
+    owner_context: market_evidence_gateway
+    legal_source_states: ["manifest reached AVAILABLE_TO_WORLD via RECEIVED -> HASH_VERIFIED -> SIGNATURE_VERIFIED -> CONTRACT_VERIFIED -> RIGHTS_VERIFIED -> TIME_VERIFIED -> MIRRORED -> AVAILABLE_TO_WORLD (§6.3)"]
+    target_aggregate: FactManifestMirror
+    idempotency_scope: "(command_owner, idempotency_key) — manifestId + manifestHash"
+    emits: [FactManifestAccepted]
+
+  - command: MirrorFactRevision
+    owner_context: market_evidence_gateway
+    legal_source_states: ["manifest MIRRORED; each fact revision has an unbroken supersedes chain (§6.2)"]
+    target_aggregate: FactRevisionChain
+    idempotency_scope: "(command_owner, idempotency_key) — fact revision id"
+    emits: [FactRevisionMirrored]
+
+  - command: QuarantineFactManifest
+    owner_context: market_evidence_gateway
+    legal_source_states: ["any ingest step failed from RECEIVED | HASH_VERIFIED | SIGNATURE_VERIFIED | CONTRACT_VERIFIED | RIGHTS_VERIFIED | TIME_VERIFIED -> QUARANTINED (missing field / hash mismatch / unsupported major / rights unknown / time contradiction / revision gap; fail closed, §6.3)"]
+    target_aggregate: FactManifestMirror
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [FactManifestQuarantined]
+
+  - command: RevokeFactRights
+    owner_context: market_evidence_gateway
+    legal_source_states: ["manifest MIRRORED | AVAILABLE_TO_WORLD -> REVOKED; immediately blocks new cognition and new public projection (§6.3)"]
+    target_aggregate: FactManifestMirror
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [FactRightsRevoked]
+
+  - command: AcceptMarketSessionFinality
+    owner_context: market_evidence_gateway
+    legal_source_states: ["n/a — no explicit MarketSession lifecycle in source docs; finality accepted per finalityPolicyRevision, gating post-hoc outcome/editorial evidence (§6.2, §11.2)"]
+    target_aggregate: MarketSession
+    idempotency_scope: "(command_owner, idempotency_key) — marketSessionId"
+    emits: [MarketSessionFinalityAccepted]
+
+  - command: ObserveFactCorrection
+    owner_context: market_evidence_gateway
+    legal_source_states: ["n/a — no explicit FactRevisionChain lifecycle; a correction arriving after a decision-input seal becomes a later world event and never rewrites what the character knew (§6.3)"]
+    target_aggregate: FactRevisionChain
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [FactCorrectionObserved]
+
+  # =====================================================================
+  # world_clock_scene — world time, scenes, encounters, SceneSeed (§7, §12.2)
+  # =====================================================================
+  - command: OpenWorldSession
+    owner_context: world_clock_scene
+    legal_source_states: ["n/a — opens a new Asia/Taipei market-day WorldSession with authoritative clock revision (§7.1)"]
+    target_aggregate: WorldSession
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [WorldSessionOpened]
+
+  - command: CommitWorldTick
+    owner_context: world_clock_scene
+    legal_source_states: ["WorldSession open (between WorldSessionOpened and WorldSessionClosed); scheduled tick or event tick; one writer ownership epoch per (logical_cell_id, world_tick_id) (§7.1)"]
+    target_aggregate: WorldSession
+    idempotency_scope: "(command_owner, idempotency_key) — world_tick_id"
+    emits: [WorldTickCommitted]
+
+  - command: ScheduleDeadline
+    owner_context: world_clock_scene
+    legal_source_states: ["WorldSession open; every wake/open/close/publish/entitlement/migration deadline is written as DeadlineScheduled before any worker fires it (§7.1)"]
+    target_aggregate: WorldSession
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [DeadlineScheduled]
+
+  - command: FireDeadline
+    owner_context: world_clock_scene
+    legal_source_states: ["a prior DeadlineScheduled that has come due; worker fires with a fixed idempotency key (§7.1)"]
+    target_aggregate: WorldSession
+    idempotency_scope: "(command_owner, idempotency_key) — deadline id"
+    emits: [DeadlineFired]
+
+  - command: MakeFactVisible
+    owner_context: world_clock_scene
+    legal_source_states: ["n/a — no multi-state lifecycle; emitted when a mirrored fact revision meets interaction eligibility available_at <= min(character_world_time, interactionCutoffAt) (§6.2)"]
+    target_aggregate: Scene
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [FactBecameVisible]
+
+  - command: ScheduleCharacterExposure
+    owner_context: world_clock_scene
+    legal_source_states: ["n/a — no multi-state lifecycle; schedules a candidate fact/material into a scene a character can reach; stays CharacterExposureScheduled until actually contacted (char-story-engine 接觸候選)"]
+    target_aggregate: Scene
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [CharacterExposureScheduled]
+
+  - command: EnterScene
+    owner_context: world_clock_scene
+    legal_source_states: ["Character continuity class PUBLIC and not currently present in the scene; scene boundary with no open cognition/pending fill/relationship settlement/privacy hold (§7.3)"]
+    target_aggregate: Presence
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [CharacterEnteredScene]
+
+  - command: LeaveScene
+    owner_context: world_clock_scene
+    legal_source_states: ["Character currently present in the scene (a prior CharacterEnteredScene) at a scene boundary (§7.3)"]
+    target_aggregate: Presence
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [CharacterLeftScene]
+
+  - command: OpenEncounterWindow
+    owner_context: world_clock_scene
+    legal_source_states: ["n/a — opens an EncounterWindow from the deterministic candidate scheduler on position/rhythm/relationship/event match (§7.3); no prior window state"]
+    target_aggregate: EncounterWindow
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [EncounterWindowOpened]
+
+  - command: ResolveEncounter
+    owner_context: world_clock_scene
+    legal_source_states: ["an open EncounterWindow (EncounterWindowOpened); staging decides positions/turn/silence but never produces dialogue (§7.3)"]
+    target_aggregate: EncounterWindow
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [EncounterResolved]
+
+  - command: RequestSceneSeed
+    owner_context: world_clock_scene
+    legal_source_states: ["n/a — creates a SceneSeed (REQUESTED); must reference the Identity CommandAdmissionReceiptV1 body digest (QuotaReserved); World may not accept a seed stream without prior quota admission (§12.2)"]
+    target_aggregate: SceneSeed
+    idempotency_scope: "sceneSeedId (bound to admission body digest + quotaWindowId)"
+    emits: [SceneSeedRequested]
+
+  - command: SealSceneSeedArtifact
+    owner_context: world_clock_scene
+    legal_source_states: ["SceneSeed in VALIDATING (from SceneSeedRequested); seals SceneSeedValidated + normalized ValidatedSceneSeedPayloadV1 bytes + policy/template/source refs + payload digest + deadline + quota-consumption-request outbox; artifact may not yet enter scheduler or cognition (§5.3, §12.2)"]
+    target_aggregate: SceneSeed
+    idempotency_scope: "(sceneSeedId, quotaWindowId)"
+    emits: [SceneSeedValidated]
+    note: "§5.3 atomic transaction. SceneSeedValidated is packaged into SceneSeedValidatedReceiptV1; the receipt/outbox are not canonical events."
+
+  - command: AcceptSceneSeed
+    owner_context: world_clock_scene
+    legal_source_states: ["SceneSeed validated-but-inert with a verified Identity QuotaConsumed acknowledgement for the same seed/window; World only verifies refs and idempotently finalizes; may not run rejecting moderation/rights/deadline/policy validation here (§5.3, §12.2)"]
+    target_aggregate: SceneSeed
+    idempotency_scope: "(sceneSeedId, quotaWindowId)"
+    emits: [SceneSeedAccepted]
+    note: "§5.3 atomic transaction. Enables the already-sealed SceneSeedArtifactV1 and writes the scheduler outbox; state -> DEFERRED | SCHEDULED."
+
+  - command: RejectSceneSeed
+    owner_context: world_clock_scene
+    legal_source_states: ["SceneSeed in VALIDATING only (World may reject a seed only during VALIDATING; never after SceneSeedAccepted, §12.2)"]
+    target_aggregate: SceneSeed
+    idempotency_scope: "(sceneSeedId, quotaWindowId)"
+    emits: [SceneSeedRejected]
+    note: "Co-commits a quota-release-request outbox; Identity later emits QuotaReservationReleased (ReleaseQuotaReservation)."
+
+  - command: DeferSceneSeed
+    owner_context: world_clock_scene
+    legal_source_states: ["SceneSeed ACCEPTED (§12.2 graph SceneSeedAccepted -> DEFERRED | SCHEDULED)"]
+    target_aggregate: SceneSeed
+    idempotency_scope: "sceneSeedId"
+    emits: [SceneSeedDeferred]
+
+  - command: ScheduleSceneSeed
+    owner_context: world_clock_scene
+    legal_source_states: ["SceneSeed ACCEPTED | DEFERRED (§12.2)"]
+    target_aggregate: SceneSeed
+    idempotency_scope: "sceneSeedId"
+    emits: [SceneSeedScheduled]
+
+  - command: PresentSceneSeed
+    owner_context: world_clock_scene
+    legal_source_states: ["SceneSeed DEFERRED | SCHEDULED -> PRESENTED (§12.2); presenting establishes a normal world condition, not a cognition patch"]
+    target_aggregate: SceneSeed
+    idempotency_scope: "sceneSeedId"
+    emits: [SceneSeedPresented]
+
+  - command: AcknowledgeSceneSeedObserved
+    owner_context: world_clock_scene
+    legal_source_states: ["SceneSeed PRESENTED; Cognition sent AcknowledgeSceneSeedObservation whose ObservedClueRegistered references the same SceneSeedPresented; World verifies seed/target/source-event/current-state (§12.2)"]
+    target_aggregate: SceneSeed
+    idempotency_scope: "(sceneSeedId, source ObservedClueRegistered event ref)"
+    emits: [SceneSeedObserved]
+    note: "World writes its own canonical lifecycle acknowledgement; it does not copy clue content and is not written by a projection worker."
+
+  - command: IgnoreSceneSeed
+    owner_context: world_clock_scene
+    legal_source_states: ["SceneSeed PRESENTED (§12.2 PRESENTED -> OBSERVED | IGNORED); the character's own ignoring is in-world behavior, not a policy rejection"]
+    target_aggregate: SceneSeed
+    idempotency_scope: "sceneSeedId"
+    emits: [SceneSeedIgnored]
+
+  - command: ExpireSceneSeed
+    owner_context: world_clock_scene
+    legal_source_states: ["SceneSeed ACCEPTED | DEFERRED | SCHEDULED with no legal window before its deadline (§12.2)"]
+    target_aggregate: SceneSeed
+    idempotency_scope: "sceneSeedId"
+    emits: [SceneSeedExpired]
+
+  - command: VoidSceneSeed
+    owner_context: world_clock_scene
+    legal_source_states: ["SceneSeed ACCEPTED | DEFERRED | SCHEDULED; rights revoke / deadline / new policy after QuotaConsumed, or account deletion before PRESENTED (§12.2)"]
+    target_aggregate: SceneSeed
+    idempotency_scope: "sceneSeedId"
+    emits: [SceneSeedVoided]
+
+  - command: WithdrawSceneSeed
+    owner_context: world_clock_scene
+    legal_source_states: ["SceneSeed ACCEPTED | DEFERRED | SCHEDULED, only before PRESENTED; once any character may contact it the viewer cannot rewind (§12.2)"]
+    target_aggregate: SceneSeed
+    idempotency_scope: "sceneSeedId"
+    emits: [SceneSeedWithdrawn]
+
+  - command: CloseWorldSession
+    owner_context: world_clock_scene
+    legal_source_states: ["WorldSession open (a prior WorldSessionOpened); end of the Asia/Taipei trading day (§7.1)"]
+    target_aggregate: WorldSession
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [WorldSessionClosed]
+
+  # =====================================================================
+  # character_origin — introduction lifecycle & continuity (§8.2, §7.2.1)
+  # =====================================================================
+  - command: RequestIntroduction
+    owner_context: character_origin
+    legal_source_states: ["n/a — creates an Introduction (REQUESTED); must reference the Identity CommandAdmissionReceiptV1 body digest, commandAcceptedAt and quota window and may not re-sample server time (§5.3, §8.2)"]
+    target_aggregate: Introduction
+    idempotency_scope: "introduction_id (bound to CommandAdmissionReceiptBodyV1.idempotencyKeyDigest / quota window)"
+    emits: [IntroductionRequested]
+
+  - command: ReserveIntroductionCapacity
+    owner_context: character_origin
+    legal_source_states: ["Introduction in CAPACITY_CHECKING; a long-tail obligation budget granted from the measured cost model (§7.2.2), advancing to CAPACITY_RESERVED"]
+    target_aggregate: Introduction
+    idempotency_scope: "(introduction_id, reservation_id, quota_window_id)"
+    emits: [IntroductionCapacityReserved]
+
+  - command: WaitlistIntroductionCapacity
+    owner_context: character_origin
+    legal_source_states: ["Introduction in CAPACITY_CHECKING with insufficient capacity -> WAITING_FOR_CAPACITY; keeps the same request/seed, consumes no quota, creates no public character (§7.2.2)"]
+    target_aggregate: Introduction
+    idempotency_scope: "(introduction_id, quota_window_id)"
+    emits: [IntroductionCapacityWaitlisted]
+
+  - command: ValidateIntroduction
+    owner_context: character_origin
+    legal_source_states: ["Introduction CAPACITY_RESERVED -> VALIDATING with age / real-person similarity / content / rights / identity business gates passed (§8.2)"]
+    target_aggregate: Introduction
+    idempotency_scope: "(command_owner, idempotency_key) — introduction_id"
+    emits: [IntroductionValidated]
+
+  - command: SealCharacterOrigin
+    owner_context: character_origin
+    legal_source_states: ["Introduction in VALIDATING with all business gates passed and no existing CharacterOriginSealed; single SERIALIZABLE transaction advancing to ORIGIN_SEALED then ASSET_PACK_BUILDING; excludes external image work (§5.3, §8.2)"]
+    target_aggregate: [Introduction, Character, CharacterAssetPack]
+    idempotency_scope: "(command_owner, idempotency_key) — introduction_id"
+    emits: [CharacterOriginSealed, ModelCoreAssigned, CharacterAssetPackRequested]
+    note: "§5.3 atomic transaction: Introduction state + Character origin blob + model-core assignment + asset-request outbox. After CharacterOriginSealed the life is fixed and cannot be re-rolled."
+
+  - command: QualifyCharacterAssetPack
+    owner_context: character_origin
+    legal_source_states: ["Introduction in ASSET_PACK_QUALIFYING; the minimum CharacterAssetPack passed every crop/rig/voice/age/identity/rights/hash/human-approval gate (§8.2), advancing to READY_FOR_ACTIVATION eligibility"]
+    target_aggregate: CharacterAssetPack
+    idempotency_scope: "(command_owner, idempotency_key) — asset_pack_digest"
+    emits: [CharacterAssetPackQualified]
+
+  - command: RejectCharacterAssetPack
+    owner_context: character_origin
+    legal_source_states: ["Introduction in ASSET_PACK_BUILDING | ASSET_PACK_QUALIFYING; failed qualification -> RETRY_PENDING (retryable) or FAILED_TERMINAL (unrecoverable) (§8.2)"]
+    target_aggregate: CharacterAssetPack
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [CharacterAssetPackRejected]
+
+  - command: MarkIntroductionReadyForActivation
+    owner_context: character_origin
+    legal_source_states: ["Introduction in ASSET_PACK_QUALIFYING with CharacterAssetPackQualified; seals IntroductionReadyReceiptBodyV1 in the same transaction, advancing to READY_FOR_ACTIVATION (§8.2)"]
+    target_aggregate: Introduction
+    idempotency_scope: "(command_owner, idempotency_key) — introduction_id"
+    emits: [IntroductionReadyForActivation]
+
+  - command: AcknowledgeIntroductionActivation
+    owner_context: character_origin
+    legal_source_states: ["Introduction in AWAITING_IDENTITY_ACK; verified Identity QuotaConsumed + IntroducerBondCreated acknowledgement matching the same ready-receipt body digest; advances to AWAITING_ARRIVAL_NODE; no rejecting validation after QuotaConsumed (§8.2)"]
+    target_aggregate: Introduction
+    idempotency_scope: "introduction_id (matched to acknowledgement event ref / ready-receipt body digest)"
+    emits: [IntroductionActivationAcknowledged]
+
+  - command: IntroduceCharacter
+    owner_context: character_origin
+    legal_source_states: ["Introduction in AWAITING_ARRIVAL_NODE; the next valid world node; idempotent finalize only, advancing to ACTIVATED (§8.2)"]
+    target_aggregate: [Introduction, Character]
+    idempotency_scope: "introduction_id"
+    emits: [CharacterIntroduced]
+
+  - command: FailIntroduction
+    owner_context: character_origin
+    legal_source_states: ["Introduction in VALIDATING | ASSET_PACK_BUILDING | ASSET_PACK_QUALIFYING -> FAILED_TERMINAL; only for age / real-person / content-safety / rights / identity / asset human-approval / unrecoverable-schema failures; must occur before QuotaConsumed (§8.2)"]
+    target_aggregate: Introduction
+    idempotency_scope: "(introduction_id, reservation_id, quota_window_id, request_digest)"
+    emits: [IntroductionFailed, IntroductionCapacityReleased]
+    note: "§8.2 co-committed transaction: the IntroductionFailed local transaction also writes IntroductionCapacityReleased (if reserved) + quota-release-request outbox. IntroductionCapacityReleased is also emitted by CancelIntroductionBeforeOrigin."
+
+  - command: CancelIntroductionBeforeOrigin
+    owner_context: character_origin
+    legal_source_states: ["Introduction in REQUESTED | CAPACITY_CHECKING | WAITING_FOR_CAPACITY | CAPACITY_RESERVED | VALIDATING; accepted only while no CharacterOriginSealed exists and QuotaConsumed has not occurred; advances to CANCELLATION_PENDING (§8.2)"]
+    target_aggregate: Introduction
+    idempotency_scope: "(introduction_id, reservation_id, quota_window_id, request_digest)"
+    emits: [IntroductionCancellationRequested, IntroductionCapacityReleased]
+    note: "§8.2 co-committed transaction: cancellation-request + origin-seal fence + IntroductionCapacityReleased (if reserved) + quota-release-request outbox, all-or-nothing. If origin seal wins the race the cancel is rejected."
+
+  - command: ConfirmIntroductionCancelledBeforeOrigin
+    owner_context: character_origin
+    legal_source_states: ["Introduction in CANCELLATION_PENDING; reconciler dedupes on introduction/reservation/window/request digest after Identity QuotaReservationReleased acknowledgement; advances to CANCELLED_BEFORE_ORIGIN (§8.2)"]
+    target_aggregate: Introduction
+    idempotency_scope: "(introduction_id, reservation_id, quota_window_id, request_digest)"
+    emits: [IntroductionCancelledBeforeOrigin]
+
+  - command: ChangeCharacterContinuityClass
+    owner_context: character_origin
+    legal_source_states: ["§7.2.1: PUBLIC <-> VISIBILITY_HELD; VISIBILITY_HELD -> WITHDRAWN; PUBLIC -> WITHDRAWN only for immediate safety/legal takedown"]
+    target_aggregate: Character
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [CharacterContinuityClassChanged]
+    note: "Character owner writes this; Privacy/Visibility separately advances SubjectLifecycleFenceAdvanced + visibility epoch on a typed command. They never co-write one canonical stream."
+
+  # =====================================================================
+  # character_life — dynamic state, belief, claims, thesis, learning
+  # =====================================================================
+  - command: AdvanceCharacterState
+    owner_context: character_life
+    legal_source_states: ["n/a — deterministic sleep/life-pressure/recovery/daily-rhythm state patch (char-story-engine 正式事件); scheduled or event tick"]
+    target_aggregate: CharacterLife
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [CharacterStateAdvanced]
+
+  - command: AdvanceNeedState
+    owner_context: character_life
+    legal_source_states: ["n/a — needs/goals re-prioritization on the months-to-years timescale (char-story-engine 動態狀態與生活壓力); no single market move rewrites long-term personality"]
+    target_aggregate: CharacterLife
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [NeedStateAdvanced]
+
+  - command: AdvanceEmotionState
+    owner_context: character_life
+    legal_source_states: ["follows a normalized interpretation for the same CognitiveEpisode (fixed sequence step 4, §8.4 / char-story-engine 從事件到行為); bounded per-event increment; the model may not submit this event directly"]
+    target_aggregate: CharacterLife
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [EmotionStateAdvanced]
+
+  - command: ReviseBelief
+    owner_context: character_life
+    legal_source_states: ["an existing belief/thesis; new evidence creates a revision recording whether the character admits changing; may not silently overwrite the original rationale (char-story-engine 信念與自我敘述)"]
+    target_aggregate: CharacterLife
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [BeliefRevised]
+
+  - command: AdvanceBehaviorHypothesis
+    owner_context: character_life
+    legal_source_states: ["pattern_hypothesis lifecycle CANDIDATE -> SUPPORTED -> REPEATED -> REVISED; SUPPORTED needs a second independent event with a similar trigger/behavior chain; counter-examples lower confidence (char-story-engine 認知傾向)"]
+    target_aggregate: CharacterLife
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [BehaviorHypothesisAdvanced]
+
+  - command: ActivateBehaviorMarker
+    owner_context: character_life
+    legal_source_states: ["n/a — no discrete lifecycle; fires only when typed evidence for a pattern is present and may state only which pattern a behavior segment matches, never a sole inner cause (§9.4)"]
+    target_aggregate: CharacterLife
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [BehaviorMarkerActivated]
+
+  - command: OpenThesis
+    owner_context: character_life
+    legal_source_states: ["n/a — opens a company thesis (ThesisOpened) as the first step of the paper-action sequence (char-story-engine 自主紙上交易); no prior thesis state"]
+    target_aggregate: CharacterLife
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [ThesisOpened]
+
+  - command: ReviseThesis
+    owner_context: character_life
+    legal_source_states: ["an open Thesis (ThesisOpened); revision keeps the original claim/timestamps and records new supporting evidence (char-story-engine 自主紙上交易)"]
+    target_aggregate: CharacterLife
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [ThesisRevised]
+
+  - command: DetectThesisDrift
+    owner_context: character_life
+    legal_source_states: ["an open Thesis whose original rationale has lapsed while the stated claim silently shifts without new supporting facts (§9.4 合理化)"]
+    target_aggregate: CharacterLife
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [ThesisDriftDetected]
+
+  - command: AttributeOutcome
+    owner_context: character_life
+    legal_source_states: ["follows PaperOutcomeRecognized for the same position/outcome (char-story-engine 正式事件); records how the character attributes the outcome; relationship and memory consequences are owned separately"]
+    target_aggregate: CharacterLife
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [OutcomeAttributed]
+    note: "This is the 'Character state patch' co-committed inside the RecognizeOutcome §5.3 transaction; it is commanded here as the character_life-owned event."
+
+  - command: AdvanceLessonThread
+    owner_context: character_life
+    legal_source_states: ["lesson_thread UNSEEN -> FELT -> NAMED -> TESTED -> INTEGRATED (+RELAPSED then back to FELT/NAMED); INTEGRATED requires >=2 distinct test events (char-story-engine 學會，還是再來一次)"]
+    target_aggregate: CharacterLife
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [LessonThreadAdvanced]
+
+  - command: LearnCharacterCorrection
+    owner_context: character_life
+    legal_source_states: ["a later FactCorrectionObserved that the character subsequently learns; does not rewrite the character's past life (§9.3)"]
+    target_aggregate: CharacterLife
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [CharacterCorrectionLearned]
+
+  - command: SealUtterance
+    owner_context: character_life
+    legal_source_states: ["a committed SemanticSpeechActCommitted for the same CognitiveEpisode (not WITHHOLD); first ACCEPTed candidate or same-version deterministic fallback (else NO_UTTERANCE); no reopen of an existing CommitmentRationaleSealed (§5.3, §8.4)"]
+    target_aggregate: [UtteranceArtifact, CharacterLife]
+    idempotency_scope: "(semanticSpeechActEventId, surfaceKind)"
+    emits: [PublicClaimMade, SelfAcknowledgementMade]
+    note: "§5.3 atomic transaction. Exactly one of PublicClaimMade | SelfAcknowledgementMade (sealingEventType) is sealed atomically with the full immutable UtteranceArtifactV1 bytes/hash + unique constraint + projection outbox."
+
+  # =====================================================================
+  # cognition_decision — sealed-input appraisal pipeline (§8.4)
+  # =====================================================================
+  - command: OpenCognitiveEpisode
+    owner_context: cognition_decision
+    legal_source_states: ["n/a — opens a CognitiveEpisode for a character at a world time; freezes character/memory/relationship/paper-account refs (§8.4)"]
+    target_aggregate: CognitiveEpisode
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [CognitiveEpisodeOpened]
+
+  - command: RegisterObservedClue
+    owner_context: cognition_decision
+    legal_source_states: ["open CognitiveEpisode; a fact in interactionFactRevisionIds passing the triple cutoff whose channel the character can reach (§6.2, char-story-engine 接觸候選)"]
+    target_aggregate: CognitiveEpisode
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [ObservedClueRegistered]
+
+  - command: SealCognitionInput
+    owner_context: cognition_decision
+    legal_source_states: ["open CognitiveEpisode with observed clues bound; freezes the interaction fact allowlist + interaction cutoff (§8.4)"]
+    target_aggregate: CognitiveEpisode
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [CognitionInputSealed]
+
+  - command: AcceptCoreAppraisal
+    owner_context: cognition_decision
+    legal_source_states: ["a sealed CognitionInput (CognitionInputSealed); the first schema-valid CognitionAppraisalV1 passing schema/source-ref/policy validation (§8.4)"]
+    target_aggregate: CognitiveEpisode
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [CoreAppraisalAccepted]
+
+  - command: UseCoreAppraisalFallback
+    owner_context: cognition_decision
+    legal_source_states: ["a sealed CognitionInput; model timeout/transport failure after one retry, or schema-invalid/prose output -> deterministic appraisal fallback with no re-roll (§17, char-story-engine 失敗處理)"]
+    target_aggregate: CognitiveEpisode
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [CoreAppraisalFallbackUsed]
+
+  - command: CommitAttention
+    owner_context: cognition_decision
+    legal_source_states: ["an accepted CoreAppraisalAccepted or CoreAppraisalFallbackUsed for the same CognitiveEpisode; deterministic attention over fixed slots with recorded misses (§8.4, char-story-engine step 2)"]
+    target_aggregate: CognitiveEpisode
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [AttentionCommitted]
+
+  - command: CommitRelationshipImpulse
+    owner_context: cognition_decision
+    legal_source_states: ["a committed AttentionCommitted plus normalized interpretation and emotion update for the same CognitiveEpisode (fixed sequence step 5); behavior input only, does not rewrite long-term relationship (§8.4)"]
+    target_aggregate: CognitiveEpisode
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [RelationshipImpulseCommitted]
+
+  - command: CommitAutonomousPaperAction
+    owner_context: cognition_decision
+    legal_source_states: ["a committed AttentionCommitted + normalized interpretation for the same CognitiveEpisode; PaperAccount and all action-mask-relevant open PaperOrder / relevant PaperPosition validated at an exact version set; single SERIALIZABLE transaction (§5.3, §8.4)"]
+    target_aggregate: [CognitiveEpisode, PaperOrder, CharacterLife]
+    idempotency_scope: "(command_owner, idempotency_key) — CognitiveEpisode action-intent id"
+    emits: [AutonomousActionIntentCommitted, PaperOrderSubmitted, PaperOrderRejected, CommitmentRationaleSealed]
+    note: "§5.3 atomic transaction. Emits AutonomousActionIntentCommitted + exactly one of PaperOrderSubmitted | PaperOrderRejected + CommitmentRationaleSealed (structured, never a quote). The speech act is a separate, later promise (SealUtterance)."
+
+  - command: CommitSemanticSpeechAct
+    owner_context: cognition_decision
+    legal_source_states: ["a committed legal behavior for the same CognitiveEpisode selected as a language act by the deterministic BehaviorPolicy; WITHHOLD yields silence, not speech; contains no prose (§8.4, char-story-engine 角色只說一次)"]
+    target_aggregate: CognitiveEpisode
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [SemanticSpeechActCommitted]
+
+  - command: CloseCognitiveEpisode
+    owner_context: cognition_decision
+    legal_source_states: ["an open CognitiveEpisode after the action intent (and optional semantic speech act) are committed (§8.4)"]
+    target_aggregate: CognitiveEpisode
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [CognitiveEpisodeClosed]
+
+  # =====================================================================
+  # relationship — directed dyad state via encounter mailbox (§10.2)
+  # =====================================================================
+  - command: OpenEncounterMailbox
+    owner_context: relationship
+    legal_source_states: ["n/a — a scene coordinator opens an immutable cross-cell encounter mailbox; no prior mailbox state (§10.2)"]
+    target_aggregate: RelationshipDyad
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [EncounterMailboxOpened]
+
+  - command: AcceptEncounterMailbox
+    owner_context: relationship
+    legal_source_states: ["an open encounter mailbox; participant cells validated presence/exposure and acknowledged source refs before the deadline (§10.2)"]
+    target_aggregate: RelationshipDyad
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [EncounterMailboxAccepted]
+
+  - command: ExpireEncounterMailbox
+    owner_context: relationship
+    legal_source_states: ["an open encounter mailbox past its deadline / participant absent / ownership epoch expired; no compensating fake encounter (§10.2)"]
+    target_aggregate: RelationshipDyad
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [EncounterMailboxExpired]
+
+  - command: CommitRelationshipEncounter
+    owner_context: relationship
+    legal_source_states: ["an accepted encounter mailbox; dyad home cell checked mailbox deadline, stream version and ownership epoch; one transaction advances both directions (§10.2)"]
+    target_aggregate: RelationshipDyad
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [RelationshipEncounterCommitted]
+
+  - command: ObserveRelationshipSignal
+    owner_context: relationship
+    legal_source_states: ["n/a — no discrete lifecycle; references an existing PublicClaimMade plus its artifact hash and stores no second copy of text (§7.3)"]
+    target_aggregate: RelationshipDyad
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [RelationshipSignalObserved]
+
+  - command: ChangeDirectedTrust
+    owner_context: relationship
+    legal_source_states: ["n/a — no discrete lifecycle; requires an observable signal plus relationship policy; one Character stream may not overwrite the other side (§10.2)"]
+    target_aggregate: RelationshipDyad
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [DirectedTrustChanged]
+
+  - command: ChangeDirectedObligation
+    owner_context: relationship
+    legal_source_states: ["n/a — no discrete lifecycle; requires an observable signal plus relationship policy; one Character stream may not overwrite the other side (§10.2)"]
+    target_aggregate: RelationshipDyad
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [DirectedObligationChanged]
+
+  - command: ChangeDirectedResentment
+    owner_context: relationship
+    legal_source_states: ["n/a — no discrete lifecycle; requires an observable signal plus relationship policy; one Character stream may not overwrite the other side (§10.2)"]
+    target_aggregate: RelationshipDyad
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [DirectedResentmentChanged]
+
+  - command: ReachRelationshipMilestone
+    owner_context: relationship
+    legal_source_states: ["n/a — no discrete lifecycle; fires when directed dyad state crosses a policy-defined milestone threshold (§10.2)"]
+    target_aggregate: RelationshipDyad
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [RelationshipMilestoneReached]
+
+  - command: TransferRelationshipDyadOwnership
+    owner_context: relationship
+    legal_source_states: ["scheduled migration barrier: old owner stops new commands, drains inbox and seals the stream version; new owner takes over at ownership epoch + 1; old-epoch commands rejected (§10.2)"]
+    target_aggregate: RelationshipDyad
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [RelationshipDyadOwnershipTransferred]
+
+  # =====================================================================
+  # memory — episodic/belief/relationship memory graph (§10.1)
+  # =====================================================================
+  - command: FormMemory
+    owner_context: memory
+    legal_source_states: ["n/a — a canonical event worth encoding (e.g. co-committed inside the RecognizeOutcome §5.3 transaction); the model may not submit this event directly (char-story-engine 因果邊界)"]
+    target_aggregate: MemoryLedger
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [MemoryFormed]
+
+  - command: RecallMemory
+    owner_context: memory
+    legal_source_states: ["n/a — no discrete lifecycle; deterministic candidate selection surfaces an existing memory for the current appraisal; the model may not freely search (§10.1)"]
+    target_aggregate: MemoryLedger
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [MemoryRecalled]
+
+  - command: LinkMemory
+    owner_context: memory
+    legal_source_states: ["n/a — no discrete lifecycle; links two or more existing memories/source events while preserving the source set (§10.1)"]
+    target_aggregate: MemoryLedger
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [MemoryLinked]
+
+  - command: ReframeMemory
+    owner_context: memory
+    legal_source_states: ["n/a — no discrete lifecycle; appends a reframe pointing to an existing memory revision and never updates the old content (§10.1)"]
+    target_aggregate: MemoryLedger
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [MemoryReframed]
+
+  - command: ChangeMemorySalience
+    owner_context: memory
+    legal_source_states: ["n/a — no discrete lifecycle; salience/confidence may decline per decayPolicyRevision but the memory is never deleted (§10.1)"]
+    target_aggregate: MemoryLedger
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [MemorySalienceChanged]
+
+  - command: ChangeMemoryVisibility
+    owner_context: memory
+    legal_source_states: ["n/a — no discrete lifecycle; sets the visibility class among canonical_restricted | subscriber_archive | public_edition (§10.1)"]
+    target_aggregate: MemoryLedger
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [MemoryVisibilityChanged]
+
+  # =====================================================================
+  # paper_portfolio — account / order / position with atomic fill (§9)
+  # =====================================================================
+  - command: OpenPaperAccount
+    owner_context: paper_portfolio
+    legal_source_states: ["n/a — opens a character's independent PaperAccount at birth under PaperAccountPolicy (NT$1,000,000 virtual principal, §9.1); no prior account state"]
+    target_aggregate: PaperAccount
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [PaperAccountOpened]
+
+  - command: InitializePaperCash
+    owner_context: paper_portfolio
+    legal_source_states: ["a newly opened PaperAccount (PaperAccountOpened) with no prior cash (§9.1)"]
+    target_aggregate: PaperAccount
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [PaperCashInitialized]
+
+  - command: ApplyPaperFill
+    owner_context: paper_portfolio
+    legal_source_states: ["a PaperOrder in SUBMITTED with the first eligible sealed reference price available after the intent commit (per fill_policy_revision); a single SERIALIZABLE fill transaction (§5.3, §9.2)"]
+    target_aggregate: [PaperOrder, PaperAccount, PaperPosition]
+    idempotency_scope: "fill_id"
+    emits: [PaperOrderFilled, PaperAccountJournalPosted, PaperPositionOpened, PaperPositionAdjusted, PaperPositionClosed]
+    note: "§5.3 atomic transaction. Emits PaperOrderFilled + PaperAccountJournalPosted + exactly one of PaperPositionOpened | PaperPositionAdjusted | PaperPositionClosed; all three reference the same fill_id, source price and transaction digest, all-or-nothing on stream CAS."
+
+  - command: ExpirePaperOrder
+    owner_context: paper_portfolio
+    legal_source_states: ["a PaperOrder in SUBMITTED with no eligible sealed reference price by order_expiry; never fills at a post-hoc price (§9.2)"]
+    target_aggregate: PaperOrder
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [PaperOrderExpired]
+
+  - command: ApplyPaperMark
+    owner_context: paper_portfolio
+    legal_source_states: ["an open PaperPosition; references an exact fact revision; the life curve is only a projection of these marks (§9.3)"]
+    target_aggregate: PaperPosition
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [PaperMarkApplied]
+
+  - command: ApplyPaperCorporateAction
+    owner_context: paper_portfolio
+    legal_source_states: ["an open PaperPosition affected by a corporate action; uses the same owner split as a fill (Account journal + Position patch by common source ref, §9.1 / char-story-engine 帳本)"]
+    target_aggregate: PaperPosition
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [PaperCorporateActionApplied]
+    note: "Cash effects of the corporate action post through PaperAccountJournalPosted (owned by PaperAccount, see ApplyPaperFill) in the same transaction; only the Position-owned event is listed here."
+
+  - command: RecognizeOutcome
+    owner_context: paper_portfolio
+    legal_source_states: ["a PaperPosition with sealed outcome-evidence marks (outcomeEvidenceRevisionIds), after MarketSessionFinalityAccepted for the session; realized and unrealized P&L kept separate (§5.3, §9.3)"]
+    target_aggregate: [PaperPosition, CharacterLife, MemoryLedger]
+    idempotency_scope: "(command_owner, idempotency_key) — outcome/mark ref set"
+    emits: [PaperOutcomeRecognized]
+    note: "§5.3 atomic transaction. Per prose it also co-commits a Character state patch, a Memory mutation, and an optional same-cell relationship effect; the spec names no distinct canonical events for those inside this transaction, so only PaperOutcomeRecognized is listed. The attribution/memory/relationship events are commanded separately (AttributeOutcome, FormMemory, and the relationship commands)."
+
+  - command: ApplyPaperAccountingCorrection
+    owner_context: paper_portfolio
+    legal_source_states: ["a prior sealed fill/journal needing correction; appends inverse/forward journal postings and co-commits a PaperPositionAdjusted patch; the original PaperOrder fill lifecycle is not rewritten, only a correction provenance ref is added (§9.3)"]
+    target_aggregate: PaperAccount
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [PaperAccountingCorrectionApplied]
+    note: "Same owner split as a fill: the co-committed PaperPositionAdjusted patch is the PaperPosition-owned event (also emitted by ApplyPaperFill)."
+
+  # =====================================================================
+  # story_editorial — chapters and the daily 0-5-act edition (§11)
+  # =====================================================================
+  - command: OpenStoryCandidate
+    owner_context: story_editorial
+    legal_source_states: ["n/a — opens a story candidate by selecting observation lines from canonical history into a StorySourceSet (§11.1); no prior chapter state"]
+    target_aggregate: StoryChapter
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [StoryCandidateOpened]
+
+  - command: ComposeStoryChapter
+    owner_context: story_editorial
+    legal_source_states: ["an open story candidate (StoryCandidateOpened) with an approved StorySourceSet; renders the approved source set into segments with no free character-claim text (§11.1)"]
+    target_aggregate: StoryChapter
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [StoryChapterComposed]
+
+  - command: PublishStoryChapter
+    owner_context: story_editorial
+    legal_source_states: ["a composed StoryChapter (StoryChapterComposed) with a validated source event set; writes chapter version + source-set digest + publication-request outbox; does NOT itself write a Privacy visibility grant (§5.3, §11.2)"]
+    target_aggregate: StoryChapter
+    idempotency_scope: "(command_owner, idempotency_key) — chapter version + sourceSetDigest"
+    emits: [StoryChapterPublished]
+    note: "§5.3 atomic transaction. Public projection requires BOTH this StoryChapterPublished and a separate Privacy PublicVisibilityGranted / SubscriberArchiveVisibilityGranted."
+
+  - command: SupersedeStoryChapter
+    owner_context: story_editorial
+    legal_source_states: ["a published StoryChapter (StoryChapterPublished) replaced by a new version on correction; the old artifact is reused or hidden, never rewritten (§11.1)"]
+    target_aggregate: StoryChapter
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [StoryChapterSuperseded]
+
+  - command: WithdrawStoryChapter
+    owner_context: story_editorial
+    legal_source_states: ["a published StoryChapter (StoryChapterPublished) withdrawn on rights revoke / retraction (§11.1, §6.3)"]
+    target_aggregate: StoryChapter
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [StoryChapterWithdrawn]
+
+  - command: PublishDailyMomentsEdition
+    owner_context: story_editorial
+    legal_source_states: ["n/a — publishes a new DailyMomentsEdition from 0-5 published chapters that passed source/consequence/market-time-fence/rights/non-performance-ranking checks (§11.2); no prior edition state"]
+    target_aggregate: DailyMomentsEdition
+    idempotency_scope: "(command_owner, idempotency_key) — market_date + candidate_set_digest"
+    emits: [DailyMomentsEditionPublished]
+
+  - command: SupersedeDailyMomentsEdition
+    owner_context: story_editorial
+    legal_source_states: ["a published DailyMomentsEdition superseded by a new version on correction / rights revoke; never reordered by the client (§11.2)"]
+    target_aggregate: DailyMomentsEdition
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [DailyMomentsEditionSuperseded]
+
+  - command: WithdrawDailyMomentsEdition
+    owner_context: story_editorial
+    legal_source_states: ["a published DailyMomentsEdition withdrawn (§11.2)"]
+    target_aggregate: DailyMomentsEdition
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [DailyMomentsEditionWithdrawn]
+
+  # =====================================================================
+  # viewer_library — follows, clips, reminders, story rolls (§11.2, §12.3)
+  # =====================================================================
+  - command: ActivateCharacterFollow
+    owner_context: viewer_library
+    legal_source_states: ["n/a — no discrete lifecycle; a registered viewer within the active-follow quota (Free 3 active, §12.3); anonymous subjects may not follow"]
+    target_aggregate: FollowSet
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [CharacterFollowActivated]
+
+  - command: DeactivateCharacterFollow
+    owner_context: viewer_library
+    legal_source_states: ["an active follow for this viewer/character (a prior CharacterFollowActivated); on Pro expiry excess follows become selection_pending rather than deleted (§12.3)"]
+    target_aggregate: FollowSet
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [CharacterFollowDeactivated]
+
+  - command: AddSavedClip
+    owner_context: viewer_library
+    legal_source_states: ["n/a — no discrete lifecycle; references a currently-visible complete public segment ref within the saved-clip quota (Free 10, §12.3)"]
+    target_aggregate: SavedClip
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [SavedClipAdded]
+
+  - command: RemoveSavedClip
+    owner_context: viewer_library
+    legal_source_states: ["an existing saved clip owned by this viewer (a prior SavedClipAdded)"]
+    target_aggregate: SavedClip
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [SavedClipRemoved]
+
+  - command: ChangeReminderRule
+    owner_context: viewer_library
+    legal_source_states: ["n/a — no discrete lifecycle; a registered viewer within the reminder/daily-digest quota (§12.3)"]
+    target_aggregate: ReminderRule
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [ReminderRuleChanged]
+
+  - command: CreateStoryRoll
+    owner_context: viewer_library
+    legal_source_states: ["n/a — creates a private StoryRoll within the story_roll_create quota, referencing 3-12 currently-visible complete public segment refs (§11.2); no prior roll state"]
+    target_aggregate: StoryRoll
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [StoryRollCreated]
+
+  - command: ChangeStoryRollItems
+    owner_context: viewer_library
+    legal_source_states: ["an existing StoryRoll owned by this viewer (StoryRollCreated); items stay within 3-12 currently-visible segment refs (§11.2)"]
+    target_aggregate: StoryRoll
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [StoryRollItemsChanged]
+
+  - command: ReviseStoryRollNote
+    owner_context: viewer_library
+    legal_source_states: ["an existing StoryRoll owned by this viewer (StoryRollCreated)"]
+    target_aggregate: StoryRoll
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [StoryRollNoteRevised]
+
+  - command: PublishStoryRoll
+    owner_context: viewer_library
+    legal_source_states: ["a private StoryRoll (StoryRollCreated) passing content/ticker-signal/rights/PII checks; shown as 觀眾整理, never impersonating canonical history (§11.2)"]
+    target_aggregate: StoryRoll
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [StoryRollPublished]
+
+  - command: WithdrawStoryRollVisibility
+    owner_context: viewer_library
+    legal_source_states: ["a published StoryRoll (StoryRollPublished), or a source chapter/segment withdrawn or visibility epoch changed forcing a tombstone (§11.2)"]
+    target_aggregate: StoryRoll
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [StoryRollVisibilityWithdrawn]
+
+  # =====================================================================
+  # identity_entitlement — accounts, entitlement, quota, bond, billing
+  # =====================================================================
+  - command: AdmitAuthoringCommand
+    owner_context: identity_entitlement
+    legal_source_states: ["n/a — single SERIALIZABLE admission; requires a valid entitlement and the beta authoring half-open window with commandAcceptedAt in [authoringWindow.startsAt, authoringWindow.endExclusiveAt); rejects and reserves nothing outside the window (§5.3, §7.2.2, §12.1)"]
+    target_aggregate: QuotaLedger
+    idempotency_scope: "(command_owner, idempotency_key) — CommandAdmissionReceiptBodyV1.idempotencyKeyDigest per (subject, quotaKey)"
+    emits: [QuotaReserved]
+    note: "§5.3 atomic transaction. Writes QuotaReserved + the same-payload CommandAdmissionReceiptV1 + outbox, all-or-nothing; the receipt is a cross-context envelope, not a canonical event. Both resident_introduction and scene_authorship quota keys use this ingress contract."
+
+  - command: GrantEntitlement
+    owner_context: identity_entitlement
+    legal_source_states: ["n/a — no discrete source state; only a server-verified, idempotent receipt/webhook transition may grant; client success / ad callback / model output may not (§12.2)"]
+    target_aggregate: Entitlement
+    idempotency_scope: "(command_owner, idempotency_key) — receipt/webhook reference"
+    emits: [EntitlementGranted]
+
+  - command: EnterEntitlementGrace
+    owner_context: identity_entitlement
+    legal_source_states: ["an active subscriber Entitlement whose BillingSubscription entered grace (§12)"]
+    target_aggregate: Entitlement
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [EntitlementEnteredGrace]
+
+  - command: ReplaceEntitlementByFree
+    owner_context: identity_entitlement
+    legal_source_states: ["a subscriber Entitlement whose grace ended; the server issues a new free/active claim so the client never guesses subscriber/expired features (§12)"]
+    target_aggregate: Entitlement
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [EntitlementReplacedByFree]
+
+  - command: ReleaseQuotaReservation
+    owner_context: identity_entitlement
+    legal_source_states: ["a prior QuotaReserved in PENDING whose owning command was rejected/cancelled/terminal-failed; only Identity may move PENDING -> RELEASED (never Origin/World failure, client callback or timeout) (§8.2, §12.1, §12.2)"]
+    target_aggregate: QuotaLedger
+    idempotency_scope: "(command_id, window_id, reservation_id, admission_body_digest, release_request_digest)"
+    emits: [QuotaReservationReleased]
+
+  - command: ConsumeQuota
+    owner_context: identity_entitlement
+    legal_source_states: ["a reserved quota whose command reached READY_FOR_ACTIVATION (introduction) or a verified SceneSeedValidated (scene authorship); irreversible once written, after which no rejecting business validation may run (§8.2, §12.2)"]
+    target_aggregate: QuotaLedger
+    idempotency_scope: "(subject, quotaKey, quotaWindowId, reservationId)"
+    emits: [QuotaConsumed]
+    note: "In the introduction path this is co-committed with IntroducerBondCreated (CreateIntroducerBond) in one Identity transaction (§8.2); in the scene-authorship path it is written alone (§12.2)."
+
+  - command: CreateIntroducerBond
+    owner_context: identity_entitlement
+    legal_source_states: ["an introduction that reached READY_FOR_ACTIVATION; Identity is the sole bond owner and Character Origin may not create it; co-committed with QuotaConsumed (§8.2)"]
+    target_aggregate: IntroducerBond
+    idempotency_scope: "(subject, introduction_id, quotaWindowId)"
+    emits: [IntroducerBondCreated]
+
+  - command: ChangeIntroducerBondState
+    owner_context: identity_entitlement
+    legal_source_states: ["an existing IntroducerBond; §12.3 CONTROLLED_INTRODUCER -> GRACE -> PUBLIC_UNCONTROLLED; PUBLIC_UNCONTROLLED -> RESTORE_PENDING -> CONTROLLED_INTRODUCER; any state -> DELETION_PENDING -> DETACHED"]
+    target_aggregate: IntroducerBond
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [IntroducerBondStateChanged]
+
+  - command: ChangeBillingSubscriptionState
+    owner_context: identity_entitlement
+    legal_source_states: ["an existing BillingSubscription; pending | active | grace | expired | refunded | revoked; only server-verified idempotent receipt/webhook transitions may move it (§12, §12.2)"]
+    target_aggregate: BillingSubscription
+    idempotency_scope: "(command_owner, idempotency_key) — receipt/webhook reference"
+    emits: [BillingSubscriptionStateChanged]
+
+  - command: PrepareAccountExport
+    owner_context: identity_entitlement
+    legal_source_states: ["n/a — no discrete source state; prepares an account data export as a product flow (§13.3)"]
+    target_aggregate: Account
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [AccountExportPrepared]
+
+  - command: BeginAccountDeletion
+    owner_context: identity_entitlement
+    legal_source_states: ["n/a — Identity-local intent from any active account state; writes only AccountDeletionRequested + deletion job state + privacy-fence-request outbox and never co-writes Privacy's fence/epoch/purge (§5.3, §13.3)"]
+    target_aggregate: Account
+    idempotency_scope: "(command_owner, idempotency_key) — deletion request digest"
+    emits: [AccountDeletionRequested]
+    note: "§5.3 atomic transaction. Deletion and unsubscription are entirely different state machines."
+
+  - command: CompleteAccountDeletion
+    owner_context: identity_entitlement
+    legal_source_states: ["AccountDeletionRequested with all Privacy / Viewer-Library / media purge receipts collected for the same deletion request digest; never faked by timeout (§13.3)"]
+    target_aggregate: Account
+    idempotency_scope: "(command_owner, idempotency_key) — deletion request digest"
+    emits: [AccountDeletionCompleted]
+
+  # =====================================================================
+  # privacy_visibility — lifecycle fence, epoch, visibility grants (§13)
+  # =====================================================================
+  - command: AdvanceSubjectLifecycleFence
+    owner_context: privacy_visibility
+    legal_source_states: ["a typed privacy-fence-request from Identity (e.g. the AccountDeletionRequested outbox); Privacy writes it in its own local transaction and Identity may not co-write (§13.3)"]
+    target_aggregate: SubjectLifecycleFence
+    idempotency_scope: "(command_owner, idempotency_key) — deletion/fence request digest"
+    emits: [SubjectLifecycleFenceAdvanced]
+
+  - command: AdvanceVisibilityEpoch
+    owner_context: privacy_visibility
+    legal_source_states: ["a lifecycle/withdrawal/deletion event requiring an epoch bump; old-epoch events are rejected thereafter and cannot be resurrected (§13.2, §13.3)"]
+    target_aggregate: VisibilityGrant
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [VisibilityEpochAdvanced]
+
+  - command: WithdrawSubjectVisibility
+    owner_context: privacy_visibility
+    legal_source_states: ["a rights revoke / withdrawal / continuity-class change requiring public content removal; public read model keeps only a policy-safe tombstone (§7.2.1, §13)"]
+    target_aggregate: SubjectLifecycleFence
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [SubjectVisibilityWithdrawn]
+
+  - command: GrantPublicVisibility
+    owner_context: privacy_visibility
+    legal_source_states: ["Privacy verified audience, market-time fence, rights and visibility epoch for a StoryChapterPublished; written in Privacy's own transaction (§5.3, §11.2)"]
+    target_aggregate: VisibilityGrant
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [PublicVisibilityGranted]
+
+  - command: GrantSubscriberArchiveVisibility
+    owner_context: privacy_visibility
+    legal_source_states: ["Privacy verified subscriber-archive audience, rights and visibility epoch for published content (§5.3, §11.3)"]
+    target_aggregate: VisibilityGrant
+    idempotency_scope: "(command_owner, idempotency_key)"
+    emits: [SubscriberArchiveVisibilityGranted]

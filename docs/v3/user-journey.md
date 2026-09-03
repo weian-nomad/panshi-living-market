@@ -1,6 +1,6 @@
 # 《盤勢・眾生》V3 User Journey
 
-> **REJECTED 2026-07-20:** 本旅程以觀象所與照拂為中心，已被 V4 否決。現行互動只驗證全螢幕場景與跟拍，見 [`../v4/interaction-prototype.md`](../v4/interaction-prototype.md)。
+> **HISTORICAL｜2026-07-23：** 本旅程以觀象所與照拂為中心，已否決，不得限制正式產品只剩跟拍。現行旅程見 [`../v5/experience-spec.md`](../v5/experience-spec.md)。
 
 _2026-07-20｜由 [`product-reset.md`](./product-reset.md) 推導；取代 V2 排席旅程_
 

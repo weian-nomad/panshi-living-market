@@ -1,5 +1,7 @@
 # Canonical vertical-slice gate
 
+> **歷史審查紀錄（V2／V4）**：下方判決只適用當時的 vertical slice；現行 V5 的動工順序、驗收門檻與 release blockers 以 [V5 交付計畫](../v5/delivery-plan.md)為準。
+
 _2026-07-20｜判決：`GO / COMMIT NOW`_
 
 第一條 production-shaped vertical slice 已關閉會迫使未來重切 canonical

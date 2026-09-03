@@ -1,6 +1,6 @@
 # 視覺與動態系統 brief
 
-> **已被 V3 取代。** 本文件保留五席排程原型的視覺規則；新設計以 [`docs/v3/visual-system.md`](../v3/visual-system.md) 為準。
+> **HISTORICAL｜2026-07-23：** 本文件保留 V2 五席排程原型的視覺規則。現行可愛成人 2.5D 方向以 [`../v5/visual-system.md`](../v5/visual-system.md) 為準。
 
 _版本 1.0｜2026-07-20｜高保真 Figma 與生成資產的共同約束_
 
