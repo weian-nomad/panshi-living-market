@@ -1,0 +1,237 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://panshi.nomadsustaintech.com/contracts/fact-manifest/v1/schema.json",
+  "title": "Panshi fact manifest envelope v1 (historical)",
+  "description": "The single authoritative cross-product contract for one sealed release of market facts. This repository is the producer and owns this schema; consuming products pin an exact released version, mirror it read-only, and reject anything this schema does not accept. The envelope carries release identity, licensing, the three separated times and two immutable evidence allowlists — never character state, narrative, symbolism, win rates, forecasts, target prices or any buy/sell instruction. Only modeDomain \"historical\" is supported by v1: knowability is decided solely by world_published_at <= evidenceCutoffAt. Current-mode releases (available_at = max(world_published_at, platform_received_at) plus character-world-time gating) are a separate contract line that this producer has not ratified; such a release must be rejected, not leniently parsed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "modeDomain",
+    "jurisdiction",
+    "manifestId",
+    "manifestHash",
+    "signatureKeyId",
+    "sealedAt",
+    "marketSessionId",
+    "marketDateTaipei",
+    "marketCalendarRevision",
+    "interactionCutoffAt",
+    "evidenceCutoffAt",
+    "finalityPolicyRevision",
+    "clockAuthorityRevision",
+    "rightsManifestId",
+    "licenseClass",
+    "rightsValidFrom",
+    "rightsValidUntil",
+    "permittedPurposes",
+    "interactionFactRevisionIds",
+    "interactionFactSetDigest",
+    "outcomeEvidenceRevisionIds",
+    "outcomeEvidenceSetDigest",
+    "objectUri",
+    "objectHash"
+  ],
+  "properties": {
+    "contractVersion": {
+      "description": "Major contract line of this envelope. The semantic release version, examples and changelog live in the published contract artifact, not inside the payload.",
+      "const": "fact-manifest/v1"
+    },
+    "modeDomain": {
+      "description": "v1 seals historical releases only. Historical knowability is world_published_at <= evidenceCutoffAt; platform_received_at never advances it. Adding \"current\" changes an enum and the knowability rule, so it requires a major contract bump.",
+      "const": "historical"
+    },
+    "jurisdiction": {
+      "description": "Market jurisdiction of every fact in this release. Additional jurisdictions require a major contract bump so consumers cannot silently widen scope.",
+      "const": "TW"
+    },
+    "manifestId": {
+      "description": "Immutable identifier of this release. A correction is published as a new manifest that supersedes this one; an existing manifest is never overwritten.",
+      "type": "string",
+      "pattern": "^fm_[a-z0-9][a-z0-9._-]{7,127}$"
+    },
+    "manifestHash": {
+      "description": "SHA-256 hex, prefixed sha256:, of the RFC 8785 JCS canonical UTF-8 bytes of this manifest object with ONLY the manifestHash field removed — the same hash-excludes-itself rule the sealed-fact content_hash uses. objectHash is deliberately INSIDE the hashed bytes: this envelope carries no signature value field, so manifestHash covering objectHash is the only thing that stops a mirror or intermediary from rewriting the sealed bundle, rewriting objectHash to match it, and recomputing a self-consistent manifestHash. Excluding objectHash here would make that substitution undetectable.",
+      "$ref": "#/$defs/sha256Digest"
+    },
+    "signatureKeyId": {
+      "description": "Opaque identifier of the producer signing key that sealed this release. Never a secret value, private host, credential or provider account identifier — only a key reference.",
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._:-]{3,127}$"
+    },
+    "sealedAt": {
+      "description": "When the producer sealed this release. Must be non-empty, and is not a world-time boundary by itself. Constrained by pattern and minLength, not by format alone: in JSON Schema 2020-12 format defaults to an annotation rather than an assertion, so a spec-default validator would otherwise accept \"\" here. The pattern asserts the LEXICAL SHAPE of an RFC 3339 UTC instant only — it cannot reject an impossible calendar day or clock reading (a value such as 2026-02-30T25:61:61Z matches the shape), so parsing every time field in this envelope to a real instant is a consumer MUST, item 16 in contracts/fact-manifest/README.md. The same shape-only caveat applies to every time field below.",
+      "type": "string",
+      "minLength": 20,
+      "maxLength": 30,
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$",
+      "format": "date-time"
+    },
+    "marketSessionId": {
+      "description": "Identifier of the sealed market session this release covers. ADR-0001 calls this contentSessionId.",
+      "type": "string",
+      "pattern": "^mkts_[a-z0-9][a-z0-9._-]{7,127}$"
+    },
+    "marketDateTaipei": {
+      "description": "Asia/Taipei market calendar day of the sealed session, matching the sealed-fact market_date_taipei convention. A non-trading date is never sealed. Constrained by pattern and minLength, not by format alone: with format as a spec-default annotation, \"not-a-date\" would otherwise be accepted. The pattern asserts lexical shape only, so it accepts an impossible calendar date such as 0000-00-00; the consumer MUST parse it to a real calendar day (README item 16). Whether the day is genuinely a trading day is a further, separate check that is NOT mechanically checkable here — the consumer MUST cross-check it against marketCalendarRevision (README item 7).",
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 10,
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "format": "date"
+    },
+    "marketCalendarRevision": {
+      "description": "Trading-calendar revision used to derive session boundaries and the cutoffs below. ADR-0001 calls this marketCalendarVersion.",
+      "$ref": "#/$defs/revisionId"
+    },
+    "interactionCutoffAt": {
+      "description": "Upper bound for interaction (exposure, attention, appraisal, action) eligibility. Adjudicates consumer commands only; it never stands in for evidenceCutoffAt or for the finality policy. A consumer additionally bounds eligibility by its own world time and sealed cognition input; this envelope does not and cannot supply those. Constrained by pattern and minLength because format alone is a spec-default annotation. The ordering invariant interactionCutoffAt <= evidenceCutoffAt is NOT expressible in JSON Schema and MUST be checked by the consumer.",
+      "type": "string",
+      "minLength": 20,
+      "maxLength": 30,
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$",
+      "format": "date-time"
+    },
+    "evidenceCutoffAt": {
+      "description": "Upper bound for outcome and editorial evidence eligibility: in historical mode, world_published_at <= evidenceCutoffAt. Independent of interactionCutoffAt — neither substitutes for the other. Evidence published later is excluded and is never backfilled into an already sealed manifest. Constrained by pattern and minLength because format alone is a spec-default annotation, which would otherwise accept \"yesterday-ish\". Its consistency with marketDateTaipei and with each revision's world_published_at is NOT expressible in JSON Schema and MUST be checked by the consumer.",
+      "type": "string",
+      "minLength": 20,
+      "maxLength": 30,
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$",
+      "format": "date-time"
+    },
+    "finalityPolicyRevision": {
+      "description": "Revision of the settlement and reveal policy. Adjudicates settlement and reveal only, never consumer commands.",
+      "$ref": "#/$defs/revisionId"
+    },
+    "clockAuthorityRevision": {
+      "description": "Revision of the authoritative clock that produced every instant in this envelope. Consumer or client clocks never participate in adjudication.",
+      "$ref": "#/$defs/revisionId"
+    },
+    "rightsManifestId": {
+      "description": "Rights manifest that authorises this release.",
+      "type": "string",
+      "pattern": "^rights_[a-z0-9][a-z0-9._-]{7,127}$"
+    },
+    "licenseClass": {
+      "description": "Producer-owned licence taxonomy value covering every fact in this release. A consumer treats it as an opaque ingest-time gate value and accepts only classes on its own allowlist.",
+      "$ref": "#/$defs/revisionId"
+    },
+    "rightsValidFrom": {
+      "description": "Start of rights validity. Rights validity is a build and bind gate only; it never substitutes for either cutoff and never acts as world time. Constrained by pattern and minLength because format alone is a spec-default annotation.",
+      "type": "string",
+      "minLength": 20,
+      "maxLength": 30,
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$",
+      "format": "date-time"
+    },
+    "rightsValidUntil": {
+      "description": "End of rights validity, or null for open-ended rights. The key is always present. Same build/bind-gate-only caveat as rightsValidFrom. Nullability is expressed as anyOf so that null stays legal while a non-null value still has to satisfy the same pattern and minLength — a bare type: [string, null] with only format would have accepted \"\". Expiry relative to wall-clock time is NOT expressible in JSON Schema and MUST be checked by the consumer at bind time.",
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "string",
+          "minLength": 20,
+          "maxLength": 30,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$",
+          "format": "date-time"
+        }
+      ]
+    },
+    "permittedPurposes": {
+      "description": "Exhaustive list of purposes this release may be used for. A consumer that meets an unlisted or unknown purpose stops, and never treats an unrecognised value as permissive.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]{2,63}$"
+      }
+    },
+    "interactionFactRevisionIds": {
+      "description": "Physically separate immutable allowlist. May ONLY be used for exposure, attention, appraisal and action. A revision may also appear in outcomeEvidenceRevisionIds, but each pipeline must resolve it through its own list's explicit ref — this is not one list reused with a filter. A release with nothing knowable is not sealed, hence at least one entry.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 65536,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/factRevisionId" }
+    },
+    "interactionFactSetDigest": {
+      "description": "SHA-256 hex, prefixed sha256:, of the UTF-8 bytes of this list's revision ids sorted by UTF-8 byte order and joined with a single newline, no trailing newline. The digest is a function of the set, not of array order. It pins ids only; evidence times are pinned by objectHash over the sealed revision bundle, and objectHash is in turn covered by manifestHash. Because interactionFactRevisionIds always has at least one entry, the empty-set digest is never a legal value here.",
+      "allOf": [
+        { "$ref": "#/$defs/sha256Digest" },
+        { "not": { "$ref": "#/$defs/emptySetDigest" } }
+      ]
+    },
+    "outcomeEvidenceRevisionIds": {
+      "description": "Physically separate immutable allowlist. May ONLY be used for paper outcome, correction and post-close editorial work. An empty array means no outcome evidence is released, and the consumer runs no outcome pipeline; it never falls back to the interaction allowlist.",
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 65536,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/factRevisionId" }
+    },
+    "outcomeEvidenceSetDigest": {
+      "description": "Same digest convention as interactionFactSetDigest, computed over the empty string when no outcome evidence is released. The two directions of that rule ARE mechanically enforced by the conditional subschemas in this schema's allOf: an empty outcomeEvidenceRevisionIds pins this to the SHA-256 of the empty string, and a non-empty list forbids that value. Full recomputation from the id list still remains a consumer MUST.",
+      "$ref": "#/$defs/sha256Digest"
+    },
+    "objectUri": {
+      "description": "Producer's public, credential-free HTTPS location of the sealed read-only fact revision bundle. What the pattern MECHANICALLY enforces: https only; no userinfo, query or fragment, so no embedded credential and no signed URL; a lowercase DNS host of at least two labels whose final label is alphabetic, which also rules out IPv4 literals and bracketed IPv6 literals; a final label that is not a private-use or special-use name (mDNS `local`, `internal`, `intranet`, `lan`, `corp`, `home`, `test`, `example`, `invalid`, `onion`); and no `..` anywhere, so no path traversal. What the pattern CANNOT decide is a consumer MUST, listed as item 15 in contracts/fact-manifest/README.md: that the host actually resolves outside private, loopback, link-local and carrier-grade-NAT ranges; that redirects are never followed to another origin; that the punycode or homoglyph form is the producer's published origin; and that this exact value sits on the consumer's pinned producer-origin allowlist. A consumer's own mirror location is consumer-internal state and never overwrites this value.",
+      "type": "string",
+      "maxLength": 512,
+      "pattern": "^https://(?!.*\\.\\.)(?!(?:[a-z0-9-]+\\.)*(?:local(?:host|domain)?|internal|intranet|lan|corp|home|test|example|invalid|onion)(?::[0-9]{2,5})?/)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*\\.[a-z]{2,63}(?::[0-9]{2,5})?/[A-Za-z0-9._~/-]*$"
+    },
+    "objectHash": {
+      "description": "SHA-256 hex, prefixed sha256:, of the RFC 8785 JCS canonical UTF-8 bytes of the sealed fact revision bundle at objectUri. Because every revision record in that bundle carries its own world_published_at and platform_received_at, this digest is what pins the evidence times — and manifestHash is computed over bytes that include this field, so the pin cannot be re-pointed at substituted content without breaking manifestHash. A mismatch quarantines the release.",
+      "$ref": "#/$defs/sha256Digest"
+    }
+  },
+  "allOf": [
+    {
+      "title": "An empty outcome allowlist pins the outcome digest to the empty-set digest",
+      "description": "Without this, a release could declare zero outcome evidence and still carry an arbitrary outcomeEvidenceSetDigest, so a consumer that trusted the digest instead of recomputing it would have no way to notice.",
+      "if": {
+        "required": ["outcomeEvidenceRevisionIds"],
+        "properties": { "outcomeEvidenceRevisionIds": { "maxItems": 0 } }
+      },
+      "then": {
+        "properties": { "outcomeEvidenceSetDigest": { "$ref": "#/$defs/emptySetDigest" } }
+      }
+    },
+    {
+      "title": "A non-empty outcome allowlist forbids the empty-set digest",
+      "description": "The mirror image of the rule above: released outcome evidence can never digest to the empty string.",
+      "if": {
+        "required": ["outcomeEvidenceRevisionIds"],
+        "properties": { "outcomeEvidenceRevisionIds": { "minItems": 1 } }
+      },
+      "then": {
+        "properties": {
+          "outcomeEvidenceSetDigest": { "not": { "$ref": "#/$defs/emptySetDigest" } }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "sha256Digest": {
+      "description": "Lowercase hexadecimal SHA-256 digest with an explicit algorithm prefix.",
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "emptySetDigest": {
+      "description": "SHA-256 of the empty string, i.e. the set digest of an empty revision id list under this contract's digest convention. Pinned as a const so the empty-outcome case cannot be filled with an arbitrary value.",
+      "const": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "revisionId": {
+      "description": "Stable revision or taxonomy identifier owned by the producer. Never a credential, private host or filesystem path.",
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{1,127}$"
+    },
+    "factRevisionId": {
+      "description": "Immutable identifier of one fact revision, reusing the sealed-fact id namespace rather than inventing a second scheme. Each revision record in the sealed bundle separately carries world_published_at, platform_received_at, observed_at, source_revision, rights_scope and an optional supersedes_fact_id; the envelope references revisions and never inlines their values.",
+      "type": "string",
+      "pattern": "^sf_[a-z0-9][a-z0-9._-]{7,127}$"
+    }
+  }
+}
