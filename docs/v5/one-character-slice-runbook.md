@@ -303,6 +303,59 @@ corepack pnpm check                        # 全部契約與 fixture audit
 cargo test -p panshi-character-episode     # 事件與投影的 Rust 測試
 ```
 
+### 7.1 文案 lint
+
+`corepack pnpm check` 會跑 `node tools/v5-copy-lint.mjs` 與它的負向 fixture 測試
+`node tools/v5-copy-lint.test.mjs`（`docs/v5/market-safety.md` 發布閘門第 4 條）。
+
+- **詞表正本只有一份**：`docs/v5/market-safety.md`「文案 lint」一節的 code block。lint 每次執行時
+  從那裡解析，程式、契約與登記檔都不再抄一份（測試會確認 lint 原始碼裡一個詞都沒有）。那一節、
+  那個 code block 找不到或是空的，lint 直接失敗，不會當成「沒有禁詞」放行。要增刪詞，改那份文件。
+- **比對前先正規化**：NFKC；空白與不可見格式字元（Cf）全部去掉；兩個中日韓字元之間的標點、符號、
+  分隔字元（Unicode P\*、S\*、Z\*）也去掉，所以在詞中間插點、句號、底線、連字號或 emoji 都擋得到；
+  最後做逐字的字形對照（`tools/v5-copy-lint.mjs` 的 `GLYPH_FOLD`：簡化字、日文新字體與一個台灣異寫，
+  只對到詞表用字，每列註明來源，不含任何詞）。詞表新增的詞如果有簡化或異寫字形，要在那張表補一列；
+  測試會確認每一列的目標字都是詞表用字、來源字不是。
+- **表面登記**：契約欄位在 `contracts/openapi/public-v2.yaml` 加 `x-panshi-copy-surface: <種類>`
+  （寫在 property 下面；寫在 schema 本身則涵蓋底下所有字串）。種類表、例外規則，以及切片還沒有的
+  表面（通知、付費頁、分享卡、9:16 短片、人生誌盤後回顧區塊）的欄位規則，登記在
+  `contracts/openapi/public-v2-copy-surfaces.json`；這幾種物件以 `copySurfaceType` 標明型別，
+  出現未登記的欄位或型別就擋。之後新增的 schema 名稱看起來像通知／付費頁／分享／短片卻沒有登記，lint 也會擋。
+- **壞掉的契約物件不會被跳過**：fixture 物件只要帶著某個已登記表面的識別欄位（它登記的文案欄位，
+  或只有它才有的 property），卻比對不到那個 schema、也比對不到其他宣告了該欄位的 schema（例如少一個
+  required key，或多一個未宣告的 key），lint 直接失敗，並照那個表面照樣檢查內文。
+- **前端**：掃 `apps/web/src` 底下所有非測試的 `.ts`／`.tsx`（排除 `*.test.ts(x)`、`.d.ts`、
+  `testing/` 測試輔助與 `api/generated-v2`）。凡是含中日韓文字的字串字面值、樣板字面值的靜態部分與
+  JSX 文字一律檢查，不看它最後落在哪個元素、哪個 prop 或哪個函式（`<Group title>`、區段順序陣列、
+  `<h4>`、`routeLabel()` 都在內）；相鄰的靜態 JSX 子節點與 `+` 串接的字面值也合起來檢查。
+  import／export 的模組路徑不是文案，跳過。
+- **檢查範圍**：`headline`、`notification`、`paywall`、`share`、`short_video`、`alt_text`、
+  `sse_event`、`journal_review_body` 與前端字面值不論是否 ticker-specific 一律檢查（比規格嚴）；
+  `caption` 只在 ticker-specific 時檢查（物件或所在文件有 `instrumentLabel`／`instrumentId`，
+  或文字含 fixture 標的名）。
+- **例外只有一條，也只有一個位置**：規格引號裡的「紙上」＋詞表詞，只在人生誌盤後回顧區塊
+  （`copySurfaceType: life_journal_review`，型別固定 `sourceContext: life_journal_post_close_review`）
+  的內文類欄位（種類 `journal_review_body`：內文、模擬標示、原始理由、後果）放行，而且同一個物件要
+  自帶時間、含「紙上」或「模擬」的模擬標示、原始理由與後果；缺任一項就擋。標題、通知、付費頁、
+  分享卡（標題與內文）、短片、替代文字、SSE、CTA 欄位與前端字面值一律不適用。登記檔若把其他種類標成
+  可適用例外、把 `journal_review_body` 用在別的型別，或讓回顧型別不再固定 `sourceContext`，lint 直接失敗。
+- **沒有登記的內容**：切片目前的人生誌內文（`LifeJournalEntry.actionSummary`、證據卡動作標籤
+  `EvidenceAction.label` 等）不是規格列的標題／通知／付費頁／分享卡，沒有登記，lint 不檢查。
+- 命中時不要自己改產品文案讓它過：回報，交給 copy-taste 審稿。
+- **比對前正規化**：NFKC；去掉空白、Cf 與 Default_Ignorable 字元（零寬字元、異體選擇符、U+034F、
+  U+3164）；中日韓字元之間的標點、符號、分隔字元一律去掉；簡體／日文字形照手寫字形表對回詞表用字。
+  JSX 文字與 JSX 屬性字串先把 HTML 字元參照（`&#x8CB7;` 這類）解碼成畫面上的字；`<wbr />` 不切斷相鄰文字。
+- **殘餘風險**：在程式碼裡用動態運算刻意拼字（樣板字串內插 `${…}`、陣列 `join`、函式回傳組字）不在
+  靜態掃描範圍。這屬於刻意規避，要靠 code review 擋，不是文案 lint 的職責。
+
+**待決事項（copy-taste／規格擁有者決定，工程端不改文案）**：`life-journal.json` 的
+`LifeJournalEntry.actionSummary` 與 `EvidenceAction.label` 用的是「模擬買進」「模擬賣出」，規格例外
+的用字是「紙上買進」「紙上賣出」。兩個方向擇一：改成規格用字，或修改 `docs/v5/market-safety.md`
+的例外用字。在決定之前，人生誌內文不要登記成 lint 表面：「模擬買進」含詞表詞「買進」又不是例外用字，
+登記後會立刻擋下。
+
+以上段落是工程文件，未經 copy-taste 審稿。
+
 ## 8. 本切片的已知邊界
 
 這些不是 bug，是這一刀切下去時明確留在外面的東西：

@@ -21,7 +21,7 @@
     "audit:owner-map": "ruby tools/owner-map-audit.rb",
     "audit:boundaries": "sh tools/contracts/check-boundaries.sh",
     "build": "pnpm --recursive --if-present build",
-    "check": "pnpm audit:contracts && pnpm audit:command-map && pnpm audit:fixtures && pnpm audit:sealed-facts && pnpm audit:world-fact-manifest && pnpm audit:world-fact-manifest-historical && pnpm audit:slice-api && node tools/v5-slice-api-audit-phrase-corpus.test.mjs && pnpm audit:receipts && pnpm audit:study-release && pnpm audit:owner-map && pnpm audit:boundaries && pnpm contracts:lint && pnpm --recursive --if-present check && pnpm audit:fact-manifest-consumer",
+    "check": "pnpm audit:contracts && pnpm audit:command-map && pnpm audit:fixtures && pnpm audit:sealed-facts && pnpm audit:world-fact-manifest && pnpm audit:world-fact-manifest-historical && pnpm audit:slice-api && node tools/v5-slice-api-audit-phrase-corpus.test.mjs && node tools/v5-copy-lint.mjs && node tools/v5-copy-lint.test.mjs && pnpm audit:receipts && pnpm audit:study-release && pnpm audit:owner-map && pnpm audit:boundaries && pnpm contracts:lint && pnpm --recursive --if-present check && pnpm audit:fact-manifest-consumer",
     "contracts:generate": "openapi-ts",
     "contracts:lint": "redocly lint contracts/openapi/public-v1.yaml",
     "slice:emit": "cargo run -p panshi-character-episode -- --write-slice-events fixtures/v5/one-character-slice/events && cargo run -p panshi-character-episode -- --write-public-api fixtures/v5/one-character-slice/api",

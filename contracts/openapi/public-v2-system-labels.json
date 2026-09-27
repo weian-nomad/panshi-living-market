@@ -1,6 +1,6 @@
 {
   "contract": "contracts/openapi/public-v2.yaml",
-  "contractVersion": "2.2.0",
+  "contractVersion": "2.3.0",
   "description": "The complete set of fixed system sentences a public-v2 projection may emit in a field marked `x-panshi-system-label: true`, keyed by field name. A system label describes the system (why a list is empty, why a value is null, why a chapter is held); it is not a claim about the character or the market and carries no truth class. A value outside its field's list is a contract violation: consumers and audits reject it rather than render it. `nonClaimNumberKeys` names the numeric keys that are provenance, versioning or scene layout rather than claims, and so carry no truth class either; every other number in a projection is covered by its own `truthClass` or a sibling `<field>TruthClass`.",
   "copyReview": "The sentences below are engineering placeholder copy, 未經 copy-taste 審稿.",
   "systemLabels": {

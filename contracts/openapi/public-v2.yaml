@@ -1,10 +1,37 @@
 openapi: 3.1.0
 info:
   title: Panshi Living Market Public API (V5)
-  version: 2.2.0
+  version: 2.3.0
   description: |
     Changelog:
 
+    - 2.3.0 (additive, minor): registers the public copy surfaces for the
+      copy lint in `docs/v5/market-safety.md` ("文案 lint"). No response
+      field is added, removed, renamed or retyped, and no producer output
+      changes; minor rather than patch because it adds a machine-read
+      contract annotation that CI now enforces. A property marked
+      `x-panshi-copy-surface: <kind>` (or a schema marked at object level,
+      which covers every string under it) is copy that `tools/v5-copy-lint.mjs`
+      checks against the blocked-word list, which that tool reads from the
+      market-safety document itself and nowhere else. Kinds: `headline`
+      (the world story-hook label, the close-up identity line, verb phrase
+      and unresolved-tension sentence, the archive's long-term tension
+      sentence), `caption` (the world focus hint, the close-up attention
+      label and consequence summaries, the archive section summaries and
+      recent highlights), and `sse_event` (the whole
+      `WorldStreamEventEnvelope`). `headline`, `notification`, `paywall`,
+      `share`, `short_video`, `alt_text` and `sse_event` are checked on
+      every value; `caption` only when the value or its document is
+      ticker-specific. Surfaces this slice does not serve yet
+      (notifications, paywalls, share cards, 9:16 short videos) are
+      registered with their field rules in
+      `contracts/openapi/public-v2-copy-surfaces.json`, together with the
+      kind table and the one exception the market-safety document allows
+      (「紙上買進」「紙上賣出」 in a life-journal post-close review, with time,
+      simulation label, original reason and consequence on the same
+      object). A future schema whose name reads as one of those surfaces
+      must carry an object-level `x-panshi-copy-surface` marker, or the
+      lint fails.
     - 2.2.0 (additive, minor): closes the per-item truth-class gaps 2.1.0
       left, and declares the system labels formally. Minor, not patch,
       because it adds new response fields (a patch would only clarify
@@ -825,6 +852,7 @@ components:
           type: string
           enum: [person, object, event, unknown]
         label:
+          x-panshi-copy-surface: caption
           type: string
           minLength: 1
           maxLength: 120
@@ -886,6 +914,7 @@ components:
         dyadArchiveRef:
           $ref: '#/components/schemas/Uuid'
         summary:
+          x-panshi-copy-surface: caption
           type: string
           minLength: 1
           maxLength: 200
@@ -901,6 +930,7 @@ components:
           type: string
           const: occupation
         summary:
+          x-panshi-copy-surface: caption
           type: string
           minLength: 1
           maxLength: 200
@@ -916,6 +946,7 @@ components:
           type: string
           const: memory
         summary:
+          x-panshi-copy-surface: caption
           type: string
           minLength: 1
           maxLength: 200
@@ -1002,6 +1033,7 @@ components:
           description: The truth class of `poseState` (2.1.0).
           $ref: '#/components/schemas/TruthClass'
         focusHint:
+          x-panshi-copy-surface: caption
           description: What/who the character is currently attending to, if known.
           oneOf:
             - type: string
@@ -1040,6 +1072,7 @@ components:
         sceneRef:
           $ref: '#/components/schemas/Uuid'
         label:
+          x-panshi-copy-surface: headline
           type: string
           minLength: 1
           maxLength: 120
@@ -1150,6 +1183,7 @@ components:
         characterId:
           $ref: '#/components/schemas/Uuid'
         displayName:
+          x-panshi-copy-surface: headline
           type: string
           minLength: 1
           maxLength: 40
@@ -1167,6 +1201,7 @@ components:
             otherwise the class of the chassis that set it.
           $ref: '#/components/schemas/TruthClass'
         occupationLabel:
+          x-panshi-copy-surface: headline
           type: string
           minLength: 1
           maxLength: 80
@@ -1183,6 +1218,7 @@ components:
           description: The truth class of `poseState` (2.1.0).
           $ref: '#/components/schemas/TruthClass'
         currentVerbPhrase:
+          x-panshi-copy-surface: headline
           type: string
           description: e.g. "正在偷看他說不在意的價格" (experience-spec §7.1).
           minLength: 1
@@ -1193,6 +1229,7 @@ components:
         currentAttention:
           $ref: '#/components/schemas/AttentionTarget'
         unresolvedTensionSummary:
+          x-panshi-copy-surface: headline
           type: string
           description: The one unresolved-contradiction main sentence (experience-spec §7.1).
           minLength: 1
@@ -1509,6 +1546,7 @@ components:
             on this section (system-design.md §11.3 audience table).
           $ref: '#/components/schemas/AudienceScope'
         summary:
+          x-panshi-copy-surface: caption
           type: string
           description: One-line index summary, e.g. "目前 2 個部位，其中 1 個理由已失效。"
           minLength: 1
@@ -1578,6 +1616,7 @@ components:
           minLength: 1
           maxLength: 64
         longTermTensionSummary:
+          x-panshi-copy-surface: headline
           type: string
           minLength: 1
           maxLength: 200
@@ -1585,6 +1624,7 @@ components:
           description: The truth class of `longTermTensionSummary` (2.1.0).
           $ref: '#/components/schemas/TruthClass'
         recentHighlights:
+          x-panshi-copy-surface: caption
           type: array
           minItems: 0
           maxItems: 3
@@ -3409,6 +3449,7 @@ components:
         - $ref: '#/components/schemas/WithdrawnCharacterProjection'
     WorldStreamEventEnvelope:
       type: object
+      x-panshi-copy-surface: sse_event
       description: >-
         The JSON shape carried in each SSE frame's `data:` field for
         `GET /events/v2/world`. This only signals "resource changed" —

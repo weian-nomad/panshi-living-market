@@ -1,0 +1,268 @@
+{
+  "contract": "contracts/openapi/public-v2.yaml",
+  "contractVersion": "2.3.0",
+  "description": "Copy-surface registry for the copy lint in docs/v5/market-safety.md (section 文案 lint), read by tools/v5-copy-lint.mjs. Contract fields register themselves in public-v2.yaml with `x-panshi-copy-surface: <kind>` (on a property, or on a schema to cover every string under it); this file holds the kind table, the one exception the market-safety document allows and the only place it may be used, the surfaces the one-character slice does not serve yet, the front-end scan scope, and the schema-name guard that makes a future surface of that kind register before it can ship. The blocked-word list itself is deliberately NOT restated here: the lint reads it from the fenced code block in the market-safety document's 文案 lint section and fails closed if that block is missing or empty. The character-level glyph fold (simplified / Japanese / variant forms onto the list's own characters) lives in the lint source and holds no words.",
+  "lexiconSource": {
+    "document": "docs/v5/market-safety.md",
+    "section": "文案 lint"
+  },
+  "surfaceKinds": {
+    "headline": {
+      "checkPolicy": "always",
+      "exceptionEligible": false,
+      "description": "Titles and lead lines: the world story-hook label (今日五幕), the close-up identity line, verb phrase and unresolved-tension sentence, the archive's long-term tension sentence, and the headline of every planned surface. Checked whether or not the value is ticker-specific (stricter than the market-safety document, which names ticker-specific titles). Never exception-eligible: a title is the line most easily lifted off its screen."
+    },
+    "notification": {
+      "checkPolicy": "always",
+      "exceptionEligible": false,
+      "description": "Push, in-app and email notification copy. Checked on every value; never exception-eligible, because a notification pulls one line out of the screen it came from."
+    },
+    "paywall": {
+      "checkPolicy": "always",
+      "exceptionEligible": false,
+      "description": "Paywall and Pro-offer copy. Checked on every value; never exception-eligible."
+    },
+    "share": {
+      "checkPolicy": "always",
+      "exceptionEligible": false,
+      "description": "Share-card copy, headline and body alike. Checked on every value; never exception-eligible, because a share card is a line lifted out of the journal by definition."
+    },
+    "short_video": {
+      "checkPolicy": "always",
+      "exceptionEligible": false,
+      "description": "9:16 short-video titles, caption lines and burned-in text. The market-safety document groups these with share cards; checked on every value and never exception-eligible."
+    },
+    "alt_text": {
+      "checkPolicy": "always",
+      "exceptionEligible": false,
+      "description": "Accessible alternative text (alt, aria-label, altText fields). Checked on every value; never exception-eligible."
+    },
+    "sse_event": {
+      "checkPolicy": "always",
+      "exceptionEligible": false,
+      "description": "Every string in a server-sent world event frame. A frame only signals that a resource changed, so it has no business carrying market words at all."
+    },
+    "caption": {
+      "checkPolicy": "ticker_specific",
+      "exceptionEligible": false,
+      "description": "Secondary visible lines on the world, close-up and archive index (focus hint, attention label, consequence summaries, section summaries, recent highlights). Checked when ticker-specific: the object or its document carries instrumentLabel / instrumentId, or the value names a fixture instrument. Never exception-eligible: none of these is a life-journal post-close review."
+    },
+    "journal_review_body": {
+      "checkPolicy": "always",
+      "exceptionEligible": true,
+      "description": "Body text of a character life journal's post-close review of a paper action that is already final: the review sentence, its simulation label, original reason and consequence. The only kind the lint lets the registry mark exception-eligible, and only on a planned type that fixes sourceContext to the review context. Checked on every value."
+    },
+    "frontend_static": {
+      "checkPolicy": "always",
+      "exceptionEligible": false,
+      "description": "Every string literal, static template part and JSX text containing a CJK character in the front-end sources, whatever element, prop or function it ends up in. A static literal cannot carry the four same-screen facts, so it is never exception-eligible."
+    }
+  },
+  "neverExceptionRoles": [
+    "cta"
+  ],
+  "exception": {
+    "description": "The market-safety document allows the quoted terms in the paragraph after the word list (紙上 + a listed word) only while a character life journal reviews an already-final paper action after the close, on the same screen as time, the simulation label, the original reason and the consequence, and never pulled out as a call to action. The lint reads the allowed terms from that paragraph. Here it only fixes where the term may appear and where the four same-screen facts must be found: in a journal_review_body field (the lint refuses any other kind marked eligible) of an object that declares the journal post-close review context and carries the four facts itself. Headlines, notifications, paywalls, share cards (headline and body), short videos, alt text, SSE frames, CTA fields and front-end literals never take it. Missing any one fact blocks the term like any other listed word.",
+    "contextField": "sourceContext",
+    "contextValue": "life_journal_post_close_review",
+    "sameObjectRequires": {
+      "time": [
+        "sessionDate",
+        "reviewedAt",
+        "asOf"
+      ],
+      "simulationLabel": [
+        "simulationLabel"
+      ],
+      "originalReason": [
+        "originalReason"
+      ],
+      "consequence": [
+        "consequenceSummary"
+      ]
+    },
+    "simulationLabelMustContainOneOf": [
+      "紙上",
+      "模擬"
+    ]
+  },
+  "contractSurfacesWithoutFixture": [
+    "MemoryConsequenceHighlight",
+    "OccupationConsequenceHighlight",
+    "RelationshipConsequenceHighlight",
+    "WorldStreamEventEnvelope"
+  ],
+  "futureSurfaceSchemaNamePattern": "(Notification|Paywall|Share|ShortVideo|Video|Clip|Reel|StoryRoll|Push)",
+  "plannedSurfaceTypes": {
+    "discriminatorField": "copySurfaceType",
+    "types": {
+      "notification": {
+        "kind": "notification",
+        "requiredFields": [
+          "copySurfaceType",
+          "notificationId",
+          "characterId",
+          "title",
+          "body",
+          "deepLinkPath"
+        ],
+        "fields": {
+          "copySurfaceType": null,
+          "notificationId": null,
+          "characterId": null,
+          "sentAt": null,
+          "title": "notification",
+          "body": "notification",
+          "deepLinkPath": "notification",
+          "altText": "alt_text"
+        },
+        "roles": {}
+      },
+      "paywall": {
+        "kind": "paywall",
+        "requiredFields": [
+          "copySurfaceType",
+          "paywallId",
+          "headline",
+          "body",
+          "ctaLabel"
+        ],
+        "fields": {
+          "copySurfaceType": null,
+          "paywallId": null,
+          "planId": null,
+          "headline": "paywall",
+          "body": "paywall",
+          "ctaLabel": "paywall",
+          "altText": "alt_text"
+        },
+        "roles": {
+          "ctaLabel": "cta"
+        }
+      },
+      "share_card": {
+        "kind": "share",
+        "requiredFields": [
+          "copySurfaceType",
+          "shareCardId",
+          "characterId",
+          "characterDisplayName",
+          "headline",
+          "fictionalAdultLabel",
+          "simulationLabel",
+          "dataAsOf",
+          "linkPath",
+          "altText"
+        ],
+        "fields": {
+          "copySurfaceType": null,
+          "shareCardId": null,
+          "characterId": null,
+          "sourceContext": null,
+          "dataAsOf": null,
+          "sessionDate": null,
+          "characterDisplayName": "share",
+          "headline": "share",
+          "body": "share",
+          "instrumentLabel": "share",
+          "fictionalAdultLabel": "share",
+          "simulationLabel": "share",
+          "originalReason": "share",
+          "consequenceSummary": "share",
+          "linkPath": "share",
+          "ctaLabel": "share",
+          "altText": "alt_text"
+        },
+        "roles": {
+          "ctaLabel": "cta",
+          "linkPath": "cta"
+        }
+      },
+      "short_video": {
+        "kind": "short_video",
+        "requiredFields": [
+          "copySurfaceType",
+          "shortVideoId",
+          "characterId",
+          "characterDisplayName",
+          "title",
+          "fictionalAdultLabel",
+          "simulationLabel",
+          "dataAsOf",
+          "linkPath",
+          "altText"
+        ],
+        "fields": {
+          "copySurfaceType": null,
+          "shortVideoId": null,
+          "characterId": null,
+          "sourceContext": null,
+          "dataAsOf": null,
+          "sessionDate": null,
+          "characterDisplayName": "short_video",
+          "title": "short_video",
+          "captionLines": "short_video",
+          "instrumentLabel": "short_video",
+          "fictionalAdultLabel": "short_video",
+          "simulationLabel": "short_video",
+          "originalReason": "short_video",
+          "consequenceSummary": "short_video",
+          "linkPath": "short_video",
+          "altText": "alt_text"
+        },
+        "roles": {
+          "linkPath": "cta"
+        }
+      },
+      "life_journal_review": {
+        "kind": "journal_review_body",
+        "description": "A life-journal block that reviews one final paper action after the close. Registered so the document's single exception has exactly one home; the served slice renders its journal through LifeJournalEntry, which this lint does not register (outside the document's list).",
+        "requiredFields": [
+          "copySurfaceType",
+          "reviewId",
+          "characterId",
+          "sourceContext",
+          "sessionDate",
+          "headline",
+          "body",
+          "simulationLabel",
+          "originalReason",
+          "consequenceSummary"
+        ],
+        "constFields": {
+          "sourceContext": "life_journal_post_close_review"
+        },
+        "fields": {
+          "copySurfaceType": null,
+          "reviewId": null,
+          "characterId": null,
+          "chapterId": null,
+          "sourceContext": null,
+          "sessionDate": null,
+          "reviewedAt": null,
+          "headline": "headline",
+          "body": "journal_review_body",
+          "instrumentLabel": "journal_review_body",
+          "simulationLabel": "journal_review_body",
+          "originalReason": "journal_review_body",
+          "consequenceSummary": "journal_review_body",
+          "altText": "alt_text"
+        },
+        "roles": {}
+      }
+    }
+  },
+  "frontend": {
+    "roots": [
+      "apps/web/src"
+    ],
+    "fileExtensions": [
+      ".ts",
+      ".tsx"
+    ],
+    "excludeFilePattern": "(\\.test\\.tsx?$|\\.d\\.ts$|(^|/)testing/|^apps/web/src/api/generated-v2/)",
+    "kind": "frontend_static",
+    "note": "Every non-test .ts / .tsx file under the roots. Excluded, matched against the repo-relative path: *.test.ts(x), declaration files, test helpers under testing/, and the generated-v2 client. Every string literal, static template part and JSX text that contains a CJK character is checked, whatever element or prop renders it; adjacent static JSX children and + chains of literals are also checked joined. Module specifiers are skipped. No front-end literal is ever exception-eligible."
+  },
+  "copyReview": "This file holds no display copy. 紙上 and 模擬 above are matching rules, not product text; the English descriptions are engineering notes (未經 copy-taste 審稿)."
+}
