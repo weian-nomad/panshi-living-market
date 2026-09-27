@@ -49,6 +49,26 @@
  *   inside his own story, an urging thought with its own subject, and 我
  *   inside a quote
  *
+ * and the review of that rule (F1):
+ *
+ *   13. the ten sentences it let through: trading verbs outside the old list
+ *       (下單/搶進/承接/入手/敲進/衝一波/逃命/落袋為安/獲利了結, English
+ *       buy), and urging with no listed verb at all ("還抱著？")
+ *   14. market-urging with no trading verb (機會來了！, 收盤前是最後機會。),
+ *       and market talk addressed to the reader with no urging word
+ *   15. instrument identity: a paper position's or a daily disclosure's
+ *       instrumentLabelTruthClass re-classed to another allowed class, an
+ *       instrument no sealed fact revision names, and the sealed revisions
+ *       missing (fail closed)
+ *
+ *   with negative controls for a quantified subject ("那天組裡沒有人加碼，
+ *   他也沒有。"), a verb reported as not done, and an urging thought
+ *   reported by the sentence's own subject
+ *
+ * The development corpus that measures the rule on ~150 advice and ~130
+ * narrative sentences is tools/v5-slice-api-audit-phrase-corpus.test.mjs;
+ * this file proves the rule is wired into the real audit end to end.
+ *
  * WHY THIS EXISTS
  * ---------------
  * Same reasoning as `contracts/fact-manifest-consumer/self-test.mjs`: an
@@ -92,6 +112,14 @@ const HISTORICAL_MANIFEST_SOURCE = join(
   "fixtures",
   "synthetic-historical-001.json",
 );
+const FACT_REVISIONS_SOURCE = join(
+  REPO_ROOT,
+  "contracts",
+  "world-fact-manifest",
+  "historical-v1",
+  "fixtures",
+  "synthetic-historical-001-fact-revisions.json",
+);
 const SYSTEM_LABELS_SOURCE = join(REPO_ROOT, "contracts", "openapi", "public-v2-system-labels.json");
 const PUBLIC_V2_SOURCE = join(REPO_ROOT, "contracts", "openapi", "public-v2.yaml");
 const CHARACTER_ID = "96450815-0db8-f735-a139-5ba222da86b2";
@@ -131,6 +159,10 @@ function scratchCopy(scratch, name) {
   cpSync(
     HISTORICAL_MANIFEST_SOURCE,
     join(root, "contracts", "world-fact-manifest", "historical-v1", "fixtures", "synthetic-historical-001.json"),
+  );
+  cpSync(
+    FACT_REVISIONS_SOURCE,
+    join(root, "contracts", "world-fact-manifest", "historical-v1", "fixtures", "synthetic-historical-001-fact-revisions.json"),
   );
   mkdirSync(join(root, "contracts", "openapi"), { recursive: true });
   cpSync(SYSTEM_LABELS_SOURCE, join(root, "contracts", "openapi", "public-v2-system-labels.json"));
@@ -302,7 +334,7 @@ const CASES = [
     },
   },
 
-  // The Traditional-Chinese strings below (5b, 6a-6d, 7a-7g, 9a-12d and the
+  // The Traditional-Chinese strings below (5b, 6a-6d, 7a-7g, 9a-14d and the
   // negative controls) are adversarial test inputs, never shown to anyone:
   // 未經 copy-taste 審稿, and deliberately so.
 
@@ -536,7 +568,97 @@ const CASES = [
     expects: ['$.selfAcknowledgement.canonicalTextUtf8 contains a buy/sell action-call phrase shape (literal) "現在減碼" [no-narrative-subject]'],
     tamper: (root) => rewriteSelfAcknowledgement(root, "原本的理由已經不成立，現在減碼。"),
   },
+
+  // -- (13)-(14) the F1 review of the structural rule -------------------------
+  // (13) the ten sentences that got through: verbs outside the old list, and
+  // urging with no listed verb. (14) market-urging with no trading verb, and
+  // market talk addressed to the reader.
+  ...[
+    ["13a", "趕快下單！", '(modal-or-imperative) "趕快下單" [no-narrative-subject]'],
+    ["13b", "趁低搶進，別猶豫。", '(timing) "趁低搶進" [no-narrative-subject]'],
+    ["13c", "現在就 buy，晚了就沒了。", '(trading-verb) "buy" [no-narrative-subject]'],
+    ["13d", "Buy now，不要等。", '(trading-verb) "Buy" [no-narrative-subject]'],
+    ["13e", "逢低承接就對了。", '(timing) "逢低承接" [no-narrative-subject]'],
+    ["13f", "這價位不入手，以後會後悔。", '(trading-verb) "入手" [no-narrative-subject]'],
+    ["13g", "獲利了結，落袋為安。", '(trading-verb) "落袋為安" [no-narrative-subject]'],
+    ["13h", "還抱著？快逃命。", '(market-urging/strong) "還抱著？" [no-narrative-subject] in sentence "還抱著？"'],
+    ["13i", "他們說：「快點敲進。」", '(modal-or-imperative) "快點敲進" [no-narrative-subject] in quoted sentence "快點敲進。"'],
+    ["13j", "收盤前是最後機會，衝一波。", '(trading-verb) "衝一波" [no-narrative-subject]'],
+    ["14a", "機會來了！", '(market-urging/strong) "機會來了" [no-narrative-subject] in sentence "機會來了！"'],
+    ["14b", "收盤前是最後機會。", '(market-urging/weak) "最後機會" [no-narrative-subject] in sentence "收盤前是最後機會。"'],
+    ["14c", "他看著報價，別猶豫。", '(market-urging/strong) "別猶豫" [imperative-mood] in sentence "他看著報價，別猶豫。"'],
+    ["14d", "等你想通，行情早就走了。", '(market-reader) "你" [reader-address] in sentence "等你想通，行情早就走了。"'],
+  ].map(([id, sentence, fragment]) => ({
+    name: `${id}. ${JSON.stringify(sentence)} is refused`,
+    expects: ["close-up.json: $.unresolvedTensionSummary contains a buy/sell action-call phrase shape ", fragment],
+    tamper: (root) => appendToTensionSummary(root, sentence),
+  })),
+
+  // -- (15) instrument identity against the sealed fact revisions -------------
+  {
+    name: "15a. positions[0].instrumentLabelTruthClass re-classed to simulated_narrative (allowed class, wrong identity)",
+    expects: [
+      'archive/paper.json positions[0]: instrumentLabelTruthClass "simulated_narrative" for "PSZS-DEMO" must equal the sealed fact class "fictional_setting" in any historical manifest',
+    ],
+    tamper: (root) =>
+      tamperPaper(root, ({ position }) => {
+        position.instrumentLabelTruthClass = "simulated_narrative";
+      }),
+  },
+  {
+    name: "15b. the 2026-03-03 disclosure's instrumentLabelTruthClass re-classed to symbolic_interpretation",
+    expects: [
+      'historicalActionFills[2026-03-03].dailyActionDisclosure: instrumentLabelTruthClass "symbolic_interpretation" for "PSZS-DEMO" must equal the sealed fact class "fictional_setting" in the 2026-03-03 manifest wfm_hist_001_s02',
+    ],
+    tamper: (root) =>
+      tamperPaper(root, ({ disclosure }) => {
+        disclosure.instrumentLabelTruthClass = "symbolic_interpretation";
+      }),
+  },
+  {
+    name: "15c. positions[0] names an instrument no sealed fact revision names",
+    expects: ['positions[0]: instrumentLabel "PSZS-OTHER" is not named by any sealed fact revision in any historical manifest'],
+    tamper: (root) =>
+      tamperPaper(root, ({ position }) => {
+        position.instrumentLabel = "PSZS-OTHER";
+      }),
+  },
+  {
+    name: "15d. the 2026-03-03 disclosure names an instrument its own manifest does not seal",
+    expects: ['historicalActionFills[2026-03-03].dailyActionDisclosure: instrumentLabel "PSZS-OTHER" is not named by any sealed fact revision in the 2026-03-03 manifest'],
+    tamper: (root) =>
+      tamperPaper(root, ({ disclosure }) => {
+        disclosure.instrumentLabel = "PSZS-OTHER";
+      }),
+  },
+  {
+    name: "15e. the sealed fact revisions are missing (fail closed: no instrument identity can be checked)",
+    expects: [
+      "synthetic-historical-001-fact-revisions.json: cannot read the sealed fact revisions",
+      'instrumentLabel "PSZS-DEMO" is not named by any sealed fact revision',
+    ],
+    tamper: (root) =>
+      rmSync(join(root, "contracts", "world-fact-manifest", "historical-v1", "fixtures", "synthetic-historical-001-fact-revisions.json")),
+  },
 ];
+
+/** archive/paper.json, for the instrument-identity cases (15). */
+function tamperPaper(root, mutate) {
+  const path = apiFile(root, "archive/paper.json");
+  const paper = readJson(path);
+  const position = paper.positions?.[0];
+  const disclosure = paper.historicalActionFills?.find((record) => record.tradingDate === "2026-03-03")?.dailyActionDisclosure;
+  if (
+    position?.instrumentLabel !== "PSZS-DEMO" ||
+    position?.instrumentLabelTruthClass !== "fictional_setting" ||
+    disclosure?.instrumentLabel !== "PSZS-DEMO" ||
+    disclosure?.instrumentLabelTruthClass !== "fictional_setting"
+  ) {
+    throw new Error("fixture shape drifted: positions[0] / the 2026-03-03 disclosure no longer name PSZS-DEMO as fictional_setting");
+  }
+  mutate({ position, disclosure });
+  writeJson(path, paper);
+}
 
 /** Rewrites close-up selfAcknowledgement (an utterance artifact) with a
  * correct own hash, so the refusal under test is the action-call one. */
@@ -601,6 +723,32 @@ const NEGATIVE_CASES = [
   {
     name: '"「我明天開盤就減碼。」他說。" (我 is a subject inside a quote)',
     tamper: (root) => appendToTensionSummary(root, "「我明天開盤就減碼。」他說。"),
+  },
+  // F1: a quantified subject, a verb reported as not done, and urging inside
+  // a thought reported by the sentence's own subject.
+  {
+    name: '"那天組裡沒有人加碼，他也沒有。" (沒有人 is a narrative subject)',
+    tamper: (root) => appendToTensionSummary(root, "那天組裡沒有人加碼，他也沒有。"),
+  },
+  {
+    name: '"有人在茶水間說要搶反彈，他沒接話。" (有人 is a narrative subject)',
+    tamper: (root) => appendToTensionSummary(root, "有人在茶水間說要搶反彈，他沒接話。"),
+  },
+  {
+    name: '"沒有下單。他繼續持有 600 股。" (a verb reported as not done)',
+    tamper: (root) => appendToTensionSummary(root, "沒有下單。他繼續持有 600 股。"),
+  },
+  {
+    name: '"他盯著報價，心想再不下單就晚了，手卻沒有動。" (urging inside his reported thought)',
+    tamper: (root) => appendToTensionSummary(root, "他盯著報價，心想再不下單就晚了，手卻沒有動。"),
+  },
+  {
+    name: '"他覺得機會來了，按下了買進。" (the urging marker sits in his own clause)',
+    tamper: (root) => appendToTensionSummary(root, "他覺得機會來了，按下了買進。"),
+  },
+  {
+    name: '"他覺得這價位不入手，以後會後悔。" (a regret marker after his own subject)',
+    tamper: (root) => appendToTensionSummary(root, "他覺得這價位不入手，以後會後悔。"),
   },
 ];
 

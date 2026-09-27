@@ -16,8 +16,9 @@ import { readFile } from "node:fs/promises";
 // declares, that the slice's fixed cardinalities hold, that the same-day
 // disclosure key is structurally absent while finality is pending, that every
 // deep-archive section item carries a truth class and a source, that every
-// journal chapter carries its typed evidence card, and that no banned string
-// or ranking-shaped field ever reaches a viewer.
+// journal chapter carries its typed evidence card, that every paper
+// instrument name carries the truth class its sealed fact revisions give it,
+// and that no banned string or ranking-shaped field ever reaches a viewer.
 //
 // The action-call rule below (a structural sentence rule over trading verbs,
 // with the banned-phrase list and the older phrase SHAPES folded into it) is
@@ -26,8 +27,10 @@ import { readFile } from "node:fs/promises";
 // state through versioned deterministic templates and a policy gate that the
 // model does not decide (AGENTS.md "Data, AI, and privacy"). A rule over
 // Traditional Chinese cannot tell every urging sentence from every story
-// sentence: urging without a listed trading verb, and an urging clause that
-// carries its own third-person subject, get through. That residual risk is
+// sentence: urging with neither a listed trading verb nor a listed market
+// word or urging marker, and an urging clause that carries its own
+// third-person subject, get through (tools/v5-slice-api-audit-phrase-corpus.test.mjs
+// measures the rule on a development corpus). That residual risk is
 // recorded in docs/v5/one-character-slice-runbook.md section 3.1 -- do not
 // treat a green audit as proof that no copy reads as trading advice.
 // ---------------------------------------------------------------------------
@@ -791,16 +794,20 @@ function stripCharacterOwnTradeLabels(text) {
 //     string and is still judged alone): a character's quoted imperative is
 //     refused exactly like narration would be -- fail closed. In the outer
 //     sentence the quote leaves an empty 「」 behind.
-// (2) Every trading verb in a sentence (ACTION_VERB, after stripping the
-//     character's own "模擬買進/模擬賣出" labels; 買氣/賣場/買單… and a bare
-//     跟 that is not sentence-final are not verbs) must pass, in order:
+// (2) Every trading verb in a sentence (ACTION_VERB, built from the grouped
+//     TRADE_VERB_FAMILIES, after stripping the character's own "模擬買進/
+//     模擬賣出" labels; 買氣/賣場/買單… and a bare 跟 that is not
+//     sentence-final are not verbs) must pass, in order:
 //       a. reader address: if the SENTENCE addresses the reader anywhere
 //          (你/你們/您/我們/咱們/大家/各位/朋友們/想賺的…) it is refused,
 //          with no exemption of any kind;
 //       b. narrative subject: somewhere BEFORE the verb there must be a
-//          narrative subject -- 他/她/他們/她們 or a character displayName
-//          that the projection itself carries (read from the documents,
-//          never hard-coded; an invented name is not a subject). 我 counts
+//          narrative subject -- 他/她/他們/她們, a quantified or generic third
+//          person inside the story (沒有人/有人/其他人/別人/同事/組裡的人/
+//          很多人/多數人…, GENERIC_THIRD_PERSON_NARRATORS; 大家/各位/所有人
+//          stay reader address), or a character displayName that the
+//          projection itself carries (read from the documents, never
+//          hard-coded; an invented name is not a subject). 我 counts
 //          only inside a quote (the character speaking of himself), and the
 //          quote itself is still judged by (1). The subject may be:
 //            - earlier in the same sentence, across commas (a topic chain:
@@ -830,30 +837,101 @@ function stripCharacterOwnTradeLabels(text) {
 //          (cut at commas, colons and quote marks). A subject borrowed from
 //          an earlier clause, the previous sentence or the field's structure
 //          does not cover an urging clause: "他看了一眼，快進場吧！" is
-//          refused, "他覺得再不進場就晚了。" is his thought and passes.
+//          refused, "他覺得再不進場就晚了。" is his thought and passes. A
+//          marker does not make the sentence urging when its own clause
+//          has a subject before it, or is a thought reported by the
+//          sentence's subject (覺得/心想/打算…, THOUGHT_CLAUSE) in a sentence
+//          with no 吧/啦/！: "他覺得機會來了，按下了買進。" and "他盯著報價，
+//          心想再不下單就晚了，手卻沒有動。" pass.
 // (3) The older phrase SHAPES (second person / follow-him / modal /
 //     timing / rhetorical x trading verb) and the literal list above are
 //     still matched, so a refusal can name the shape; they obey (2) exactly
 //     like a bare verb does, except that a structural subject does not cover
 //     them. A verb that is not inside any refused shape is judged on its own
 //     and reported as shape "trading-verb".
-// Nouns built on a trading verb (建倉時封存的理由, 與建倉當時相比: the verb
-// followed by 時 -- not 時機/時候 -- or 當時) name a moment, not an action,
-// and skip (2b)/(2c); a reader-addressed sentence is refused even then.
+// (4) Urging about the market needs no trading verb: a sentence with a
+//     market-context word (MARKET_CONTEXT: 價位/股價/盤/收盤/行情/這檔/標的/
+//     漲/跌/低點/機會/抱著…, or any trading verb) and an urging marker
+//     (URGING_STRONG / URGING_WEAK: 趕快/別猶豫/不要等/就對了/衝/還…？/
+//     最後機會/晚了就沒了/會後悔/！…) is refused unless a narrative subject
+//     comes before the marker in the same sentence -- inside the marker's
+//     own clause for a strong marker (or a reported thought, as in 2c). A
+//     reader-addressed sentence with a market-context word is refused even
+//     without any marker. Details at MARKET_CONTEXT below.
+// Nouns built on a trading verb (建倉時封存的理由, 與建倉當時相比, 下單意圖,
+// 進場價: NOMINAL_TAIL) name a moment, an intention or a price, not an
+// action, and a verb reported as not done (沒有下單, 也沒有再加碼:
+// NOT_DONE_BEFORE) states the past; both skip (2b)/(2c) for the bare verb
+// (a listed shape around it is still judged), and a reader-addressed
+// sentence is refused even then.
 // Every refusal names the field path, the shape, the reason
 // (reader-address / no-narrative-subject / imperative-mood) and the sentence.
 // ---------------------------------------------------------------------------
 const CLAUSE_BOUNDARY_CHARS = "。！？!?；;：:，,、「」『』\\n";
 const SENTENCE_END = /[。！？!?；;]/u;
-// Bare 買/賣 are verbs only when they are not the first half of a noun
-// (買氣, 賣場, 賣命, 買單…) or a relative clause (你買的咖啡). A bare 跟 is a
-// verb ("不跟會後悔", "快跟！") only right before a mood/tense particle or at a
-// clause end, never as the preposition in "跟同事說".
-const ACTION_VERB =
-  "(?:買進|買入|買回|賣出|賣掉|賣了|加碼|減碼|加倉|減倉|建倉|清倉|砍倉|出清|回補|放空|做空|做多|作多|進場|出場|上車|下車|抄底|撿便宜|停損|停利|布局|佈局|卡位|跟單|跟進|跟風|追高|攤平|梭哈|(?<![A-Za-z])[Aa][Ll][Ll][- ]?[Ii][Nn](?![A-Za-z])|買(?![氣家方盤的單帳])|賣(?![場家方盤命力的弄萌關])|跟(?=[吧啦就會才。！？!?；;，,]|$))";
+
+// Trading verbs, grouped by what they do to a position. Every entry is a
+// regex fragment; ACTION_VERB is their alternation. JavaScript alternation is
+// leftmost-first, so every multi-character idiom sits in a family before
+// BARE_ONE_CHARACTER, and inside a family the longer spelling comes first
+// (落袋為安 before nothing shorter, 衝一波 before the bare 衝).
+const TRADE_VERB_FAMILIES = {
+  // Opening a position or adding to one, including the slang for it
+  // (上車, 抄底, 搶反彈, 接刀 -- buying into a falling price).
+  open_or_add: [
+    "買進", "買入", "買回", "加碼", "加倉", "建倉", "進場", "上車", "抄底", "撿便宜", "布局", "佈局", "卡位",
+    "下單", "搶進", "搶買", "搶反彈", "搶短", "承接", "入手", "敲進", "掃貨", "追高", "追價", "攤平", "回補",
+    "梭哈", "接飛刀", "接刀", "衝一波", "衝一把", "拿下", "掛單", "試單", "低接", "出手", "換股",
+    // 進去 only right after 先/再/就/直接/馬上/立刻 ("明天開盤直接進去"), not 追進去 or 走進去.
+    "(?<=先|再|就|直接|馬上|立刻)進去", "丟進去", "全壓", "重壓", "押在", "壓在", "放長線",
+  ],
+  // Closing, cutting or fleeing a position, and taking the profit.
+  close_or_cut: [
+    "賣出", "賣掉", "賣了", "減碼", "減倉", "清倉", "砍倉", "砍掉", "出清", "出場", "離場", "退場", "下車",
+    "停損", "停利", "認賠", "殺出", "殺低", "逃命", "落袋為安", "獲利了結", "清掉", "出掉", "脫手", "倒貨",
+    "走人",
+  ],
+  // Holding said as an instruction (續抱 = keep holding).
+  hold: ["續抱", "抱緊", "抱牢", "死抱"],
+  // Taking a side.
+  direction: ["放空", "做空", "做多", "作多"],
+  // Copying someone else's trade.
+  follow: ["跟單", "跟進", "跟風", "跟著?(?:主力|大戶|法人|外資|老師)"],
+  // English mixed into Chinese copy, any letter case, as whole words only
+  // (not "Buyer", "shortcut", "long-term").
+  english: ["(?<![A-Za-z])(?i:buy|sell|all[- ]?in|long(?!-)|short(?!-))(?![A-Za-z])"],
+  // One-character verbs, each guarded so the character is a verb only where
+  // it cannot be something else: 買/賣 not as the first half of a noun (買氣,
+  // 賣場, 賣命, 買單…) or a relative clause (你買的咖啡); 跟 only before a
+  // mood/tense particle or at a clause end, never the preposition in
+  // "跟同事說"; 衝/追/砍/逃/跑 only before a particle, a completive or the
+  // end (衝了, 突破就追。, 跌了再補。, 再撿。, 不接，, 再進。, 砍吧, 快逃。)
+  // -- never 衝動, 緩衝, 追問, 補看, 撿起, 接話, 進會議室, 砍價, 跑步.
+  bare_one_character: [
+    "買(?![氣家方盤的單帳])",
+    "賣(?![場家方盤命力的弄萌關])",
+    "跟(?=[吧啦就會才。！？!?；;，,]|$)",
+    "(?<!緩)衝(?=[吧啦啊了進下！!。，,]|$)",
+    "追(?=[吧啦了就！!。，,]|$)",
+    "補(?=[吧啦了！!。，,]|$)",
+    "撿(?=[吧啦了！!。，,]|$)",
+    "接(?=[吧啦了！!。，,]|$)",
+    "進(?=[吧啦了！!。，,]|$)",
+    "砍(?=[吧啦了！!。，,]|$)",
+    "逃(?=[吧啦了！!。，,]|$)",
+    "(?<![賽長慢起])跑(?=[吧啦了！!。，,]|$)",
+  ],
+};
+const ACTION_VERB = `(?:${Object.values(TRADE_VERB_FAMILIES).flat().join("|")})`;
 const TRADE_VERB = new RegExp(ACTION_VERB, "gu");
-// A trading verb used as a moment ("建倉時", "建倉當時"), not an action.
-const NOMINAL_TAIL = /^(?:時(?![機候])|當時)/u;
+// A trading verb used as a noun, not an action: a moment ("建倉時",
+// "建倉當時"; not 時機/時候), an intention ("下單意圖", "加碼的念頭") or a
+// price ("進場價"; not 價位).
+const NOMINAL_TAIL = /^(?:時(?![機候])|當時|意圖|的意圖|念頭|的念頭|價(?!位))/u;
+// A trading verb reported as NOT done ("沒有下單。", "也沒有再加碼"): a
+// statement about the past, not an instruction. Only 沒/未 forms -- 不 and
+// 別 are how an instruction is negated ("不要賣", "別停損") and stay judged.
+const NOT_DONE_BEFORE = /(?:沒有|沒|未曾|並未|從未|尚未|未|不曾)(?:再|也|又|還|就|先)?$/u;
 // Modal, imperative and urging words. `要` excludes 重要/主要/只要/將要, where
 // the character is not an addressee of an order.
 const ACTION_MODAL =
@@ -872,6 +950,16 @@ const TIMING_TAIL = "(?:就對了|正是時候|正當時|更待何時|還來得�
 const RHETORICAL_TAIL = "(?:更待何時|還等什麼|等什麼|要等到何時|要等到什麼時候)";
 // 他/她 inside 其他/他人 is not a person in the story.
 const PRONOUN_NARRATORS = ["他們", "她們", "(?<!其)他(?!人)", "(?<!其)她(?!人)"];
+// Quantified and generic third persons: people inside the story who are not
+// the reader ("那天組裡沒有人加碼，他也沒有。", "有人在對照紀錄"). 所有人,
+// 每個人, 大家 and 各位 include the reader and are NOT here -- they are
+// READER_SUBJECT or nothing (fail closed). 有人 is not the tail of 所有人 or
+// 擁有人.
+const GENERIC_THIRD_PERSON_NARRATORS = [
+  "沒有人", "沒人", "(?<![所擁])有人", "其他人", "別人", "旁人", "旁邊的人", "他人",
+  "同事們", "同事", "組裡的人", "組上的人", "同組的人",
+  "很多人", "許多人", "大多數人", "多數人", "不少人", "少數人", "幾個人", "一些人", "有些人",
+];
 // The character speaking of himself -- a subject only inside a quote.
 const QUOTE_SELF_NARRATOR = "我(?!們)";
 const CLAUSE_BOUNDARY = new RegExp(`[${CLAUSE_BOUNDARY_CHARS}]`, "u");
@@ -883,6 +971,18 @@ const NARRATIVE_OPENER = new RegExp(
     "(?:覺得|心想|想著|想到|認為|以為|打算|決定|猶豫|考慮|盤算|告訴自己|說服自己|寫下|記下|看到|看了|看著|盯著|算了算|知道|明白|懷疑|擔心|沒有)",
   "u",
 );
+// A clause that reports a thought of the sentence's own subject: "他盯著報價，
+// 心想再不下單就晚了，手卻沒有動。" The urging is inside his head, so the
+// topic-chain subject covers it -- but only when the sentence carries no
+// 吧/啦/！, which turn a reported thought back into an exhortation
+// ("他看了一眼，覺得該加碼吧！" stays refused).
+const THOUGHT_CLAUSE = new RegExp(
+  "^(?:又|也|還是|仍然|卻|便|才|一度|當時|那時|其實|原本|本來|始終|一直|默默|暗自|反覆|再次)?" +
+    "(?:覺得|心想|想著|想到|認為|以為|打算|決定|猶豫|考慮|盤算|告訴自己|說服自己|擔心|懷疑)",
+  "u",
+);
+const EXHORTATION_PARTICLE = /[吧啦！!]/u;
+
 // Urging and rhetorical-urging markers (2c). Matched against the sentence.
 const IMPERATIVE_MOOD = new RegExp(
   [
@@ -896,8 +996,67 @@ const IMPERATIVE_MOOD = new RegExp(
     `(?<![很最越愈太趕加儘盡飛])快(?:點|一點)?${ACTION_VERB}`,
     "趕快|趕緊",
   ].join("|"),
+  "gu",
+);
+
+// ---------------------------------------------------------------------------
+// Market-urging rule (4) in detail: urging about the market with NO trading verb at
+// all ("還抱著？", "機會來了！", "收盤前是最後機會。"). A sentence that has a
+// market-context word (or a trading verb) AND an urging marker must carry a
+// narrative subject BEFORE the marker, in the same sentence (a subject is
+// never borrowed from the previous sentence or from the field's structure).
+// A STRONG marker -- an order, a hurry, a rhetorical question -- needs that
+// subject inside its own clause ("他看著報價，快！" is refused); a WEAK marker
+// -- regret, a deadline, an exclamation mark -- may take it from earlier in
+// the sentence ("他覺得這價位不入手，以後會後悔。" is his thought). A
+// reader-addressed sentence is refused whatever the marker.
+// ---------------------------------------------------------------------------
+// Words that put a sentence on a price, a quote, a session or a position.
+// 盤 is market context except inside 命盤/星盤/算盤/棋盤/茶盤 and 盤算/盤問/
+// 盤子/盤點/盤腿.
+const MARKET_CONTEXT = new RegExp(
+  [
+    "價位", "股價", "價格", "價錢", "報價", "走勢", "開戶", "券商", "行情", "大盤", "(?<![命星算棋茶])盤(?![算問子點腿纏])",
+    "這檔", "那檔", "這一檔", "(?<![屁])股(?![東份])", "點位", "主力", "開高", "開低", "這支", "那支", "標的", "個股", "持股", "部位", "股票", "這波", "那波", "這一波",
+    "漲", "跌", "低點", "高點", "底部", "反彈", "突破", "機會", "時機", "買點", "賣點", "進場點", "便宜", "觀望",
+    // 抱 as holding a position: 抱著/抱到/抱住/抱緊/抱牢.
+    "抱(?=[著到住緊牢])",
+    ACTION_VERB,
+  ].join("|"),
   "u",
 );
+// An order, a hurry, or a rhetorical question: needs the subject in its own clause.
+const URGING_STRONG = [
+  "趕快", "趕緊", "快點", "快一點",
+  // 快 as "hurry", not 很快/加快/愉快/快樂/快速/快訊 or 快要/快到/快了 (about to).
+  "(?<![很最越愈太趕加儘盡飛痛愉涼爽勤輕明捷])快(?![樂速感遞餐訊報照門閃要到了])",
+  "別再猶豫", "別猶豫", "不要猶豫", "不用猶豫", "別再等", "別等", "不要等", "不用等", "不能再等",
+  "還等什麼", "等什麼", "更待何時", "就對了", "(?<!緩)衝(?![動突擊撞刺著])",
+  "何不", "是時候", "時候到了", "時機到了", "機會又?來了", "就是現在", "正是時候",
+  "趁", "逢低", "逢高", "閉著眼睛", "閉著眼", "閉眼", "無腦", "別傻了", "別傻傻",
+  "千萬別", "千萬不要", "一定要", "務必", "(?:別|不要|不能)錯過", "機不可失", "千載難逢",
+  "[吧啦](?=[。！？!?，,；;]|$)",
+  // Rhetorical questions: a 還/難道/何必/為什麼不… question, or 不…嗎？, in one clause.
+  `(?:還|難道|何必|為什麼不|為何不|怎麼不|怎麼還|幹嘛不|幹嘛還)[^${CLAUSE_BOUNDARY_CHARS}]*[？?]`,
+  `不[^${CLAUSE_BOUNDARY_CHARS}]{0,10}嗎[？?]`,
+];
+// Regret, a deadline, fear of missing out, an exclamation mark: a subject
+// earlier in the same sentence covers these.
+const URGING_WEAK = [
+  "[！!]",
+  "(?:會|一定|肯定|以後|將來|到時)會?後悔", "後悔莫及",
+  "最後一次機會", "最後機會", "晚了就沒了", "就沒了", "來不及", "太晚", "沒機會", "再也買不到",
+  "錯過這", "錯過就", "下次就沒", "不會再有", "只能看別人", "看別人賺", "別人都在賺",
+  "晚一步", "追不上", "搭不上", "只有一次", "僅此一次", "可惜", "對不起自己", "等著看", "準沒錯", "下次沒",
+  // A guaranteed outcome is a call to act on it (market-safety.md).
+  "穩賺", "包賺", "穩了", "必漲", "必跌", "保證",
+  `(?:再|現在|今天|此時|這時)不[^${CLAUSE_BOUNDARY_CHARS}]{0,8}?(?:晚了|太晚|來不及|後悔|沒機會|錯過)`,
+  "(?:好|最佳|絕佳|難得)的?(?:時機|買點|賣點|進場點|機會)",
+];
+const URGING_MARKERS = [
+  ...URGING_STRONG.map((source) => ({ strength: "strong", pattern: new RegExp(source, "gu") })),
+  ...URGING_WEAK.map((source) => ({ strength: "weak", pattern: new RegExp(source, "gu") })),
+];
 
 function escapeRegExp(text) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -916,7 +1075,7 @@ function actionCallMatcher(characterNames) {
     .map(escapeRegExp);
   const person = `(?:他們|她們|他|她${names.map((name) => `|${name}`).join("")})`;
   const gap = `(?:${READER_GAP.slice(3, -1)}${names.map((name) => `|${name}`).join("")})`;
-  const narrators = [...names, ...PRONOUN_NARRATORS];
+  const narrators = [...names, ...GENERIC_THIRD_PERSON_NARRATORS, ...PRONOUN_NARRATORS];
   const literal = [...BANNED_ACTION_CALL_PHRASES].sort((a, b) => b.length - a.length).map(escapeRegExp);
   return {
     narrator: new RegExp(narrators.join("|"), "u"),
@@ -1000,7 +1159,14 @@ function clauseStartBefore(sentence, index) {
 function sentenceActionCallHits(sentence, previous, { matcher, quote, structural }) {
   const narrator = quote ? matcher.quoteNarrator : matcher.narrator;
   const readerAddressed = READER_ADDRESS.test(sentence);
-  const urging = IMPERATIVE_MOOD.test(sentence);
+  // (2c) urging counts only where a marker's own clause has no subject of
+  // its own and is not a reported thought: "他覺得機會來了，按下了買進。" is
+  // his thought, "他看了一眼，快進場吧！" is not.
+  const urging = [...sentence.matchAll(IMPERATIVE_MOOD)].some(
+    (match) =>
+      !narrator.test(sentence.slice(clauseStartBefore(sentence, match.index), match.index)) &&
+      !reportedThought(sentence, match.index, narrator),
+  );
   const continued = previous !== null && narrator.test(previous) && NARRATIVE_OPENER.test(sentence.trimStart());
   const judge = (start, shaped) => {
     if (readerAddressed) return "reader-address";
@@ -1024,8 +1190,47 @@ function sentenceActionCallHits(sentence, previous, { matcher, quote, structural
     const end = match.index + match[0].length;
     if (refusedSpans.some(([from, to]) => match.index >= from && end <= to)) continue;
     if (!readerAddressed && NOMINAL_TAIL.test(sentence.slice(end))) continue;
+    if (!readerAddressed && NOT_DONE_BEFORE.test(sentence.slice(0, match.index))) continue;
     const reason = judge(match.index, false);
     if (reason !== null) hits.push({ kind: "trading-verb", reason, phrase: match[0], sentence, quote });
+  }
+  hits.push(...marketUrgingHits(sentence, narrator, readerAddressed, quote));
+  return hits;
+}
+
+/**
+ * The clause holding `start` reports a thought of a subject named earlier in
+ * the same sentence, and the sentence has no exhortation particle.
+ */
+function reportedThought(sentence, start, narrator) {
+  if (EXHORTATION_PARTICLE.test(sentence)) return false;
+  const clauseStart = clauseStartBefore(sentence, start);
+  return narrator.test(sentence.slice(0, clauseStart)) && THOUGHT_CLAUSE.test(sentence.slice(clauseStart, start));
+}
+
+/** (4): urging about the market, with or without a trading verb. */
+function marketUrgingHits(sentence, narrator, readerAddressed, quote) {
+  if (!MARKET_CONTEXT.test(sentence)) return [];
+  // Market talk addressed to the reader is refused even with no urging word
+  // ("等你想通，行情早就走了。").
+  if (readerAddressed) {
+    return [{ kind: "market-reader", reason: "reader-address", phrase: sentence.match(READER_ADDRESS)[0], sentence, quote }];
+  }
+  const hits = [];
+  for (const { strength, pattern } of URGING_MARKERS) {
+    for (const match of sentence.matchAll(pattern)) {
+      let reason = null;
+      if (!narrator.test(sentence.slice(0, match.index))) {
+        reason = "no-narrative-subject";
+      } else if (
+        strength === "strong" &&
+        !narrator.test(sentence.slice(clauseStartBefore(sentence, match.index), match.index)) &&
+        !reportedThought(sentence, match.index, narrator)
+      ) {
+        reason = "imperative-mood";
+      }
+      if (reason !== null) hits.push({ kind: `market-urging/${strength}`, reason, phrase: match[0], sentence, quote });
+    }
   }
   return hits;
 }
@@ -1067,8 +1272,32 @@ function structuralSubjectField(owner, key) {
   return {};
 }
 
+// A paper action's machine code ("BUY", "SELL", "HOLD", "NO_ACTION") is an
+// enum value, not copy: the front end renders its own reviewed label for it.
+// It is exempt only as the WHOLE value of an `action` / `kind` key and only if
+// it is one of the values public-v2.yaml declares for PaperActionKind -- read
+// from the contract, so a missing or unparsable contract exempts nothing.
+const PAPER_ACTION_CODE_KEYS = new Set(["action", "kind"]);
+let paperActionCodes = new Set();
+
+function paperActionKindEnum(yaml) {
+  const codes = new Set();
+  let inside = false;
+  for (const line of yaml.split("\n")) {
+    if (/^ {4}PaperActionKind:\s*$/.test(line)) {
+      inside = true;
+      continue;
+    }
+    if (inside && /^ {0,4}\S/.test(line)) break;
+    const match = inside ? /^ {8}- ([A-Z][A-Z_]*)\s*$/.exec(line) : null;
+    if (match) codes.add(match[1]);
+  }
+  return codes;
+}
+
 function auditActionCalls(value, file, path, matcher, field = {}) {
   if (typeof value === "string") {
+    if (field.enumCode === true && paperActionCodes.has(value)) return;
     for (const hit of actionCallHits(value, matcher, field)) {
       check(
         false,
@@ -1079,7 +1308,8 @@ function auditActionCalls(value, file, path, matcher, field = {}) {
     value.forEach((item, position) => auditActionCalls(item, file, `${path}[${position}]`, matcher));
   } else if (value !== null && typeof value === "object") {
     for (const [key, child] of Object.entries(value)) {
-      auditActionCalls(child, file, `${path}.${key}`, matcher, structuralSubjectField(value, key));
+      const field = PAPER_ACTION_CODE_KEYS.has(key) ? { enumCode: true } : structuralSubjectField(value, key);
+      auditActionCalls(child, file, `${path}.${key}`, matcher, field);
     }
   }
 }
@@ -1344,562 +1574,715 @@ function auditUtterances(value, label) {
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const DIGEST_PATTERN = /^[a-f0-9]{64}$/;
 
-const index = await readJson("index.json");
-if (index === null) {
-  console.error("v5-slice-api-audit: fixtures/v5/one-character-slice/api/index.json is missing.");
-  console.error("Regenerate it with: pnpm slice:emit");
-  process.exit(1);
-}
+// ---------------------------------------------------------------------------
+// Instrument identity against the sealed facts. A paper position and a
+// daily disclosure name an instrument (`instrumentLabel`) and say what kind
+// of claim that name is (`instrumentLabelTruthClass`). The class is not free:
+// it is whatever the sealed fact revisions naming that instrument say it is,
+// read from the objects the historical manifests point at (`objectUri`, a
+// repository-relative `panshi-fixture:` path). The class must be one value
+// across every sealed revision of the instrument and equal to the class of
+// each manifest that seals it; an instrument no sealed revision names, or a
+// label the manifests disagree about, is refused -- fail closed, never a
+// default class.
+// ---------------------------------------------------------------------------
+const FACT_OBJECT_PREFIX = "contracts/world-fact-manifest/historical-v1/";
 
-const characterId = index.value.characterId;
-check(
-  typeof characterId === "string" && UUID_PATTERN.test(characterId),
-  `index.json: characterId ${JSON.stringify(characterId)} is not a lowercase UUID`,
-);
-
-const expectedRoutes = [
-  "/api/v2/world",
-  `/api/v2/characters/${characterId}/close-up`,
-  `/api/v2/characters/${characterId}/life-journal`,
-  `/api/v2/characters/${characterId}/archive`,
-  `/api/v2/characters/${characterId}/archive/paper`,
-  ...Object.keys(ARCHIVE_DETAIL_SECTIONS).map(
-    (key) => `/api/v2/characters/${characterId}/archive/${key}`,
-  ),
-];
-const routes = index.value.routes ?? {};
-check(
-  Object.keys(routes).length === expectedRoutes.length,
-  `index.json: expected ${expectedRoutes.length} routes, found ${Object.keys(routes).length}`,
-);
-for (const route of expectedRoutes) {
-  check(typeof routes[route] === "string", `index.json: no file mapped for route ${route}`);
-}
-
-let fieldIdentitySummary = null;
-const loaded = {};
-for (const route of expectedRoutes) {
-  if (typeof routes[route] !== "string") continue;
-  const document = await readJson(routes[route]);
-  if (document !== null) loaded[route] = document;
-}
-
-if (errors.length === 0) {
-  // -- world ---------------------------------------------------------------
-  const world = loaded["/api/v2/world"].value;
-  requireFields("world.json", world, REQUIRED.WorldSnapshot);
-  requireFields("world.json marketClock", world.marketClock, REQUIRED.WorldMarketClock);
-  requireFields("world.json scene", world.scene, REQUIRED.WorldSceneState);
-  check(
-    Array.isArray(world.characterPositions) && world.characterPositions.length === 1,
-    "world.json: exactly one canonical character position is expected in this slice",
-  );
-  for (const position of world.characterPositions ?? []) {
-    requireFields("world.json characterPositions[]", position, REQUIRED.CharacterWorldPosition);
-  }
-  check(
-    Array.isArray(world.storyHooks) && world.storyHooks.length <= 5,
-    "world.json: storyHooks must be an array of at most five entries",
-  );
-  for (const hook of world.storyHooks ?? []) {
-    requireFields("world.json storyHooks[]", hook, REQUIRED.WorldStoryHookRef);
-    // A hook is a pointer, never a ranked or scored recommendation.
-    for (const forbidden of ["rank", "score", "order", "priority", "weight", "ticker"]) {
-      check(
-        !Object.hasOwn(hook, forbidden),
-        `world.json: storyHooks[] must not carry a ${forbidden} field`,
-      );
+/**
+ * instrumentLabel -> { classes: Set, manifestIds: Set } over every sealed
+ * revision, plus per-manifest label -> Set(classes). `problems` collects
+ * anything that makes an identity unknowable.
+ */
+async function loadInstrumentIdentities() {
+  const problems = [];
+  const objects = new Map();
+  for (const manifest of historicalManifests) {
+    let path = null;
+    try {
+      const uri = new URL(manifest.objectUri);
+      if (uri.protocol !== "panshi-fixture:" || uri.host !== "") throw new Error("not a panshi-fixture: URI");
+      if (!uri.pathname.startsWith(FACT_OBJECT_PREFIX) || uri.pathname.includes("..")) {
+        throw new Error(`not under ${FACT_OBJECT_PREFIX}`);
+      }
+      path = uri.pathname;
+    } catch (error) {
+      problems.push(`${manifest.manifestId}: objectUri ${JSON.stringify(manifest.objectUri)} cannot be resolved (${error.message})`);
+      continue;
     }
-  }
-  check(
-    world.marketClock?.marketDate === TODAY &&
-      world.marketClock?.sessionPhase === "in_session" &&
-      world.marketClock?.asOfTradingDate === PREVIOUS_CLOSE_DATE,
-    `world.json: marketClock must show ${TODAY} in session with paper figures as of ${PREVIOUS_CLOSE_DATE}`,
-  );
-  check(world.dataState === "READY", "world.json: dataState must be READY");
-
-  // -- close-up ------------------------------------------------------------
-  const closeUp = loaded[`/api/v2/characters/${characterId}/close-up`].value;
-  requireFields("close-up.json", closeUp, REQUIRED.CharacterCloseUp);
-  if (closeUp.recentConsequenceHighlight) {
-    requireFields(
-      "close-up.json recentConsequenceHighlight",
-      closeUp.recentConsequenceHighlight,
-      REQUIRED.PaperPositionConsequenceHighlight,
-    );
-  }
-  for (const commitment of closeUp.unresolvedCommitments ?? []) {
-    requireFields("close-up.json unresolvedCommitments[]", commitment, REQUIRED.UnresolvedCommitment);
-  }
-  for (const key of ["publicClaim", "selfAcknowledgement"]) {
-    if (closeUp[key]) requireFields(`close-up.json ${key}`, closeUp[key], REQUIRED.CharacterUtterance);
-  }
-  // A close-up shows one consequence fragment, never the holdings table.
-  check(
-    !Object.hasOwn(closeUp, "positions") && !Object.hasOwn(closeUp, "lots"),
-    "close-up.json: a close-up must not carry a full holdings table",
-  );
-
-  // -- life journal --------------------------------------------------------
-  const journal = loaded[`/api/v2/characters/${characterId}/life-journal`].value;
-  requireFields("life-journal.json", journal, REQUIRED.LifeJournalPage);
-  check(
-    SETTLED_DATES.length === 29 && SESSION_COUNT === 30,
-    `historical fixture: expected 30 sessions with 29 settled, found ${SESSION_COUNT}/${SETTLED_DATES.length}`,
-  );
-  check(
-    Array.isArray(journal.entries) && journal.entries.length === SETTLED_DATES.length,
-    `life-journal.json: expected ${SETTLED_DATES.length} entries, found ${journal.entries?.length}`,
-  );
-  check(journal.nextCursor === null, "life-journal.json: nextCursor must be null");
-  const expectedChapterDates = SETTLED_DATES;
-  let chaptersWithDyad = 0;
-  (journal.entries ?? []).forEach((entry, position) => {
-    const label = `life-journal.json entries[${position}]`;
-    requireFields(label, entry, REQUIRED.LifeJournalEntry);
-    check(entry.entryVisibility === "PUBLIC", `${label}: an entry is always PUBLIC`);
-    check(
-      entry.narrativeState === "composed" || entry.narrativeState === "evidence_card_only",
-      `${label}: narrativeState must be composed or evidence_card_only`,
-    );
-    check(
-      Array.isArray(entry.narrativeSegments) &&
-        (entry.narrativeState === "composed") === entry.narrativeSegments.length > 0,
-      `${label}: a composed chapter has segments and an evidence-card-only chapter has none`,
-    );
-    for (const segment of entry.narrativeSegments ?? []) {
-      checkTruthClassed(`${label}.narrativeSegments[]`, segment, null);
-    }
-    // The typed evidence card, every part of which carries a truth class.
-    const card = entry.evidenceCard;
-    requireFields(`${label}.evidenceCard`, card, REQUIRED.EvidenceCard);
-    checkTruthClassed(`${label}.evidenceCard.action`, card?.action, null);
-    check(
-      (card?.paperOutcome === null) === (typeof card?.paperOutcomeNullReason === "string"),
-      `${label}.evidenceCard: paperOutcomeNullReason must be set exactly when paperOutcome is null`,
-    );
-    if (card?.paperOutcome) {
-      requireFields(`${label}.evidenceCard.paperOutcome`, card.paperOutcome, REQUIRED.EvidencePaperOutcome);
-      checkTruthClassed(`${label}.evidenceCard.paperOutcome`, card.paperOutcome, null);
-      for (const field of ["realizedPnlMinorUnits", "feeMinorUnits", "taxMinorUnits"]) {
-        check(Number.isInteger(card.paperOutcome[field]), `${label}.evidenceCard: ${field} must be an integer`);
+    if (!objects.has(path)) {
+      try {
+        const revisions = JSON.parse(await readFile(new URL(`../${path}`, import.meta.url), "utf8"));
+        if (!Array.isArray(revisions)) throw new Error("not a list of fact revisions");
+        objects.set(path, new Map(revisions.map((revision) => [revision.factRevisionId, revision])));
+      } catch (error) {
+        problems.push(`${path}: cannot read the sealed fact revisions (${error.message})`);
+        objects.set(path, null);
       }
     }
-    for (const listKey of ["quotedUtterances", "memoryRefs", "relationshipRefs"]) {
-      check(Array.isArray(card?.[listKey]), `${label}.evidenceCard: ${listKey} must be an array`);
-      for (const item of card?.[listKey] ?? []) {
-        checkTruthClassed(`${label}.evidenceCard.${listKey}[]`, item, null);
+  }
+  const byLabel = new Map();
+  const byManifest = new Map();
+  for (const manifest of historicalManifests) {
+    const path = (() => {
+      try {
+        return new URL(manifest.objectUri).pathname;
+      } catch {
+        return null;
       }
+    })();
+    const revisions = objects.get(path);
+    if (!revisions) continue;
+    const labels = new Map();
+    const sealed = [...(manifest.interactionFactRevisionIds ?? []), ...(manifest.outcomeEvidenceRevisionIds ?? [])];
+    for (const revisionId of new Set(sealed)) {
+      const revision = revisions.get(revisionId);
+      if (!revision) {
+        problems.push(`${manifest.manifestId}: sealed fact revision ${revisionId} is missing from ${path}`);
+        continue;
+      }
+      const label = revision.payload?.instrumentLabel;
+      if (typeof label !== "string") continue;
+      if (revision.truthClass !== manifest.truthClass) {
+        problems.push(
+          `${revisionId}: truthClass ${JSON.stringify(revision.truthClass)} differs from its manifest ${manifest.manifestId}'s ${JSON.stringify(manifest.truthClass)}`,
+        );
+      }
+      if (!labels.has(label)) labels.set(label, new Set());
+      labels.get(label).add(revision.truthClass);
+      if (!byLabel.has(label)) byLabel.set(label, { classes: new Set(), manifestIds: new Set() });
+      byLabel.get(label).classes.add(revision.truthClass);
+      byLabel.get(label).manifestIds.add(manifest.manifestId);
     }
-    for (const quote of card?.quotedUtterances ?? []) {
-      requireFields(`${label}.evidenceCard.quotedUtterances[]`, quote, REQUIRED.CharacterUtterance);
-    }
-    check(
-      (entry.relationshipConsequence === null) ===
-        (typeof entry.relationshipConsequenceNullReason === "string"),
-      `${label}: relationshipConsequenceNullReason must be set exactly when relationshipConsequence is null`,
-    );
-    if (entry.relationshipConsequence) {
-      requireFields(
-        `${label}.relationshipConsequence`,
-        entry.relationshipConsequence,
-        REQUIRED.RelationshipSignalView,
-      );
-      checkTruthClassed(`${label}.relationshipConsequence`, entry.relationshipConsequence, null);
-    }
-    check(
-      entry.chapterDate === expectedChapterDates[position],
-      `${label}: expected chapterDate ${expectedChapterDates[position]}, found ${entry.chapterDate}`,
-    );
-    requireFields(`${label}.archiveRefs`, entry.archiveRefs, REQUIRED.LifeJournalArchiveRefs);
-    if (entry.consequence?.paperConsequence) {
-      requireFields(
-        `${label}.consequence.paperConsequence`,
-        entry.consequence.paperConsequence,
-        REQUIRED.PaperConsequenceFragment,
-      );
-    } else {
-      check(
-        typeof entry.consequence?.nonPaperConsequenceSummary === "string",
-        `${label}: consequence needs a paper fragment or a non-paper summary`,
-      );
-    }
-    if (entry.contemporaneousClaim) {
-      requireFields(
-        `${label}.contemporaneousClaim`,
-        entry.contemporaneousClaim,
-        REQUIRED.CharacterUtterance,
-      );
-    }
-    const narration = entry.currentSelfNarration;
-    check(
-      narration?.kind === "utterance" || narration?.kind === "summary",
-      `${label}: currentSelfNarration must be an utterance or a summary`,
-    );
-    if (narration?.kind === "utterance") {
-      requireFields(`${label}.currentSelfNarration`, narration, [
-        "kind",
-        "utteranceArtifactId",
-        "canonicalTextSha256",
-        "canonicalTextUtf8",
-      ]);
-    }
-    // 老毛病又回來了 only appears where the pattern came back after two
-    // earlier occurrences.
-    check(
-      Object.hasOwn(entry, "recurringPatternRef") ===
-        RECURRING_PATTERN_DATES.includes(entry.chapterDate),
-      `${label}: recurringPatternRef presence does not match the recurrence threshold`,
-    );
-    if (position > 0) {
-      check(
-        journal.entries[position - 1].chapterDate < entry.chapterDate,
-        `${label}: chapterDate must strictly increase`,
-      );
-    }
-    if ((entry.archiveRefs?.relationshipDyadRefs ?? []).length > 0) chaptersWithDyad += 1;
-  });
-  // One public statement put a loss on the colleague, and only that chapter
-  // points at the relationship stream it left behind.
+    byManifest.set(manifest.marketDateTaipei, { manifestId: manifest.manifestId, labels });
+  }
+  return { byLabel, byManifest, problems };
+}
+
+/** One instrument name against the sealed class set it must match. */
+function checkInstrumentIdentity(label, owner, classes, where) {
+  const name = owner?.instrumentLabel;
+  const declared = owner?.instrumentLabelTruthClass;
+  if (classes === undefined || classes.size === 0) {
+    check(false, `${label}: instrumentLabel ${JSON.stringify(name)} is not named by any sealed fact revision ${where}; its identity cannot be checked (fail closed)`);
+    return;
+  }
+  if (classes.size !== 1) {
+    check(false, `${label}: the sealed fact revisions ${where} disagree about instrumentLabel ${JSON.stringify(name)} (${[...classes].join(", ")})`);
+    return;
+  }
+  const [expected] = classes;
   check(
-    chaptersWithDyad === 1,
-    `life-journal.json: expected exactly one chapter with a relationship dyad ref, found ${chaptersWithDyad}`,
+    declared === expected,
+    `${label}: instrumentLabelTruthClass ${JSON.stringify(declared)} for ${JSON.stringify(name)} must equal the sealed fact class ${JSON.stringify(expected)} ${where}`,
   );
-  check(
-    (journal.entries ?? []).filter((entry) => entry.relationshipConsequence).length === 1,
-    "life-journal.json: exactly one chapter carries a readable relationship consequence",
-  );
-  // A held chapter is an id, a date and a label; the checked-in fixture holds none.
-  check(Array.isArray(journal.heldEntries), "life-journal.json: heldEntries must be an array");
-  for (const held of journal.heldEntries ?? []) {
-    check(
-      JSON.stringify(Object.keys(held).sort()) ===
-        JSON.stringify([...REQUIRED.HeldLifeJournalEntry].sort()) && held.entryVisibility === "HELD",
-      "life-journal.json: a held entry may carry only entryId, chapterDate, entryVisibility and heldReasonLabel",
-    );
+}
+
+// The phrase rule, for tools/v5-slice-api-audit-phrase-corpus.test.mjs.
+// Importing this module runs no audit: the fixture audit below runs only
+// when this file is the entry point (`node tools/v5-slice-api-audit.mjs`).
+export { TRADE_VERB_FAMILIES, actionCallHits, actionCallMatcher, characterDisplayNames };
+
+if (import.meta.main) await runSliceAudit();
+
+async function runSliceAudit() {
+  const index = await readJson("index.json");
+  if (index === null) {
+    console.error("v5-slice-api-audit: fixtures/v5/one-character-slice/api/index.json is missing.");
+    console.error("Regenerate it with: pnpm slice:emit");
+    process.exit(1);
   }
 
-  // -- archive index -------------------------------------------------------
-  const archive = loaded[`/api/v2/characters/${characterId}/archive`].value;
-  requireFields("archive.json", archive, REQUIRED.CharacterArchiveIndex);
+  const characterId = index.value.characterId;
   check(
-    Array.isArray(archive.sections) && archive.sections.length === 6,
-    `archive.json: expected 6 sections, found ${archive.sections?.length}`,
-  );
-  check(
-    Array.isArray(archive.recentHighlights) && archive.recentHighlights.length <= 3,
-    "archive.json: recentHighlights must be an array of at most three entries",
-  );
-  (archive.sections ?? []).forEach((section, position) => {
-    const label = `archive.json sections[${position}]`;
-    requireFields(label, section, REQUIRED.ArchiveSectionIndexEntry);
-    check(
-      section.sectionKey === ARCHIVE_SECTION_KEYS[position],
-      `${label}: expected sectionKey ${ARCHIVE_SECTION_KEYS[position]}, found ${section.sectionKey}`,
-    );
-    // Every section has its own page, so no entrance is a dead end.
-    check(
-      section.sectionPath === `/api/v2/characters/${characterId}/archive/${section.sectionKey}`,
-      `${label}: ${section.sectionKey} must link to its own endpoint (sectionPath must not be null)`,
-    );
-  });
-
-  // -- paper archive -------------------------------------------------------
-  const paper = loaded[`/api/v2/characters/${characterId}/archive/paper`].value;
-  requireFields("archive/paper.json", paper, REQUIRED.PaperArchiveProjection);
-  requireFields("archive/paper.json paperVersionSet", paper.paperVersionSet, REQUIRED.PaperVersionSet);
-  requireFields("archive/paper.json account", paper.account, REQUIRED.PaperAccountPublicSummary);
-
-  const versionSet = paper.paperVersionSet ?? {};
-  check(
-    Array.isArray(versionSet.paperOrderRefs) &&
-      Array.isArray(versionSet.paperOrderVersions) &&
-      versionSet.paperOrderRefs.length === versionSet.paperOrderVersions.length,
-    "archive/paper.json: paperOrderRefs and paperOrderVersions must be equal-length parallel arrays",
-  );
-  check(
-    Array.isArray(versionSet.paperPositionRefs) &&
-      Array.isArray(versionSet.paperPositionVersions) &&
-      versionSet.paperPositionRefs.length === versionSet.paperPositionVersions.length,
-    "archive/paper.json: paperPositionRefs and paperPositionVersions must be equal-length parallel arrays",
-  );
-  const sortedOrderRefs = [...(versionSet.paperOrderRefs ?? [])].sort();
-  check(
-    JSON.stringify(sortedOrderRefs) === JSON.stringify(versionSet.paperOrderRefs ?? []),
-    "archive/paper.json: paperOrderRefs must be ordered by aggregate id byte order",
-  );
-  check(
-    DIGEST_PATTERN.test(versionSet.paperVersionSetDigest ?? ""),
-    "archive/paper.json: paperVersionSetDigest must be a lowercase sha256 hex digest",
+    typeof characterId === "string" && UUID_PATTERN.test(characterId),
+    `index.json: characterId ${JSON.stringify(characterId)} is not a lowercase UUID`,
   );
 
+  const expectedRoutes = [
+    "/api/v2/world",
+    `/api/v2/characters/${characterId}/close-up`,
+    `/api/v2/characters/${characterId}/life-journal`,
+    `/api/v2/characters/${characterId}/archive`,
+    `/api/v2/characters/${characterId}/archive/paper`,
+    ...Object.keys(ARCHIVE_DETAIL_SECTIONS).map(
+      (key) => `/api/v2/characters/${characterId}/archive/${key}`,
+    ),
+  ];
+  const routes = index.value.routes ?? {};
   check(
-    Array.isArray(paper.positions) && paper.positions.length === 1,
-    `archive/paper.json: expected 1 position, found ${paper.positions?.length}`,
+    Object.keys(routes).length === expectedRoutes.length,
+    `index.json: expected ${expectedRoutes.length} routes, found ${Object.keys(routes).length}`,
   );
-  for (const position of paper.positions ?? []) {
-    requireFields("archive/paper.json positions[]", position, REQUIRED.PaperPositionPublic);
-    for (const lot of position.lots ?? []) {
-      requireFields("archive/paper.json positions[].lots[]", lot, REQUIRED.PaperLotPublic);
-      check(
-        Number.isInteger(lot.quantityFixed6) && Number.isInteger(lot.costBasisMinorUnits),
-        "archive/paper.json: lot quantities and amounts must be integers, never floats",
-      );
-    }
-    if (position.concurrentClaim) {
-      requireFields(
-        "archive/paper.json positions[].concurrentClaim",
-        position.concurrentClaim,
-        REQUIRED.CharacterUtterance,
-      );
-    }
-    // Influence is shown by name and relationship label, never as a bare id,
-    // and an empty list says why it is empty.
-    check(Array.isArray(position.influencedBy), "archive/paper.json: influencedBy must be an array");
-    for (const influence of position.influencedBy ?? []) {
-      requireFields("archive/paper.json positions[].influencedBy[]", influence, REQUIRED.InfluenceRef);
-      check(
-        typeof influence.displayName === "string" && influence.displayName.length > 0,
-        "archive/paper.json: influencedBy[] must carry a displayName",
-      );
-      checkTruthClassed("archive/paper.json positions[].influencedBy[]", influence, null);
-    }
-    check(
-      ((position.influencedBy ?? []).length === 0) === (typeof position.influencedByEmptyReason === "string"),
-      "archive/paper.json: influencedByEmptyReason must be set exactly when influencedBy is empty",
-    );
-    // The complete loss stays visible.
-    check(
-      Number.isInteger(position.realizedPnlMinorUnits) &&
-        Number.isInteger(position.unrealizedPnlMinorUnits) &&
-        Number.isInteger(position.unrealizedPnlPercentFixed2),
-      "archive/paper.json: P&L figures must be integer minor units / fixed-point",
-    );
-    // `consequenceSummary` is prose derived from the same numbers; it must
-    // never launder a realized or unrealized loss into something neutral
-    // like "持有中。" -- whichever side of the P&L is negative must be named.
-    const summary = position.consequenceSummary;
-    if (Number.isInteger(position.realizedPnlMinorUnits) && position.realizedPnlMinorUnits < 0) {
-      check(
-        typeof summary === "string" && summary.includes("虧損"),
-        "archive/paper.json: positions[].consequenceSummary must name the realized loss when realizedPnlMinorUnits is negative",
-      );
-    }
-    if (Number.isInteger(position.unrealizedPnlMinorUnits) && position.unrealizedPnlMinorUnits < 0) {
-      check(
-        typeof summary === "string" && summary.includes("未實現虧損"),
-        "archive/paper.json: positions[].consequenceSummary must name the unrealized loss when unrealizedPnlMinorUnits is negative",
-      );
-    }
+  for (const route of expectedRoutes) {
+    check(typeof routes[route] === "string", `index.json: no file mapped for route ${route}`);
   }
 
-  check(
-    Array.isArray(paper.historicalActionFills) && paper.historicalActionFills.length === SESSION_COUNT,
-    `archive/paper.json: expected ${SESSION_COUNT} daily records, found ${paper.historicalActionFills?.length}`,
-  );
-  check(
-    paper.historicalActionFills?.at(-1)?.tradingDate === TODAY,
-    `archive/paper.json: the last daily record must be today (${TODAY})`,
-  );
-  let pendingRecords = 0;
-  for (const record of paper.historicalActionFills ?? []) {
-    const label = `archive/paper.json historicalActionFills[${record.tradingDate}]`;
-    requireFields(label, record, REQUIRED.PaperActionFillRecord);
-    if (record.marketSessionFinalityState === "accepted") {
-      check(
-        Object.hasOwn(record, "dailyActionDisclosure"),
-        `${label}: an accepted trading day must carry its disclosure`,
-      );
-      requireFields(
-        `${label}.dailyActionDisclosure`,
-        record.dailyActionDisclosure,
-        REQUIRED.PaperDailyActionDisclosure,
-      );
-    } else {
-      pendingRecords += 1;
-      // Structurally absent, not present-and-null.
-      check(
-        !Object.hasOwn(record, "dailyActionDisclosure"),
-        `${label}: same-day disclosure leaked before finality was accepted`,
-      );
-    }
-  }
-  check(
-    pendingRecords === 1,
-    `archive/paper.json: expected exactly one pending trading day, found ${pendingRecords}`,
-  );
-  for (const revision of paper.dataRevisions ?? []) {
-    requireFields("archive/paper.json dataRevisions[]", revision, REQUIRED.DataRevisionNote);
+  let fieldIdentitySummary = null;
+  const loaded = {};
+  for (const route of expectedRoutes) {
+    if (typeof routes[route] !== "string") continue;
+    const document = await readJson(routes[route]);
+    if (document !== null) loaded[route] = document;
   }
 
-  // -- the five detail sections -------------------------------------------
-  for (const [key, schema] of Object.entries(ARCHIVE_DETAIL_SECTIONS)) {
-    const route = `/api/v2/characters/${characterId}/archive/${key}`;
-    const label = `archive/${key}.json`;
-    const section = loaded[route]?.value;
-    requireFields(label, section, REQUIRED[schema]);
-    if (!section) continue;
-    check(section.sectionKey === key, `${label}: sectionKey must be ${key}`);
+  if (errors.length === 0) {
+    // -- world ---------------------------------------------------------------
+    const world = loaded["/api/v2/world"].value;
+    requireFields("world.json", world, REQUIRED.WorldSnapshot);
+    requireFields("world.json marketClock", world.marketClock, REQUIRED.WorldMarketClock);
+    requireFields("world.json scene", world.scene, REQUIRED.WorldSceneState);
     check(
-      section.appliedAudienceScope === "subscriber_archive",
-      `${label}: a deep-archive section resolves at subscriber_archive`,
+      Array.isArray(world.characterPositions) && world.characterPositions.length === 1,
+      "world.json: exactly one canonical character position is expected in this slice",
     );
-    const items = [];
-    archiveItems(section, true, items);
-    check(items.length > 0, `${label}: a section page must carry items`);
-    for (const { key: itemKey, item } of items) {
-      checkTruthClassed(`${label} ${itemKey}`, item, section.truthClasses ?? []);
+    for (const position of world.characterPositions ?? []) {
+      requireFields("world.json characterPositions[]", position, REQUIRED.CharacterWorldPosition);
     }
-    for (const field of Object.keys(section)) {
-      if (field.endsWith("EmptyReason")) {
-        const listKey = field.slice(0, -"EmptyReason".length);
+    check(
+      Array.isArray(world.storyHooks) && world.storyHooks.length <= 5,
+      "world.json: storyHooks must be an array of at most five entries",
+    );
+    for (const hook of world.storyHooks ?? []) {
+      requireFields("world.json storyHooks[]", hook, REQUIRED.WorldStoryHookRef);
+      // A hook is a pointer, never a ranked or scored recommendation.
+      for (const forbidden of ["rank", "score", "order", "priority", "weight", "ticker"]) {
         check(
-          (Array.isArray(section[listKey]) && section[listKey].length === 0) ===
-            (typeof section[field] === "string"),
-          `${label}: ${field} must be set exactly when ${listKey} is empty`,
+          !Object.hasOwn(hook, forbidden),
+          `world.json: storyHooks[] must not carry a ${forbidden} field`,
         );
       }
     }
-    // A raw acquaintance key is canonical plumbing, never viewer copy.
-    check(!/"acq-[^"]*"/.test(loaded[route].raw), `${label}: exposes a raw acquaintance key`);
-  }
-  const chart = loaded[`/api/v2/characters/${characterId}/archive/chart`]?.value;
-  for (const motif of chart?.motifs ?? []) {
     check(
-      motif.truthClass === "symbolic_interpretation" &&
-        typeof motif.effectScopeLabel === "string" &&
-        motif.effectScopeLabel.includes("不影響價格或績效"),
-      "archive/chart.json: a motif is symbolic_interpretation and says it does not affect price or performance",
+      world.marketClock?.marketDate === TODAY &&
+        world.marketClock?.sessionPhase === "in_session" &&
+        world.marketClock?.asOfTradingDate === PREVIOUS_CLOSE_DATE,
+      `world.json: marketClock must show ${TODAY} in session with paper figures as of ${PREVIOUS_CLOSE_DATE}`,
     );
-  }
-  const memories = loaded[`/api/v2/characters/${characterId}/archive/memories`]?.value;
-  for (const memory of memories?.memories ?? []) {
-    check(
-      memory.visibility === "subscriber_archive" || memory.visibility === "public_edition",
-      "archive/memories.json: a canonical_restricted memory may never be listed",
-    );
-  }
-  const traits = loaded[`/api/v2/characters/${characterId}/archive/traits`]?.value;
-  check(
-    Array.isArray(traits?.biasOccurrences) && traits.biasOccurrences.length > 0,
-    "archive/traits.json: the slice's detected patterns must be listed per occurrence",
-  );
-  // Every character is a fictional adult (AGENTS.md "Product invariants").
-  // The floor here is stricter than the runbook's advertised "at least 18":
-  // this audit also requires the identity to be explicitly marked as an
-  // adult fictional resident, not merely to clear a numeric age.
-  const life = loaded[`/api/v2/characters/${characterId}/archive/life`]?.value;
-  const identity = life?.identity;
-  check(
-    identity?.adultFictionalResident === true,
-    "archive/life.json: identity.adultFictionalResident must be present and true",
-  );
-  check(
-    Number.isInteger(identity?.ageYears) && identity.ageYears >= 20,
-    `archive/life.json: identity.ageYears must be at least 20, found ${JSON.stringify(identity?.ageYears)}`,
-  );
+    check(world.dataState === "READY", "world.json: dataState must be READY");
 
-  // -- cross-cutting -------------------------------------------------------
-  for (const [route, document] of Object.entries(loaded)) {
-    const label = routes[route];
-    for (const truthClass of document.value.truthClasses ?? []) {
-      check(
-        ALLOWED_TRUTH_CLASSES.includes(truthClass),
-        `${label}: truthClasses may not include ${JSON.stringify(truthClass)}`,
+    // -- close-up ------------------------------------------------------------
+    const closeUp = loaded[`/api/v2/characters/${characterId}/close-up`].value;
+    requireFields("close-up.json", closeUp, REQUIRED.CharacterCloseUp);
+    if (closeUp.recentConsequenceHighlight) {
+      requireFields(
+        "close-up.json recentConsequenceHighlight",
+        closeUp.recentConsequenceHighlight,
+        REQUIRED.PaperPositionConsequenceHighlight,
       );
     }
-    for (const reference of document.value.sourceRevisionSet ?? []) {
-      requireFields(`${label} sourceRevisionSet[]`, reference, REQUIRED.SourceRevisionRef);
+    for (const commitment of closeUp.unresolvedCommitments ?? []) {
+      requireFields("close-up.json unresolvedCommitments[]", commitment, REQUIRED.UnresolvedCommitment);
+    }
+    for (const key of ["publicClaim", "selfAcknowledgement"]) {
+      if (closeUp[key]) requireFields(`close-up.json ${key}`, closeUp[key], REQUIRED.CharacterUtterance);
+    }
+    // A close-up shows one consequence fragment, never the holdings table.
+    check(
+      !Object.hasOwn(closeUp, "positions") && !Object.hasOwn(closeUp, "lots"),
+      "close-up.json: a close-up must not carry a full holdings table",
+    );
+
+    // -- life journal --------------------------------------------------------
+    const journal = loaded[`/api/v2/characters/${characterId}/life-journal`].value;
+    requireFields("life-journal.json", journal, REQUIRED.LifeJournalPage);
+    check(
+      SETTLED_DATES.length === 29 && SESSION_COUNT === 30,
+      `historical fixture: expected 30 sessions with 29 settled, found ${SESSION_COUNT}/${SETTLED_DATES.length}`,
+    );
+    check(
+      Array.isArray(journal.entries) && journal.entries.length === SETTLED_DATES.length,
+      `life-journal.json: expected ${SETTLED_DATES.length} entries, found ${journal.entries?.length}`,
+    );
+    check(journal.nextCursor === null, "life-journal.json: nextCursor must be null");
+    const expectedChapterDates = SETTLED_DATES;
+    let chaptersWithDyad = 0;
+    (journal.entries ?? []).forEach((entry, position) => {
+      const label = `life-journal.json entries[${position}]`;
+      requireFields(label, entry, REQUIRED.LifeJournalEntry);
+      check(entry.entryVisibility === "PUBLIC", `${label}: an entry is always PUBLIC`);
+      check(
+        entry.narrativeState === "composed" || entry.narrativeState === "evidence_card_only",
+        `${label}: narrativeState must be composed or evidence_card_only`,
+      );
+      check(
+        Array.isArray(entry.narrativeSegments) &&
+          (entry.narrativeState === "composed") === entry.narrativeSegments.length > 0,
+        `${label}: a composed chapter has segments and an evidence-card-only chapter has none`,
+      );
+      for (const segment of entry.narrativeSegments ?? []) {
+        checkTruthClassed(`${label}.narrativeSegments[]`, segment, null);
+      }
+      // The typed evidence card, every part of which carries a truth class.
+      const card = entry.evidenceCard;
+      requireFields(`${label}.evidenceCard`, card, REQUIRED.EvidenceCard);
+      checkTruthClassed(`${label}.evidenceCard.action`, card?.action, null);
+      check(
+        (card?.paperOutcome === null) === (typeof card?.paperOutcomeNullReason === "string"),
+        `${label}.evidenceCard: paperOutcomeNullReason must be set exactly when paperOutcome is null`,
+      );
+      if (card?.paperOutcome) {
+        requireFields(`${label}.evidenceCard.paperOutcome`, card.paperOutcome, REQUIRED.EvidencePaperOutcome);
+        checkTruthClassed(`${label}.evidenceCard.paperOutcome`, card.paperOutcome, null);
+        for (const field of ["realizedPnlMinorUnits", "feeMinorUnits", "taxMinorUnits"]) {
+          check(Number.isInteger(card.paperOutcome[field]), `${label}.evidenceCard: ${field} must be an integer`);
+        }
+      }
+      for (const listKey of ["quotedUtterances", "memoryRefs", "relationshipRefs"]) {
+        check(Array.isArray(card?.[listKey]), `${label}.evidenceCard: ${listKey} must be an array`);
+        for (const item of card?.[listKey] ?? []) {
+          checkTruthClassed(`${label}.evidenceCard.${listKey}[]`, item, null);
+        }
+      }
+      for (const quote of card?.quotedUtterances ?? []) {
+        requireFields(`${label}.evidenceCard.quotedUtterances[]`, quote, REQUIRED.CharacterUtterance);
+      }
+      check(
+        (entry.relationshipConsequence === null) ===
+          (typeof entry.relationshipConsequenceNullReason === "string"),
+        `${label}: relationshipConsequenceNullReason must be set exactly when relationshipConsequence is null`,
+      );
+      if (entry.relationshipConsequence) {
+        requireFields(
+          `${label}.relationshipConsequence`,
+          entry.relationshipConsequence,
+          REQUIRED.RelationshipSignalView,
+        );
+        checkTruthClassed(`${label}.relationshipConsequence`, entry.relationshipConsequence, null);
+      }
+      check(
+        entry.chapterDate === expectedChapterDates[position],
+        `${label}: expected chapterDate ${expectedChapterDates[position]}, found ${entry.chapterDate}`,
+      );
+      requireFields(`${label}.archiveRefs`, entry.archiveRefs, REQUIRED.LifeJournalArchiveRefs);
+      if (entry.consequence?.paperConsequence) {
+        requireFields(
+          `${label}.consequence.paperConsequence`,
+          entry.consequence.paperConsequence,
+          REQUIRED.PaperConsequenceFragment,
+        );
+      } else {
+        check(
+          typeof entry.consequence?.nonPaperConsequenceSummary === "string",
+          `${label}: consequence needs a paper fragment or a non-paper summary`,
+        );
+      }
+      if (entry.contemporaneousClaim) {
+        requireFields(
+          `${label}.contemporaneousClaim`,
+          entry.contemporaneousClaim,
+          REQUIRED.CharacterUtterance,
+        );
+      }
+      const narration = entry.currentSelfNarration;
+      check(
+        narration?.kind === "utterance" || narration?.kind === "summary",
+        `${label}: currentSelfNarration must be an utterance or a summary`,
+      );
+      if (narration?.kind === "utterance") {
+        requireFields(`${label}.currentSelfNarration`, narration, [
+          "kind",
+          "utteranceArtifactId",
+          "canonicalTextSha256",
+          "canonicalTextUtf8",
+        ]);
+      }
+      // 老毛病又回來了 only appears where the pattern came back after two
+      // earlier occurrences.
+      check(
+        Object.hasOwn(entry, "recurringPatternRef") ===
+          RECURRING_PATTERN_DATES.includes(entry.chapterDate),
+        `${label}: recurringPatternRef presence does not match the recurrence threshold`,
+      );
+      if (position > 0) {
+        check(
+          journal.entries[position - 1].chapterDate < entry.chapterDate,
+          `${label}: chapterDate must strictly increase`,
+        );
+      }
+      if ((entry.archiveRefs?.relationshipDyadRefs ?? []).length > 0) chaptersWithDyad += 1;
+    });
+    // One public statement put a loss on the colleague, and only that chapter
+    // points at the relationship stream it left behind.
+    check(
+      chaptersWithDyad === 1,
+      `life-journal.json: expected exactly one chapter with a relationship dyad ref, found ${chaptersWithDyad}`,
+    );
+    check(
+      (journal.entries ?? []).filter((entry) => entry.relationshipConsequence).length === 1,
+      "life-journal.json: exactly one chapter carries a readable relationship consequence",
+    );
+    // A held chapter is an id, a date and a label; the checked-in fixture holds none.
+    check(Array.isArray(journal.heldEntries), "life-journal.json: heldEntries must be an array");
+    for (const held of journal.heldEntries ?? []) {
+      check(
+        JSON.stringify(Object.keys(held).sort()) ===
+          JSON.stringify([...REQUIRED.HeldLifeJournalEntry].sort()) && held.entryVisibility === "HELD",
+        "life-journal.json: a held entry may carry only entryId, chapterDate, entryVisibility and heldReasonLabel",
+      );
+    }
+
+    // -- archive index -------------------------------------------------------
+    const archive = loaded[`/api/v2/characters/${characterId}/archive`].value;
+    requireFields("archive.json", archive, REQUIRED.CharacterArchiveIndex);
+    check(
+      Array.isArray(archive.sections) && archive.sections.length === 6,
+      `archive.json: expected 6 sections, found ${archive.sections?.length}`,
+    );
+    check(
+      Array.isArray(archive.recentHighlights) && archive.recentHighlights.length <= 3,
+      "archive.json: recentHighlights must be an array of at most three entries",
+    );
+    (archive.sections ?? []).forEach((section, position) => {
+      const label = `archive.json sections[${position}]`;
+      requireFields(label, section, REQUIRED.ArchiveSectionIndexEntry);
+      check(
+        section.sectionKey === ARCHIVE_SECTION_KEYS[position],
+        `${label}: expected sectionKey ${ARCHIVE_SECTION_KEYS[position]}, found ${section.sectionKey}`,
+      );
+      // Every section has its own page, so no entrance is a dead end.
+      check(
+        section.sectionPath === `/api/v2/characters/${characterId}/archive/${section.sectionKey}`,
+        `${label}: ${section.sectionKey} must link to its own endpoint (sectionPath must not be null)`,
+      );
+    });
+
+    // -- paper archive -------------------------------------------------------
+    const paper = loaded[`/api/v2/characters/${characterId}/archive/paper`].value;
+    requireFields("archive/paper.json", paper, REQUIRED.PaperArchiveProjection);
+    requireFields("archive/paper.json paperVersionSet", paper.paperVersionSet, REQUIRED.PaperVersionSet);
+    requireFields("archive/paper.json account", paper.account, REQUIRED.PaperAccountPublicSummary);
+
+    const versionSet = paper.paperVersionSet ?? {};
+    check(
+      Array.isArray(versionSet.paperOrderRefs) &&
+        Array.isArray(versionSet.paperOrderVersions) &&
+        versionSet.paperOrderRefs.length === versionSet.paperOrderVersions.length,
+      "archive/paper.json: paperOrderRefs and paperOrderVersions must be equal-length parallel arrays",
+    );
+    check(
+      Array.isArray(versionSet.paperPositionRefs) &&
+        Array.isArray(versionSet.paperPositionVersions) &&
+        versionSet.paperPositionRefs.length === versionSet.paperPositionVersions.length,
+      "archive/paper.json: paperPositionRefs and paperPositionVersions must be equal-length parallel arrays",
+    );
+    const sortedOrderRefs = [...(versionSet.paperOrderRefs ?? [])].sort();
+    check(
+      JSON.stringify(sortedOrderRefs) === JSON.stringify(versionSet.paperOrderRefs ?? []),
+      "archive/paper.json: paperOrderRefs must be ordered by aggregate id byte order",
+    );
+    check(
+      DIGEST_PATTERN.test(versionSet.paperVersionSetDigest ?? ""),
+      "archive/paper.json: paperVersionSetDigest must be a lowercase sha256 hex digest",
+    );
+
+    check(
+      Array.isArray(paper.positions) && paper.positions.length === 1,
+      `archive/paper.json: expected 1 position, found ${paper.positions?.length}`,
+    );
+    for (const position of paper.positions ?? []) {
+      requireFields("archive/paper.json positions[]", position, REQUIRED.PaperPositionPublic);
+      for (const lot of position.lots ?? []) {
+        requireFields("archive/paper.json positions[].lots[]", lot, REQUIRED.PaperLotPublic);
+        check(
+          Number.isInteger(lot.quantityFixed6) && Number.isInteger(lot.costBasisMinorUnits),
+          "archive/paper.json: lot quantities and amounts must be integers, never floats",
+        );
+      }
+      if (position.concurrentClaim) {
+        requireFields(
+          "archive/paper.json positions[].concurrentClaim",
+          position.concurrentClaim,
+          REQUIRED.CharacterUtterance,
+        );
+      }
+      // Influence is shown by name and relationship label, never as a bare id,
+      // and an empty list says why it is empty.
+      check(Array.isArray(position.influencedBy), "archive/paper.json: influencedBy must be an array");
+      for (const influence of position.influencedBy ?? []) {
+        requireFields("archive/paper.json positions[].influencedBy[]", influence, REQUIRED.InfluenceRef);
+        check(
+          typeof influence.displayName === "string" && influence.displayName.length > 0,
+          "archive/paper.json: influencedBy[] must carry a displayName",
+        );
+        checkTruthClassed("archive/paper.json positions[].influencedBy[]", influence, null);
+      }
+      check(
+        ((position.influencedBy ?? []).length === 0) === (typeof position.influencedByEmptyReason === "string"),
+        "archive/paper.json: influencedByEmptyReason must be set exactly when influencedBy is empty",
+      );
+      // The complete loss stays visible.
+      check(
+        Number.isInteger(position.realizedPnlMinorUnits) &&
+          Number.isInteger(position.unrealizedPnlMinorUnits) &&
+          Number.isInteger(position.unrealizedPnlPercentFixed2),
+        "archive/paper.json: P&L figures must be integer minor units / fixed-point",
+      );
+      // `consequenceSummary` is prose derived from the same numbers; it must
+      // never launder a realized or unrealized loss into something neutral
+      // like "持有中。" -- whichever side of the P&L is negative must be named.
+      const summary = position.consequenceSummary;
+      if (Number.isInteger(position.realizedPnlMinorUnits) && position.realizedPnlMinorUnits < 0) {
+        check(
+          typeof summary === "string" && summary.includes("虧損"),
+          "archive/paper.json: positions[].consequenceSummary must name the realized loss when realizedPnlMinorUnits is negative",
+        );
+      }
+      if (Number.isInteger(position.unrealizedPnlMinorUnits) && position.unrealizedPnlMinorUnits < 0) {
+        check(
+          typeof summary === "string" && summary.includes("未實現虧損"),
+          "archive/paper.json: positions[].consequenceSummary must name the unrealized loss when unrealizedPnlMinorUnits is negative",
+        );
+      }
+    }
+
+    check(
+      Array.isArray(paper.historicalActionFills) && paper.historicalActionFills.length === SESSION_COUNT,
+      `archive/paper.json: expected ${SESSION_COUNT} daily records, found ${paper.historicalActionFills?.length}`,
+    );
+    check(
+      paper.historicalActionFills?.at(-1)?.tradingDate === TODAY,
+      `archive/paper.json: the last daily record must be today (${TODAY})`,
+    );
+    let pendingRecords = 0;
+    for (const record of paper.historicalActionFills ?? []) {
+      const label = `archive/paper.json historicalActionFills[${record.tradingDate}]`;
+      requireFields(label, record, REQUIRED.PaperActionFillRecord);
+      if (record.marketSessionFinalityState === "accepted") {
+        check(
+          Object.hasOwn(record, "dailyActionDisclosure"),
+          `${label}: an accepted trading day must carry its disclosure`,
+        );
+        requireFields(
+          `${label}.dailyActionDisclosure`,
+          record.dailyActionDisclosure,
+          REQUIRED.PaperDailyActionDisclosure,
+        );
+      } else {
+        pendingRecords += 1;
+        // Structurally absent, not present-and-null.
+        check(
+          !Object.hasOwn(record, "dailyActionDisclosure"),
+          `${label}: same-day disclosure leaked before finality was accepted`,
+        );
+      }
+    }
+    check(
+      pendingRecords === 1,
+      `archive/paper.json: expected exactly one pending trading day, found ${pendingRecords}`,
+    );
+    for (const revision of paper.dataRevisions ?? []) {
+      requireFields("archive/paper.json dataRevisions[]", revision, REQUIRED.DataRevisionNote);
+    }
+
+    // Instrument identity: the class of every instrument name is the class
+    // the sealed fact revisions give it -- across all sessions for a
+    // position, and in that trading day's own manifest for a disclosure.
+    const instruments = await loadInstrumentIdentities();
+    for (const problem of instruments.problems) check(false, `sealed fact revisions: ${problem}`);
+    let instrumentChecks = 0;
+    (paper.positions ?? []).forEach((position, positionIndex) => {
+      checkInstrumentIdentity(
+        `archive/paper.json positions[${positionIndex}]`,
+        position,
+        instruments.byLabel.get(position.instrumentLabel)?.classes,
+        "in any historical manifest",
+      );
+      instrumentChecks += 1;
+    });
+    for (const record of paper.historicalActionFills ?? []) {
+      const disclosure = record.dailyActionDisclosure;
+      if (disclosure === undefined) continue;
+      const session = instruments.byManifest.get(record.tradingDate);
+      checkInstrumentIdentity(
+        `archive/paper.json historicalActionFills[${record.tradingDate}].dailyActionDisclosure`,
+        disclosure,
+        session?.labels.get(disclosure?.instrumentLabel),
+        `in the ${record.tradingDate} manifest ${session?.manifestId ?? "(none)"}`,
+      );
+      instrumentChecks += 1;
+    }
+    check(
+      instrumentChecks === (paper.positions ?? []).length + SETTLED_DATES.length,
+      `archive/paper.json: instrument identity checked ${instrumentChecks} times, expected every position and every accepted disclosure`,
+    );
+
+    // -- the five detail sections -------------------------------------------
+    for (const [key, schema] of Object.entries(ARCHIVE_DETAIL_SECTIONS)) {
+      const route = `/api/v2/characters/${characterId}/archive/${key}`;
+      const label = `archive/${key}.json`;
+      const section = loaded[route]?.value;
+      requireFields(label, section, REQUIRED[schema]);
+      if (!section) continue;
+      check(section.sectionKey === key, `${label}: sectionKey must be ${key}`);
+      check(
+        section.appliedAudienceScope === "subscriber_archive",
+        `${label}: a deep-archive section resolves at subscriber_archive`,
+      );
+      const items = [];
+      archiveItems(section, true, items);
+      check(items.length > 0, `${label}: a section page must carry items`);
+      for (const { key: itemKey, item } of items) {
+        checkTruthClassed(`${label} ${itemKey}`, item, section.truthClasses ?? []);
+      }
+      for (const field of Object.keys(section)) {
+        if (field.endsWith("EmptyReason")) {
+          const listKey = field.slice(0, -"EmptyReason".length);
+          check(
+            (Array.isArray(section[listKey]) && section[listKey].length === 0) ===
+              (typeof section[field] === "string"),
+            `${label}: ${field} must be set exactly when ${listKey} is empty`,
+          );
+        }
+      }
+      // A raw acquaintance key is canonical plumbing, never viewer copy.
+      check(!/"acq-[^"]*"/.test(loaded[route].raw), `${label}: exposes a raw acquaintance key`);
+    }
+    const chart = loaded[`/api/v2/characters/${characterId}/archive/chart`]?.value;
+    for (const motif of chart?.motifs ?? []) {
+      check(
+        motif.truthClass === "symbolic_interpretation" &&
+          typeof motif.effectScopeLabel === "string" &&
+          motif.effectScopeLabel.includes("不影響價格或績效"),
+        "archive/chart.json: a motif is symbolic_interpretation and says it does not affect price or performance",
+      );
+    }
+    const memories = loaded[`/api/v2/characters/${characterId}/archive/memories`]?.value;
+    for (const memory of memories?.memories ?? []) {
+      check(
+        memory.visibility === "subscriber_archive" || memory.visibility === "public_edition",
+        "archive/memories.json: a canonical_restricted memory may never be listed",
+      );
+    }
+    const traits = loaded[`/api/v2/characters/${characterId}/archive/traits`]?.value;
+    check(
+      Array.isArray(traits?.biasOccurrences) && traits.biasOccurrences.length > 0,
+      "archive/traits.json: the slice's detected patterns must be listed per occurrence",
+    );
+    // Every character is a fictional adult (AGENTS.md "Product invariants").
+    // The floor here is stricter than the runbook's advertised "at least 18":
+    // this audit also requires the identity to be explicitly marked as an
+    // adult fictional resident, not merely to clear a numeric age.
+    const life = loaded[`/api/v2/characters/${characterId}/archive/life`]?.value;
+    const identity = life?.identity;
+    check(
+      identity?.adultFictionalResident === true,
+      "archive/life.json: identity.adultFictionalResident must be present and true",
+    );
+    check(
+      Number.isInteger(identity?.ageYears) && identity.ageYears >= 20,
+      `archive/life.json: identity.ageYears must be at least 20, found ${JSON.stringify(identity?.ageYears)}`,
+    );
+
+    // -- cross-cutting -------------------------------------------------------
+    for (const [route, document] of Object.entries(loaded)) {
+      const label = routes[route];
+      for (const truthClass of document.value.truthClasses ?? []) {
+        check(
+          ALLOWED_TRUTH_CLASSES.includes(truthClass),
+          `${label}: truthClasses may not include ${JSON.stringify(truthClass)}`,
+        );
+      }
+      for (const reference of document.value.sourceRevisionSet ?? []) {
+        requireFields(`${label} sourceRevisionSet[]`, reference, REQUIRED.SourceRevisionRef);
+      }
+      for (const banned of BANNED_SUBSTRINGS) {
+        check(
+          !document.raw.includes(banned),
+          `${label}: contains the banned string ${JSON.stringify(banned)}`,
+        );
+      }
+      auditUtterances(document.value, label);
+      const keys = [];
+      allKeys(document.value, keys);
+      for (const key of keys) {
+        const lower = key.toLowerCase();
+        for (const fragment of BANNED_KEY_FRAGMENTS) {
+          check(!lower.includes(fragment), `${label}: ranking-shaped field ${JSON.stringify(key)}`);
+        }
+      }
+      checkActionCallPhraseKeys(label, keys);
     }
     for (const banned of BANNED_SUBSTRINGS) {
       check(
-        !document.raw.includes(banned),
-        `${label}: contains the banned string ${JSON.stringify(banned)}`,
+        !index.raw.includes(banned),
+        `index.json: contains the banned string ${JSON.stringify(banned)}`,
       );
     }
-    auditUtterances(document.value, label);
-    const keys = [];
-    allKeys(document.value, keys);
-    for (const key of keys) {
-      const lower = key.toLowerCase();
-      for (const fragment of BANNED_KEY_FRAGMENTS) {
-        check(!lower.includes(fragment), `${label}: ranking-shaped field ${JSON.stringify(key)}`);
-      }
-    }
-    checkActionCallPhraseKeys(label, keys);
-  }
-  for (const banned of BANNED_SUBSTRINGS) {
-    check(
-      !index.raw.includes(banned),
-      `index.json: contains the banned string ${JSON.stringify(banned)}`,
-    );
-  }
-  const indexKeys = [];
-  allKeys(index.value, indexKeys);
-  checkActionCallPhraseKeys("index.json", indexKeys);
+    const indexKeys = [];
+    allKeys(index.value, indexKeys);
+    checkActionCallPhraseKeys("index.json", indexKeys);
 
-  // -- action-call rule, per string value (literal list included) ------------
-  const walkedDocuments = [
-    ...Object.entries(loaded).map(([route, document]) => [routes[route], document.value]),
-    ["index.json", index.value],
-  ];
-  const shapeMatcher = actionCallMatcher(characterDisplayNames(walkedDocuments));
-  for (const [file, value] of walkedDocuments) auditActionCalls(value, file, "$", shapeMatcher);
-
-  // -- field-level truth-class identity -------------------------------------
-  if (systemLabelAllowlist !== null) {
-    const identity = newIdentityWalk();
-    for (const [file, value] of walkedDocuments) {
-      let declared = null;
-      if (Object.hasOwn(value, "truthClasses")) {
-        check(Array.isArray(value.truthClasses), `${file}: envelope truthClasses must be a list`);
-        declared = Array.isArray(value.truthClasses) ? value.truthClasses : [];
-      }
-      identityWalk(file, "$", value, declared, systemLabelAllowlist, identity);
+    // -- action-call rule, per string value (literal list included) ------------
+    const walkedDocuments = [
+      ...Object.entries(loaded).map(([route, document]) => [routes[route], document.value]),
+      ["index.json", index.value],
+    ];
+    try {
+      paperActionCodes = paperActionKindEnum(await readFile(new URL(`../${PUBLIC_V2_CONTRACT_PATH}`, import.meta.url), "utf8"));
+    } catch {
+      paperActionCodes = new Set();
     }
     check(
-      identity.realFact === 0,
-      `field-level truth classes: found ${identity.realFact} real_fact class value(s); a synthetic slice must have 0`,
+      ["BUY", "SELL", "HOLD", "NO_ACTION"].every((code) => paperActionCodes.has(code)),
+      `${PUBLIC_V2_CONTRACT_PATH}: cannot read the PaperActionKind enum; no paper action code is exempt from the action-call rule`,
     );
-    // Not a vacuous pass (same floors as the Rust walker's on-disk test): the
-    // eleven files carry hundreds of claims and numbers, the reviewed reason
-    // fields are all visited as listed system labels, and the non-claim
-    // number list is actually exercised.
-    check(identity.claims >= 400, `field-level truth classes: only ${identity.claims} claims visited (expected >= 400)`);
-    check(identity.numbers >= 400, `field-level truth classes: only ${identity.numbers} numbers visited (expected >= 400)`);
-    check(
-      identity.classesSeen >= 400,
-      `field-level truth classes: only ${identity.classesSeen} class values visited (expected >= 400)`,
-    );
-    check(
-      identity.systemLabels >= 30,
-      `field-level truth classes: only ${identity.systemLabels} system labels visited (expected >= 30)`,
-    );
-    check(identity.nonClaimNumbers > 0, "field-level truth classes: no non-claim number was visited");
-    // The sibling map is actually applied: 29 chapters x 5 prose siblings,
-    // 30 daily disclosures x 2, the close-up, the relationship signals...
-    check(
-      siblingContract === null || identity.siblingRules >= 200,
-      `field-level truth classes: only ${identity.siblingRules} required-sibling rules applied (expected >= 200)`,
-    );
-    fieldIdentitySummary = identity;
+    const shapeMatcher = actionCallMatcher(characterDisplayNames(walkedDocuments));
+    for (const [file, value] of walkedDocuments) auditActionCalls(value, file, "$", shapeMatcher);
+
+    // -- field-level truth-class identity -------------------------------------
+    if (systemLabelAllowlist !== null) {
+      const identity = newIdentityWalk();
+      for (const [file, value] of walkedDocuments) {
+        let declared = null;
+        if (Object.hasOwn(value, "truthClasses")) {
+          check(Array.isArray(value.truthClasses), `${file}: envelope truthClasses must be a list`);
+          declared = Array.isArray(value.truthClasses) ? value.truthClasses : [];
+        }
+        identityWalk(file, "$", value, declared, systemLabelAllowlist, identity);
+      }
+      check(
+        identity.realFact === 0,
+        `field-level truth classes: found ${identity.realFact} real_fact class value(s); a synthetic slice must have 0`,
+      );
+      // Not a vacuous pass (same floors as the Rust walker's on-disk test): the
+      // eleven files carry hundreds of claims and numbers, the reviewed reason
+      // fields are all visited as listed system labels, and the non-claim
+      // number list is actually exercised.
+      check(identity.claims >= 400, `field-level truth classes: only ${identity.claims} claims visited (expected >= 400)`);
+      check(identity.numbers >= 400, `field-level truth classes: only ${identity.numbers} numbers visited (expected >= 400)`);
+      check(
+        identity.classesSeen >= 400,
+        `field-level truth classes: only ${identity.classesSeen} class values visited (expected >= 400)`,
+      );
+      check(
+        identity.systemLabels >= 30,
+        `field-level truth classes: only ${identity.systemLabels} system labels visited (expected >= 30)`,
+      );
+      check(identity.nonClaimNumbers > 0, "field-level truth classes: no non-claim number was visited");
+      // The sibling map is actually applied: 29 chapters x 5 prose siblings,
+      // 30 daily disclosures x 2, the close-up, the relationship signals...
+      check(
+        siblingContract === null || identity.siblingRules >= 200,
+        `field-level truth classes: only ${identity.siblingRules} required-sibling rules applied (expected >= 200)`,
+      );
+      fieldIdentitySummary = identity;
+    }
   }
+
+  // The field-level walk is not optional: if nothing else failed, it must have run.
+  check(errors.length > 0 || fieldIdentitySummary !== null, "field-level truth classes: the walker did not run");
+
+  if (errors.length > 0) {
+    console.error("v5-slice-api-audit failed:");
+    for (const error of errors) console.error(`  - ${error}`);
+    process.exit(1);
+  }
+
+  assert.equal(errors.length, 0);
+  console.log(
+    `v5-slice-api-audit: ok (${expectedRoutes.length} public-v2 documents + index for character ${characterId})`,
+  );
+  console.log(
+    `v5-slice-api-audit: field-level truth classes ok (${fieldIdentitySummary.claims} claims, ${fieldIdentitySummary.numbers} numbers, ${fieldIdentitySummary.classesSeen} class values, ${fieldIdentitySummary.systemLabels} listed system labels, ${fieldIdentitySummary.nonClaimNumbers} non-claim numbers, ${fieldIdentitySummary.siblingRules} required-sibling rules, ${fieldIdentitySummary.realFact} real_fact)`,
+  );
 }
-
-// The field-level walk is not optional: if nothing else failed, it must have run.
-check(errors.length > 0 || fieldIdentitySummary !== null, "field-level truth classes: the walker did not run");
-
-if (errors.length > 0) {
-  console.error("v5-slice-api-audit failed:");
-  for (const error of errors) console.error(`  - ${error}`);
-  process.exit(1);
-}
-
-assert.equal(errors.length, 0);
-console.log(
-  `v5-slice-api-audit: ok (${expectedRoutes.length} public-v2 documents + index for character ${characterId})`,
-);
-console.log(
-  `v5-slice-api-audit: field-level truth classes ok (${fieldIdentitySummary.claims} claims, ${fieldIdentitySummary.numbers} numbers, ${fieldIdentitySummary.classesSeen} class values, ${fieldIdentitySummary.systemLabels} listed system labels, ${fieldIdentitySummary.nonClaimNumbers} non-claim numbers, ${fieldIdentitySummary.siblingRules} required-sibling rules, ${fieldIdentitySummary.realFact} real_fact)`,
-);
