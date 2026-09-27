@@ -5,7 +5,8 @@
 //   - 已封存 `UtteranceArtifactV1` 的**逐字**原話；沒有 artifact 就不補台詞
 //   - 他正在看的人或物
 //   - `SELF_ACKNOWLEDGED` 自述（若有）
-//   - 事實來源入口（資料身分、資料時間、版本）
+//   - 事實來源入口：每一項各自掛投影在那一項上給的資料身分（public-v2.yaml 2.1.0），
+//     缺身分的那一項不顯示並寫出原因；本檔不自行決定任何一項的身分
 //   - 「再靠近一點」
 //
 // **不顯示**完整人格值、隱藏動機、持股明細或長段模型文字；離開跟拍也不提供
@@ -17,7 +18,7 @@
 import { useEffect, useState } from "react";
 
 import type { CharacterCloseUp, CharacterUtterance } from "../api/generated-v2/types.gen";
-import { TruthTag } from "./TruthTag";
+import { ClaimWithTruth } from "./ItemTruthTag";
 import { fetchCloseUp, type UnavailableReason } from "./apiClient";
 import { DATA_UNAVAILABLE_LABEL, formatAsOfIntraday } from "./format";
 import { DIGEST_PREFIX_LENGTH } from "./journalSections";
@@ -203,34 +204,63 @@ export function FollowLayer({
 
       {content.phase === "ready" ? (
         <>
-          <p className="v5-follow__name">{content.closeUp.displayName}</p>
-          <p className="v5-follow__verb panshi-paper">{content.closeUp.currentVerbPhrase}</p>
+          <ClaimWithTruth
+            truthClass={content.closeUp.displayNameTruthClass}
+            declared={content.closeUp.truthClasses}
+            asOfLabel={asOfLabel(asOfTradingDate)}
+            versionLabel={versionLabel(content.closeUp)}
+          >
+            <p className="v5-follow__name">{content.closeUp.displayName}</p>
+          </ClaimWithTruth>
+          <ClaimWithTruth
+            truthClass={content.closeUp.currentVerbPhraseTruthClass}
+            declared={content.closeUp.truthClasses}
+            asOfLabel={asOfLabel(asOfTradingDate)}
+            versionLabel={versionLabel(content.closeUp)}
+          >
+            <p className="v5-follow__verb panshi-paper">{content.closeUp.currentVerbPhrase}</p>
+          </ClaimWithTruth>
 
           {content.closeUp.publicClaim ? (
-            <Utterance utterance={content.closeUp.publicClaim} label="他當場說的話" />
+            <ClaimWithTruth
+              truthClass={content.closeUp.publicClaim.truthClass}
+              declared={content.closeUp.truthClasses}
+              asOfLabel={asOfLabel(asOfTradingDate)}
+              versionLabel={versionLabel(content.closeUp)}
+            >
+              <Utterance utterance={content.closeUp.publicClaim} label="他當場說的話" />
+            </ClaimWithTruth>
           ) : (
             // 沒有已封存的原話就不補台詞（§6.2）。
             <p className="v5-follow__row panshi-paper">他沒有說話。</p>
           )}
 
           {content.closeUp.currentAttention ? (
-            <p className="v5-follow__row panshi-paper">
-              <span className="v5-follow__label">他正在看</span>
-              {content.closeUp.currentAttention.label}
-            </p>
+            <ClaimWithTruth
+              truthClass={content.closeUp.currentAttention.truthClass}
+              declared={content.closeUp.truthClasses}
+              asOfLabel={asOfLabel(asOfTradingDate)}
+              versionLabel={versionLabel(content.closeUp)}
+            >
+              <p className="v5-follow__row panshi-paper">
+                <span className="v5-follow__label">他正在看</span>
+                {content.closeUp.currentAttention.label}
+              </p>
+            </ClaimWithTruth>
           ) : null}
 
           {content.closeUp.selfAcknowledgement ? (
-            <Utterance utterance={content.closeUp.selfAcknowledgement} label="他對自己說的話" />
+            <ClaimWithTruth
+              truthClass={content.closeUp.selfAcknowledgement.truthClass}
+              declared={content.closeUp.truthClasses}
+              asOfLabel={asOfLabel(asOfTradingDate)}
+              versionLabel={versionLabel(content.closeUp)}
+            >
+              <Utterance utterance={content.closeUp.selfAcknowledgement} label="他對自己說的話" />
+            </ClaimWithTruth>
           ) : null}
 
           <div className="v5-follow__foot">
-            <TruthTag
-              truthClass="fictional_setting"
-              explanation="這個世界的市場事實是 repo 內自有的合成歷史 fixture，不是真實行情。"
-              asOfLabel={asOfLabel(asOfTradingDate)}
-              versionLabel={versionLabel(content.closeUp)}
-            />
             <button
               type="button"
               className="v5-follow__cta"

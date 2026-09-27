@@ -17,6 +17,14 @@
 //   不渲染任何 narrative segment，也不渲染九段。
 // - `HELD`：只渲染 `heldReasonLabel`，這個形狀本來就沒有內容欄位。
 //
+// `heldReasonLabel`、`paperOutcomeNullReason`、`relationshipConsequenceNullReason` 是系統說明
+// （public-v2.yaml 2.2.0 `x-panshi-system-label`），不是宣稱：以 `SystemLabel` 呈現、不掛身分。
+// 關係後果裡對方的名字與關係讀它們自己的 `displayNameTruthClass`／`relationLabelTruthClass`
+// （人物設定），不沿用整筆訊號的身分。
+//
+// 九段裡每一段掛它自己在投影裡的資料身分（public-v2.yaml 2.1.0）。有內容但缺身分的
+// 那一段不顯示並寫出原因（`journalSections()` 的 `unlabelled`）；本檔不替任何一段決定身分。
+//
 // 每章都有錨點 `id="chapter-YYYY-MM-DD"`。改口旁的「回到原話」指向原話那一章的錨點，
 // 那一章同時有當時的逐字原話、「他其實知道什麼」與「他漏掉了什麼」：一次點擊就到。
 // 深層檔案各節用 `/people/{id}/journal#chapter-YYYY-MM-DD` 連回來。
@@ -24,7 +32,7 @@
 import { useEffect, type ReactNode } from "react";
 
 import type {
-  CharacterUtterance,
+  ClassifiedCharacterUtterance,
   HeldLifeJournalEntry,
   LifeJournalEntry,
   LifeJournalPage,
@@ -32,9 +40,11 @@ import type {
 } from "../api/generated-v2/types.gen";
 import { ClaimComparison } from "./ClaimComparison";
 import { EvidenceCardView, SignedMoney } from "./EvidenceCardView";
-import { ItemTruthTag } from "./ItemTruthTag";
+import { ClaimWithTruth, ItemTruthTag, WithheldClaim } from "./ItemTruthTag";
+import { SystemLabel } from "./SystemLabel";
 import { TruthTag } from "./TruthTag";
 import { Utterance } from "./Utterance";
+import { MISSING_CLAIM_TRUTH_CLASS_TEXT, claimTruthClassOf, distinctTruthClasses } from "./claimTruth";
 import { DATA_UNAVAILABLE_LABEL } from "./format";
 import { chapterAnchorId, claimRevisions, type ClaimRevision } from "./journalRevisions";
 import { journalSections, type JournalSectionBody } from "./journalSections";
@@ -90,9 +100,10 @@ const TRUTH_CLASS_EXPLANATION: Readonly<Record<TruthClass, string>> = {
   simulated_narrative: "由已封存事件編成的敘事，不是角色親口說的話。",
 };
 
-const ABSENT_LABEL: Readonly<Record<"missing" | "unverifiable", string>> = {
+const ABSENT_LABEL: Readonly<Record<"missing" | "unverifiable" | "unlabelled", string>> = {
   missing: "這一天沒有這件事。",
   unverifiable: `${DATA_UNAVAILABLE_LABEL}：這句話無法核對，因此不顯示。`,
+  unlabelled: MISSING_CLAIM_TRUTH_CLASS_TEXT,
 };
 
 /** 「回到原話」：同一頁的章節錨點，一次點擊（說明文字未經 copy-taste 審稿）。 */
@@ -107,14 +118,36 @@ function BackToOriginal({ revision }: { revision: ClaimRevision }) {
   );
 }
 
-function SectionBody({ body, beside }: { body: JournalSectionBody; beside?: ReactNode }) {
+function SectionBody({
+  body,
+  beside,
+  asOfLabel,
+  versionLabel,
+}: {
+  body: JournalSectionBody;
+  beside?: ReactNode;
+  asOfLabel: string;
+  versionLabel: string;
+}) {
   switch (body.kind) {
     case "absent":
-      return <p className="v5-journal__absent panshi-paper">{ABSENT_LABEL[body.reason]}</p>;
+      return (
+        <p
+          className="v5-journal__absent panshi-paper"
+          data-claim-withheld={body.reason === "unlabelled" ? "missing_truth_class" : undefined}
+        >
+          {ABSENT_LABEL[body.reason]}
+        </p>
+      );
 
     case "summary":
       // 系統摘要：無引號。
-      return <p className="panshi-paper">{body.text}</p>;
+      return (
+        <>
+          <p className="panshi-paper">{body.text}</p>
+          <ItemTruthTag truthClass={body.truthClass} asOfLabel={asOfLabel} versionLabel={versionLabel} />
+        </>
+      );
 
     case "quote":
       return (
@@ -131,6 +164,7 @@ function SectionBody({ body, beside }: { body: JournalSectionBody; beside?: Reac
           <p className="v5-journal__attr panshi-data">
             {body.utteranceArtifactId}／sha256 {body.digestPrefix}
           </p>
+          <ItemTruthTag truthClass={body.truthClass} asOfLabel={asOfLabel} versionLabel={versionLabel} />
           {beside}
         </>
       );
@@ -139,16 +173,23 @@ function SectionBody({ body, beside }: { body: JournalSectionBody; beside?: Reac
       return (
         <>
           {body.paper === null ? null : (
-            <p className="v5-journal__figures">
-              <span className="panshi-data">模擬損益 {body.paper.unrealizedPnlText}</span>
-              <span className="panshi-data">{body.paper.unrealizedPnlPercentText}</span>
-              <span className="panshi-data">持有 {body.paper.heldDays} 個交易日</span>
-              <span className="v5-journal__attr panshi-data">{body.paper.asOfLabel}</span>
-            </p>
+            <>
+              <p className="v5-journal__figures">
+                <span className="panshi-data">模擬損益 {body.paper.unrealizedPnlText}</span>
+                <span className="panshi-data">{body.paper.unrealizedPnlPercentText}</span>
+                <span className="panshi-data">持有 {body.paper.heldDays} 個交易日</span>
+                <span className="v5-journal__attr panshi-data">{body.paper.asOfLabel}</span>
+              </p>
+              <ItemTruthTag truthClass={body.paper.truthClass} asOfLabel={body.paper.asOfLabel} versionLabel={versionLabel} />
+            </>
           )}
-          {body.nonPaperSummary === null ? null : (
-            <p className="panshi-paper">{body.nonPaperSummary}</p>
+          {body.nonPaperSummary === null || body.nonPaperTruthClass === null ? null : (
+            <>
+              <p className="panshi-paper">{body.nonPaperSummary}</p>
+              <ItemTruthTag truthClass={body.nonPaperTruthClass} asOfLabel={asOfLabel} versionLabel={versionLabel} />
+            </>
           )}
+          {body.withheld ? <WithheldClaim className="v5-journal__absent" /> : null}
         </>
       );
 
@@ -161,56 +202,88 @@ function SectionBody({ body, beside }: { body: JournalSectionBody; beside?: Reac
         <>
           <p className="panshi-paper">同一種模式又出現了一次。</p>
           <p className="v5-journal__attr panshi-data">模式 {body.patternRef}</p>
+          <ItemTruthTag truthClass={body.truthClass} asOfLabel={asOfLabel} versionLabel={versionLabel} />
         </>
       );
   }
 }
 
-/** 同一章裡這一句原話宣告的資料身分（證據卡或敘事的原話段）；找不到就是 `null`。 */
-function utteranceTruthClass(entry: LifeJournalEntry, artifactId: string): TruthClass | null {
-  const quoted = entry.evidenceCard?.quotedUtterances?.find(
-    (candidate) => candidate.utteranceArtifactId === artifactId,
-  );
-  if (quoted) return quoted.truthClass;
-  for (const segment of entry.narrativeSegments ?? []) {
-    if (segment.kind === "character_claim" && segment.utteranceArtifactId === artifactId) {
-      return segment.truthClass;
-    }
-  }
-  return null;
-}
-
+/** 並排比較裡的一句原話：身分讀那一句自己的 `truthClass`，缺了就整句不顯示。 */
 function QuotedWithTag({
   entry,
   utterance,
   caption,
   versionLabel,
+  declared,
 }: {
   entry: LifeJournalEntry;
-  utterance: CharacterUtterance;
+  utterance: ClassifiedCharacterUtterance;
   caption: string;
   versionLabel: string;
+  declared: readonly TruthClass[];
 }) {
-  const truthClass = utteranceTruthClass(entry, utterance.utteranceArtifactId);
   return (
-    <>
+    <ClaimWithTruth
+      truthClass={utterance.truthClass}
+      declared={declared}
+      asOfLabel={entry.chapterDate}
+      versionLabel={versionLabel}
+      withheldClassName="v5-journal__absent"
+    >
       <p>
         <Utterance utterance={utterance} />
       </p>
       <p className="v5-journal__attr panshi-data">{caption}</p>
-      {truthClass === null ? (
-        <p className="v5-journal__absent panshi-paper">
-          {DATA_UNAVAILABLE_LABEL}：這一章沒有宣告這句原話的資料身分，所以這裡不掛標籤。
-        </p>
-      ) : (
-        <ItemTruthTag truthClass={truthClass} asOfLabel={entry.chapterDate} versionLabel={versionLabel} />
-      )}
+    </ClaimWithTruth>
+  );
+}
+
+/**
+ * 關係後果裡的「對方（關係）」一行：名字與關係各讀自己的身分（2.2.0）。任一個缺或不合法，
+ * 整行不顯示並寫原因；兩個身分相同時只掛一顆標籤。
+ */
+function CounterpartLine({
+  displayName,
+  displayNameTruthClass,
+  relationLabel,
+  relationLabelTruthClass,
+  declared,
+  asOfLabel,
+  versionLabel,
+}: {
+  displayName: string;
+  displayNameTruthClass: unknown;
+  relationLabel: string;
+  relationLabelTruthClass: unknown;
+  declared: readonly TruthClass[];
+  asOfLabel: string;
+  versionLabel: string;
+}) {
+  const nameClass = claimTruthClassOf(displayNameTruthClass, declared);
+  const labelClass = claimTruthClassOf(relationLabelTruthClass, declared);
+  if (nameClass === null || labelClass === null) return <WithheldClaim />;
+  return (
+    <>
+      <p className="panshi-paper">
+        {displayName}（{relationLabel}）
+      </p>
+      {distinctTruthClasses([nameClass, labelClass]).map((truthClass) => (
+        <ItemTruthTag key={truthClass} truthClass={truthClass} asOfLabel={asOfLabel} versionLabel={versionLabel} />
+      ))}
     </>
   );
 }
 
 /** 改口章節的四欄並排：原本理由｜現在說法｜紙上代價｜關係後果。 */
-function RevisionComparison({ revision, versionLabel }: { revision: ClaimRevision; versionLabel: string }) {
+function RevisionComparison({
+  revision,
+  versionLabel,
+  declared,
+}: {
+  revision: ClaimRevision;
+  versionLabel: string;
+  declared: readonly TruthClass[];
+}) {
   const { entry, original } = revision;
   const outcome = entry.evidenceCard?.paperOutcome ?? null;
   const relationship = entry.relationshipConsequence;
@@ -225,6 +298,7 @@ function RevisionComparison({ revision, versionLabel }: { revision: ClaimRevisio
             utterance={revision.originalClaim}
             caption={`${original.chapterDate} 當時的原話`}
             versionLabel={versionLabel}
+            declared={declared}
           />
         ),
         currentClaim: (
@@ -233,13 +307,12 @@ function RevisionComparison({ revision, versionLabel }: { revision: ClaimRevisio
             utterance={revision.revision}
             caption={`${entry.chapterDate} 的說法`}
             versionLabel={versionLabel}
+            declared={declared}
           />
         ),
         paperCost:
           outcome === null ? (
-            <p className="panshi-paper">
-              {entry.evidenceCard?.paperOutcomeNullReason ?? DATA_UNAVAILABLE_LABEL}
-            </p>
+            <SystemLabel field="paperOutcomeNullReason" text={entry.evidenceCard?.paperOutcomeNullReason} />
           ) : (
             <>
               <SignedMoney label="已實現損益" amountMinorUnits={outcome.realizedPnlMinorUnits} />
@@ -250,20 +323,26 @@ function RevisionComparison({ revision, versionLabel }: { revision: ClaimRevisio
           ),
         relationship:
           relationship === null || relationship === undefined ? (
-            <p className="panshi-paper">
-              {entry.relationshipConsequenceNullReason ?? DATA_UNAVAILABLE_LABEL}
-            </p>
+            <SystemLabel field="relationshipConsequenceNullReason" text={entry.relationshipConsequenceNullReason} />
           ) : (
             <>
-              <p className="panshi-paper">
-                {relationship.displayName}（{relationship.relationLabel}）
-              </p>
-              <p className="panshi-paper">{relationship.summary}</p>
-              <ItemTruthTag
-                truthClass={relationship.truthClass}
+              <CounterpartLine
+                displayName={relationship.displayName}
+                displayNameTruthClass={relationship.displayNameTruthClass}
+                relationLabel={relationship.relationLabel}
+                relationLabelTruthClass={relationship.relationLabelTruthClass}
+                declared={declared}
                 asOfLabel={relationship.observedAt}
                 versionLabel={versionLabel}
               />
+              <ClaimWithTruth
+                truthClass={relationship.truthClass}
+                declared={declared}
+                asOfLabel={relationship.observedAt}
+                versionLabel={versionLabel}
+              >
+                <p className="panshi-paper">{relationship.summary}</p>
+              </ClaimWithTruth>
             </>
           ),
       }}
@@ -276,11 +355,13 @@ function Chapter({
   revision,
   versionLabel,
   serverNow,
+  declared,
 }: {
   entry: LifeJournalEntry;
   revision: ClaimRevision | undefined;
   versionLabel: string;
   serverNow: string;
+  declared: readonly TruthClass[];
 }) {
   const anchor = chapterAnchorId(entry.chapterDate);
 
@@ -300,7 +381,7 @@ function Chapter({
     );
   }
 
-  const sections = journalSections(entry);
+  const sections = journalSections(entry, declared);
   const revisionArtifactId = revision?.revision.utteranceArtifactId ?? null;
 
   return (
@@ -317,6 +398,8 @@ function Chapter({
           <h4>{section.title}</h4>
           <SectionBody
             body={section.body}
+            asOfLabel={entry.chapterDate}
+            versionLabel={versionLabel}
             beside={
               revision !== undefined &&
               section.body.kind === "quote" &&
@@ -328,7 +411,7 @@ function Chapter({
         </section>
       ))}
       {revision === undefined ? null : (
-        <RevisionComparison revision={revision} versionLabel={versionLabel} />
+        <RevisionComparison revision={revision} versionLabel={versionLabel} declared={declared} />
       )}
     </article>
   );
@@ -345,7 +428,7 @@ function HeldChapter({ held }: { held: HeldLifeJournalEntry }) {
       data-entry-visibility="HELD"
     >
       <h3 className="v5-journal__date panshi-data">{held.chapterDate}</h3>
-      <p className="v5-journal__held panshi-paper">{held.heldReasonLabel}</p>
+      <SystemLabel field="heldReasonLabel" text={held.heldReasonLabel} className="v5-journal__held" />
     </article>
   );
 }
@@ -411,6 +494,7 @@ export function LifeJournalScreen({ page, onBackToCloseUp, onOpenArchive }: Life
               revision={revisions.get(item.entry.entryId)}
               versionLabel={versionLabel}
               serverNow={page.serverNow}
+              declared={page.truthClasses}
               key={item.entry.entryId}
             />
           ),

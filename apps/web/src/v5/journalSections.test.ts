@@ -37,10 +37,14 @@ function minimalEntry(overrides: Partial<LifeJournalEntry> = {}): LifeJournalEnt
     relationshipConsequence: null,
     relationshipConsequenceNullReason: "測試：這一天沒有關係訊號。",
     sceneSummary: "他在開盤後又打開了同一家公司的資料。",
+    sceneSummaryTruthClass: "simulated_narrative",
     knownAtTheTimeSummary: "他當時看過昨天的公告附註與早盤那段上漲。",
+    knownAtTheTimeSummaryTruthClass: "simulated_narrative",
     actionSummary: "他建立了一筆紙上部位，數量與價格記在模擬紀錄。",
+    actionSummaryTruthClass: "simulated_narrative",
     consequence: {},
     openQuestionSummary: "他還沒有和小雨談這件事。",
+    openQuestionSummaryTruthClass: "simulated_narrative",
     archiveRefs: { paperPositionRefs: [], relationshipDyadRefs: [], memoryRefs: [] },
     ...overrides,
   };
@@ -57,10 +61,17 @@ describe("人生誌九段 mapper", () => {
         utteranceArtifactId: "utt-001",
         canonicalTextSha256: DIGEST,
         canonicalTextUtf8: "只是小部位。",
+        truthClass: "simulated_narrative",
       },
       missedFactsSummary: "同業存貨天數上升的那則資料，他當時沒有點開。",
+      missedFactsSummaryTruthClass: "simulated_narrative",
       recurringPatternRef: "pattern-confirmation-bias",
-      currentSelfNarration: { kind: "summary", summaryText: "他把標題改成長期治理價值。" },
+      recurringPatternTruthClass: "simulated_narrative",
+      currentSelfNarration: {
+        kind: "summary",
+        summaryText: "他把標題改成長期治理價值。",
+        truthClass: "simulated_narrative",
+      },
     });
 
     expect(journalSections(entry).map((section) => section.title)).toEqual(
@@ -91,6 +102,7 @@ describe("人生誌九段 mapper", () => {
           utteranceArtifactId: "utt-001",
           canonicalTextSha256: DIGEST,
           canonicalTextUtf8: "沒有新資料，我不會為了價格動。",
+          truthClass: "simulated_narrative",
         },
       }),
     );
@@ -102,6 +114,7 @@ describe("人生誌九段 mapper", () => {
       utteranceArtifactId: "utt-001",
       canonicalTextSha256: DIGEST,
       digestPrefix: DIGEST.slice(0, DIGEST_PREFIX_LENGTH),
+      truthClass: "simulated_narrative",
     });
   });
 
@@ -112,6 +125,7 @@ describe("人生誌九段 mapper", () => {
           utteranceArtifactId: "utt-001",
           canonicalTextSha256: "not-a-digest",
           canonicalTextUtf8: "只是小部位。",
+          truthClass: "simulated_narrative",
         },
       }),
     );
@@ -129,11 +143,15 @@ describe("人生誌九段 mapper", () => {
     );
 
     const recurring = journalSections(
-      minimalEntry({ recurringPatternRef: "pattern-confirmation-bias" }),
+      minimalEntry({
+        recurringPatternRef: "pattern-confirmation-bias",
+        recurringPatternTruthClass: "simulated_narrative",
+      }),
     ).find((section) => section.key === "recurringPattern");
     expect(recurring?.body).toEqual({
       kind: "recurringPattern",
       patternRef: "pattern-confirmation-bias",
+      truthClass: "simulated_narrative",
     });
   });
 
@@ -147,7 +165,9 @@ describe("人生誌九段 mapper", () => {
     });
 
     const blank = journalSections(
-      minimalEntry({ currentSelfNarration: { kind: "summary", summaryText: "   " } }),
+      minimalEntry({
+        currentSelfNarration: { kind: "summary", summaryText: "   ", truthClass: "simulated_narrative" },
+      }),
     ).find((section) => section.key === "currentSelfNarration");
     expect(blank?.body).toEqual({
       kind: "unacknowledgedMotive",
@@ -165,8 +185,10 @@ describe("人生誌九段 mapper", () => {
             unrealizedPnlMinorUnits: -708_000,
             unrealizedPnlPercentFixed2: -1_180,
             asOf: "2026-03-17",
+            truthClass: "simulated_narrative",
           },
           nonPaperConsequenceSummary: "他今天避開了小雨的座位。",
+          nonPaperConsequenceSummaryTruthClass: "simulated_narrative",
         },
       }),
     ).find((section) => section.key === "consequence");
@@ -179,8 +201,11 @@ describe("人生誌九段 mapper", () => {
         unrealizedPnlText: "−7,080.00",
         unrealizedPnlPercentText: "−11.80%",
         asOfLabel: "截至前一交易日收盤（2026-03-17）",
+        truthClass: "simulated_narrative",
       },
       nonPaperSummary: "他今天避開了小雨的座位。",
+      nonPaperTruthClass: "simulated_narrative",
+      withheld: false,
     });
 
     const broken = journalSections(
@@ -192,6 +217,7 @@ describe("人生誌九段 mapper", () => {
             unrealizedPnlMinorUnits: Number.NaN,
             unrealizedPnlPercentFixed2: Number.NaN,
             asOf: "昨天",
+            truthClass: "simulated_narrative",
           },
         },
       }),
@@ -205,8 +231,11 @@ describe("人生誌九段 mapper", () => {
         unrealizedPnlText: DATA_UNAVAILABLE_LABEL,
         unrealizedPnlPercentText: DATA_UNAVAILABLE_LABEL,
         asOfLabel: DATA_UNAVAILABLE_LABEL,
+        truthClass: "simulated_narrative",
       },
       nonPaperSummary: null,
+      nonPaperTruthClass: null,
+      withheld: false,
     });
   });
 
@@ -238,6 +267,7 @@ describe("人生誌九段 mapper", () => {
             unrealizedPnlMinorUnits: UNREALIZED_MINOR_UNITS,
             unrealizedPnlPercentFixed2: PERCENT_FIXED2,
             asOf: "2026-03-17T13:30:00+08:00",
+            truthClass: "simulated_narrative",
           },
         },
       }),
@@ -260,5 +290,88 @@ describe("人生誌九段 mapper", () => {
     const amountInTwd = Number(paper.unrealizedPnlText.replace("−", "-").replace(/,/g, ""));
     expect(amountInTwd).toBe(-7_080);
     expect((amountInTwd / (COST_BASIS_MINOR_UNITS / 100)) * 100).toBeCloseTo(-11.8, 10);
+  });
+});
+
+describe("人生誌九段：每一段讀它自己的資料身分，缺了就 fail closed", () => {
+  // 舊版或被竄改的投影就是會缺欄位；型別上拿掉必填欄位，模擬那樣的輸入。
+  function withoutKey(entry: LifeJournalEntry, key: string): LifeJournalEntry {
+    const copy: Record<string, unknown> = { ...entry };
+    delete copy[key];
+    return copy as unknown as LifeJournalEntry;
+  }
+
+  it("每一段有內容的都帶投影給的身分，不是介面挑的", () => {
+    const sections = journalSections(
+      minimalEntry({ sceneSummaryTruthClass: "fictional_setting" }),
+      ["fictional_setting", "simulated_narrative"],
+    );
+    const scene = sections.find((section) => section.key === "sceneSummary");
+    // 投影說這一段是虛構設定，畫面就掛虛構設定——不因為它是「故事」就改掛模擬敘事。
+    expect(scene?.body).toEqual({
+      kind: "summary",
+      text: "他在開盤後又打開了同一家公司的資料。",
+      truthClass: "fictional_setting",
+    });
+  });
+
+  it("缺 `<欄位>TruthClass` 的那一段不顯示內容，只標原因；其他段照常", () => {
+    const entry = withoutKey(minimalEntry(), "actionSummaryTruthClass");
+    const sections = journalSections(entry);
+    const action = sections.find((section) => section.key === "action");
+    expect(action?.body).toEqual({ kind: "absent", reason: "unlabelled" });
+    // 內容本身不能從 view model 漏出去。
+    expect(JSON.stringify(action)).not.toContain("紙上部位");
+
+    const scene = sections.find((section) => section.key === "sceneSummary");
+    expect(scene?.body.kind).toBe("summary");
+  });
+
+  it("身分不是五種之一、或不在投影宣告的 `truthClasses` 裡，一樣不顯示", () => {
+    const bogus = journalSections(
+      minimalEntry({ openQuestionSummaryTruthClass: "rumour" as unknown as "simulated_narrative" }),
+    ).find((section) => section.key === "openQuestion");
+    expect(bogus?.body).toEqual({ kind: "absent", reason: "unlabelled" });
+
+    const undeclared = journalSections(minimalEntry(), ["fictional_setting"]).find(
+      (section) => section.key === "knownAtTheTime",
+    );
+    expect(undeclared?.body).toEqual({ kind: "absent", reason: "unlabelled" });
+  });
+
+  it("原話缺自己的 `truthClass` 時整句不顯示（逐字引用也不例外）", () => {
+    const entry = minimalEntry({
+      contemporaneousClaim: {
+        utteranceArtifactId: "utt-001",
+        canonicalTextSha256: DIGEST,
+        canonicalTextUtf8: "只是小部位。",
+      } as unknown as NonNullable<LifeJournalEntry["contemporaneousClaim"]>,
+    });
+    const claim = journalSections(entry).find((section) => section.key === "contemporaneousClaim");
+    expect(claim?.body).toEqual({ kind: "absent", reason: "unlabelled" });
+  });
+
+  it("後果兩項各自過閘：缺身分的紙上數字不顯示，另一項照常並標出有一項被扣住", () => {
+    const entry = minimalEntry({
+      consequence: {
+        paperConsequence: {
+          positionArchiveRef: "pos-001",
+          heldDays: 15,
+          unrealizedPnlMinorUnits: -708_000,
+          unrealizedPnlPercentFixed2: -1_180,
+          asOf: "2026-03-17",
+        } as unknown as NonNullable<LifeJournalEntry["consequence"]["paperConsequence"]>,
+        nonPaperConsequenceSummary: "他今天避開了小雨的座位。",
+        nonPaperConsequenceSummaryTruthClass: "simulated_narrative",
+      },
+    });
+    const consequence = journalSections(entry).find((section) => section.key === "consequence");
+    expect(consequence?.body).toEqual({
+      kind: "consequence",
+      paper: null,
+      nonPaperSummary: "他今天避開了小雨的座位。",
+      nonPaperTruthClass: "simulated_narrative",
+      withheld: true,
+    });
   });
 });

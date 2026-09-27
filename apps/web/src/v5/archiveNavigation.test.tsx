@@ -14,6 +14,7 @@ import type {
   LifeJournalPage,
 } from "../api/generated-v2/types.gen";
 import { CHART_SCOPE_NOTICE } from "./ArchiveSectionScreen";
+import { SYSTEM_LABEL_KIND_TEXT } from "./SystemLabel";
 import { CLAIM_COMPARISON_COLUMNS } from "./ClaimComparison";
 import { EVIDENCE_CARD_ONLY_NOTE } from "./EvidenceCardView";
 import { SliceView, type SliceData } from "./SliceApp";
@@ -284,10 +285,16 @@ describe("[nav:ledger-in-three] 從世界出發三次操作內找到成本、損
 type SectionCase = {
   key: "relations" | "chart" | "traits" | "memories" | "life";
   value: SliceData;
-  /** 這一節畫面上應該恰好掛幾顆 item 標籤（每一項宣稱一顆）。 */
+  /**
+   * 這一節畫面上應該恰好掛幾顆 item 標籤（每一項宣稱一顆）。外殼第一屏那句人的句子
+   *（`HUMAN_HOOK_TAG`）也是一項宣稱，掛它自己的身分，所以有那一句的節多一顆。
+   */
   expectedTags: number;
   mustContain: string[];
 };
+
+/** 外殼第一屏那句（關係、性格與習慣、記憶三節有；命盤與生平沒有）自己的那顆標籤。 */
+const HUMAN_HOOK_TAG = 1;
 
 function sectionCases(): SectionCase[] {
   const relations = sliceRelations();
@@ -299,16 +306,20 @@ function sectionCases(): SectionCase[] {
     {
       key: "relations",
       value: { kind: "archiveRelations", data: relations },
-      expectedTags: relations.acquaintances.reduce(
-        (total, person) => total + 2 + person.observedInteractions.length + person.relationshipSignals.length,
-        0,
-      ),
+      expectedTags:
+        HUMAN_HOOK_TAG +
+        relations.acquaintances.reduce(
+          // 每筆關係訊號兩顆（2.2.0）：訊號本身，和它引用的那句原話自己的身分。
+          (total, person) =>
+            total + 2 + person.observedInteractions.length + 2 * person.relationshipSignals.length,
+          0,
+        ),
       mustContain: relations.acquaintances.flatMap((person) => [
         person.displayName,
         person.relationNote,
         person.counterpartAccount.reasonLabel,
         ...person.observedInteractions.map((interaction) => interaction.observableAction),
-        ...person.relationshipSignals.map((signal) => signal.summary),
+        ...person.relationshipSignals.flatMap((signal) => [signal.summary, signal.utterance.canonicalTextUtf8]),
       ]),
     },
     {
@@ -334,7 +345,12 @@ function sectionCases(): SectionCase[] {
       key: "traits",
       value: { kind: "archiveTraits", data: traits },
       expectedTags:
-        4 + 4 + traits.habits.length + traits.biasOccurrences.length + traits.counterExamples.length,
+        HUMAN_HOOK_TAG +
+        4 +
+        4 +
+        traits.habits.length +
+        traits.biasOccurrences.length +
+        traits.counterExamples.length,
       mustContain: [
         traits.coreNeed.label,
         traits.coreFear.label,
@@ -349,11 +365,17 @@ function sectionCases(): SectionCase[] {
     {
       key: "memories",
       value: { kind: "archiveMemories", data: memories },
-      expectedTags: memories.memories.reduce(
-        (total, memory) => total + 1 + memory.reinterpretations.length,
-        0,
-      ),
-      mustContain: memories.memories.map((memory) => memory.note),
+      expectedTags:
+        HUMAN_HOOK_TAG +
+        // 記憶裡提到的每一個人也掛自己的身分（2.2.0），不沿用那則記憶的。
+        memories.memories.reduce(
+          (total, memory) => total + 1 + memory.reinterpretations.length + memory.involvedPeople.length,
+          0,
+        ),
+      mustContain: memories.memories.flatMap((memory) => [
+        memory.note,
+        ...memory.involvedPeople.map((person) => `${person.displayName}（${person.relationLabel}）`),
+      ]),
     },
     {
       key: "life",
@@ -472,6 +494,7 @@ describe("[utterance:verbatim] 原話逐字渲染", () => {
       utteranceArtifactId: base.contemporaneousClaim?.utteranceArtifactId ?? "∅",
       canonicalTextSha256: sha256(text),
       canonicalTextUtf8: text,
+      truthClass: "simulated_narrative" as const,
     };
     const page: LifeJournalPage = {
       ...journal,
@@ -560,9 +583,12 @@ describe("[entry-held] 單章 HELD 只渲染原因標籤", () => {
     const article = articleById(markup, chapterAnchorId(held.chapterDate));
     expect(article).not.toBeNull();
     expect(markup).toMatch(new RegExp(`<article[^>]*id="${chapterAnchorId(held.chapterDate)}"[^>]*data-entry-visibility="HELD"`));
+    // 原因是系統說明（2.2.0）：句首固定標出「系統說明」，不掛資料身分。
     expect(visibleText(article ?? "").replace(/\s+/g, " ").trim()).toBe(
-      `${held.chapterDate} ${held.heldReasonLabel}`,
+      `${held.chapterDate} ${SYSTEM_LABEL_KIND_TEXT} ${held.heldReasonLabel}`,
     );
+    expect(article ?? "").toContain('data-system-label="heldReasonLabel"');
+    expect(article ?? "").not.toContain("panshi-truth-tag");
     // 排在前一天之後、後一天之前。
     const before = markup.indexOf(`id="${chapterAnchorId("2026-03-17")}"`);
     const at = markup.indexOf(`id="${chapterAnchorId(held.chapterDate)}"`);

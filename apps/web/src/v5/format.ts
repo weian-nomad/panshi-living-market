@@ -12,7 +12,7 @@
 //
 // 本檔是純函式，不讀 DOM、不讀時鐘、不打 API。
 
-import type { RecentConsequenceHighlight, TruthClass } from "../api/generated-v2/types.gen";
+import type { TruthClass } from "../api/generated-v2/types.gen";
 
 /** U+2212 MINUS SIGN。 */
 export const MINUS_SIGN = "−";
@@ -206,71 +206,6 @@ export function truthClassLabel(tc: TruthClass): string {
  */
 export function truthClassGlyphId(tc: TruthClass): string {
   return TRUTH_CLASS_GLYPH_IDS[tc];
-}
-
-/**
- * 對外可見宣稱的種類 → 它**應該**掛哪一個 `truth_class`。
- *
- * 這張表是 `docs/v5/product-constitution.md`「角色資料的五種身分」的唯一前端副本：
- * 紙上部位、紙上損益與故事投影＝`simulated_narrative`；姓名、職業、關係、記憶與
- * 人生事件＝`fictional_setting`；命盤的文化詮釋＝`symbolic_interpretation`。
- * `ArchiveIndexScreen.tsx` 的 `SECTION_TRUTH_CLASS` 逐格對得上這張表。
- *
- * 注意 `paper_figure`：紙上數字**不是** `fictional_setting`。把它掛成虛構設定，
- * 等於對外宣稱一份由已封存事件 fold 出來的模擬帳本只是設定文案。
- */
-const CLAIM_TRUTH_CLASS = {
-  /** 姓名、年齡、職業、姿態、未解矛盾。 */
-  character_scene: "fictional_setting",
-  /** 紙上部位、損益、成交紀錄與由它們編成的敘事。 */
-  paper_figure: "simulated_narrative",
-  relationship: "fictional_setting",
-  occupation: "fictional_setting",
-  memory: "fictional_setting",
-  natal_chart: "symbolic_interpretation",
-} as const satisfies Record<string, TruthClass>;
-
-export type VisibleClaimKind = keyof typeof CLAIM_TRUTH_CLASS;
-
-/** 一種對外可見宣稱應有的資料身分（身分歸屬，不代表已經可以掛）。 */
-export function claimTruthClass(kind: VisibleClaimKind): TruthClass {
-  return CLAIM_TRUTH_CLASS[kind];
-}
-
-/**
- * 近景／世界的「後果碎片」該掛哪一種身分。
- *
- * 碎片缺席時畫面講的仍然是紙上持倉（「他目前沒有模擬持倉」），所以一樣是
- * `simulated_narrative`，不會因為沒有數字就降級成設定文案。
- */
-export function consequenceHighlightTruthClass(
-  kind: RecentConsequenceHighlight["kind"] | undefined,
-): TruthClass {
-  switch (kind) {
-    case undefined:
-    case "paper_position":
-      return claimTruthClass("paper_figure");
-    case "relationship":
-      return claimTruthClass("relationship");
-    case "occupation":
-      return claimTruthClass("occupation");
-    case "memory":
-      return claimTruthClass("memory");
-  }
-}
-
-/**
- * 資料身分的 fail-closed 閘門：只有投影**自己宣告過**的身分才掛得上標籤。
- *
- * `wanted` 不在 `declared` 裡時回 `null`，呼叫端必須**不掛標籤**，不得改掛一個
- * 比較好講的身分，也不得猜。AGENTS.md「Product invariants」：每一項對外可見的
- * 宣稱剛好帶一個 `truth_class`；投影沒宣告就是事實缺漏，不是排版問題。
- */
-export function declaredTruthClass(
-  declared: readonly TruthClass[],
-  wanted: TruthClass,
-): TruthClass | null {
-  return declared.includes(wanted) ? wanted : null;
 }
 
 /** 供列舉用的完整 `truth_class` 清單（順序同 product-constitution.md 的表）。 */

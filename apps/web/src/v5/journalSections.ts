@@ -12,6 +12,10 @@
 // 3. `老毛病又回來了` 只有 `recurringPatternRef` 存在時才出現（同類模式至少兩次）；
 //    `現在怎麼說` 缺席代表角色還沒承認內在動機，介面固定寫「暫時不知道」，
 //    不顯示第三人稱全知答案。
+// 4. **每一段帶它自己的資料身分**（public-v2.yaml 2.1.0：`<欄位>TruthClass`、原話與
+//    自述的 `truthClass`、紙上後果的 `truthClass`）。身分只從投影讀；有內容但缺身分、
+//    或身分不在投影 `truthClasses` 裡，那一段回 `absent`／`unlabelled`：不顯示內容，
+//    畫面寫出原因。本檔不替任何一段決定身分。
 //
 // 本檔是純函式：不碰 DOM、不打 API、不讀時鐘。
 
@@ -19,7 +23,9 @@ import type {
   CharacterUtterance,
   LifeJournalEntry,
   PaperConsequenceFragment,
+  TruthClass,
 } from "../api/generated-v2/types.gen";
+import { claimTruthClassOf } from "./claimTruth";
 import {
   DATA_UNAVAILABLE_LABEL,
   formatAsOfIntraday,
@@ -58,7 +64,9 @@ export type JournalAbsentReason =
   /** 投影根本沒有這個欄位：那一天就是沒有這件事。 */
   | "missing"
   /** 有欄位但無法核對（digest 格式不合）：寧可不顯示，也不顯示無法追溯的原話。 */
-  | "unverifiable";
+  | "unverifiable"
+  /** 有內容但投影沒有替它標出資料身分：不顯示，並寫出原因。 */
+  | "unlabelled";
 
 export type JournalPaperConsequenceView = {
   positionArchiveRef: string;
@@ -68,12 +76,14 @@ export type JournalPaperConsequenceView = {
   unrealizedPnlPercentText: string;
   /** 「截至前一交易日收盤（YYYY-MM-DD）」。 */
   asOfLabel: string;
+  /** 這組紙上數字自己的資料身分。 */
+  truthClass: TruthClass;
 };
 
 export type JournalSectionBody =
   | { kind: "absent"; reason: JournalAbsentReason }
   /** 系統摘要：結構化敘述，永遠不加引號。 */
-  | { kind: "summary"; text: string }
+  | { kind: "summary"; text: string; truthClass: TruthClass }
   /** 逐字原話：一定帶 artifact id 與 digest 前 8 碼。 */
   | {
       kind: "quote";
@@ -81,14 +91,18 @@ export type JournalSectionBody =
       utteranceArtifactId: string;
       canonicalTextSha256: string;
       digestPrefix: string;
+      truthClass: TruthClass;
     }
   | {
       kind: "consequence";
       paper: JournalPaperConsequenceView | null;
       nonPaperSummary: string | null;
+      nonPaperTruthClass: TruthClass | null;
+      /** 有一項後果因為缺資料身分而不顯示（其餘照常顯示）。 */
+      withheld: boolean;
     }
   | { kind: "unacknowledgedMotive"; text: typeof UNACKNOWLEDGED_MOTIVE_LABEL }
-  | { kind: "recurringPattern"; patternRef: string };
+  | { kind: "recurringPattern"; patternRef: string; truthClass: TruthClass };
 
 export type JournalSectionView = {
   key: JournalSectionKey;
@@ -107,12 +121,22 @@ function textOrNull(value: string | undefined): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-function summaryOrAbsent(value: string | undefined): JournalSectionBody {
+type Declared = readonly TruthClass[] | undefined;
+
+const UNLABELLED: JournalSectionBody = { kind: "absent", reason: "unlabelled" };
+
+function summaryOrAbsent(value: string | undefined, truthClass: unknown, declared: Declared): JournalSectionBody {
   const text = textOrNull(value);
-  return text === null ? { kind: "absent", reason: "missing" } : { kind: "summary", text };
+  if (text === null) return { kind: "absent", reason: "missing" };
+  const labelled = claimTruthClassOf(truthClass, declared);
+  return labelled === null ? UNLABELLED : { kind: "summary", text, truthClass: labelled };
 }
 
-function quoteBody(utterance: CharacterUtterance | undefined): JournalSectionBody {
+function quoteBody(
+  utterance: CharacterUtterance | undefined,
+  truthClass: unknown,
+  declared: Declared,
+): JournalSectionBody {
   if (!utterance) return { kind: "absent", reason: "missing" };
 
   const text = textOrNull(utterance.canonicalTextUtf8);
@@ -124,8 +148,12 @@ function quoteBody(utterance: CharacterUtterance | undefined): JournalSectionBod
     return { kind: "absent", reason: "unverifiable" };
   }
 
+  const labelled = claimTruthClassOf(truthClass, declared);
+  if (labelled === null) return UNLABELLED;
+
   return {
     kind: "quote",
+    truthClass: labelled,
     // 逐字：artifact 的 canonical bytes 原封不動，不 trim、不改寫、不截斷、不補標點
     //（`Utterance.tsx` 會把這串文字放進元素並附 digest，任何人都能重算核對）。
     text: utterance.canonicalTextUtf8,
@@ -144,10 +172,11 @@ function formatOrUnavailable(render: () => string): string {
 }
 
 function paperConsequenceView(
-  fragment: PaperConsequenceFragment | undefined,
-): JournalPaperConsequenceView | null {
-  if (!fragment) return null;
+  fragment: PaperConsequenceFragment,
+  truthClass: TruthClass,
+): JournalPaperConsequenceView {
   return {
+    truthClass,
     positionArchiveRef: fragment.positionArchiveRef,
     heldDays: fragment.heldDays,
     unrealizedPnlText: formatOrUnavailable(() => minorUnitsToTwd(fragment.unrealizedPnlMinorUnits)),
@@ -158,59 +187,72 @@ function paperConsequenceView(
   };
 }
 
-function consequenceBody(entry: LifeJournalEntry): JournalSectionBody {
+function consequenceBody(entry: LifeJournalEntry, declared: Declared): JournalSectionBody {
   const consequence = entry.consequence;
-  const paper = paperConsequenceView(consequence?.paperConsequence);
-  const nonPaperSummary = textOrNull(consequence?.nonPaperConsequenceSummary);
+  const fragment = consequence?.paperConsequence;
+  const nonPaperText = textOrNull(consequence?.nonPaperConsequenceSummary);
+  if (!fragment && nonPaperText === null) return { kind: "absent", reason: "missing" };
 
-  if (paper === null && nonPaperSummary === null) {
-    return { kind: "absent", reason: "missing" };
-  }
-  return { kind: "consequence", paper, nonPaperSummary };
+  // 兩項後果各自過身分閘門：缺身分的那一項不顯示，另一項照常顯示。
+  const paperClass = fragment ? claimTruthClassOf(fragment.truthClass, declared) : null;
+  const paper = fragment && paperClass !== null ? paperConsequenceView(fragment, paperClass) : null;
+  const nonPaperClass =
+    nonPaperText === null ? null : claimTruthClassOf(consequence?.nonPaperConsequenceSummaryTruthClass, declared);
+  const nonPaperSummary = nonPaperClass === null ? null : nonPaperText;
+  const withheld = (fragment !== undefined && paper === null) || (nonPaperText !== null && nonPaperSummary === null);
+
+  if (paper === null && nonPaperSummary === null) return UNLABELLED;
+  return { kind: "consequence", paper, nonPaperSummary, nonPaperTruthClass: nonPaperClass, withheld };
 }
 
-function currentSelfNarrationBody(entry: LifeJournalEntry): JournalSectionBody {
+function currentSelfNarrationBody(entry: LifeJournalEntry, declared: Declared): JournalSectionBody {
   const narration = entry.currentSelfNarration;
   if (!narration) {
     // 還沒承認的動機不由系統代答。
     return { kind: "unacknowledgedMotive", text: UNACKNOWLEDGED_MOTIVE_LABEL };
   }
   if (narration.kind === "utterance") {
-    return quoteBody({
-      utteranceArtifactId: narration.utteranceArtifactId,
-      canonicalTextSha256: narration.canonicalTextSha256,
-      canonicalTextUtf8: narration.canonicalTextUtf8,
-    });
+    return quoteBody(
+      {
+        utteranceArtifactId: narration.utteranceArtifactId,
+        canonicalTextSha256: narration.canonicalTextSha256,
+        canonicalTextUtf8: narration.canonicalTextUtf8,
+      },
+      narration.truthClass,
+      declared,
+    );
   }
   const text = textOrNull(narration.summaryText);
-  return text === null
-    ? { kind: "unacknowledgedMotive", text: UNACKNOWLEDGED_MOTIVE_LABEL }
-    : { kind: "summary", text };
+  if (text === null) return { kind: "unacknowledgedMotive", text: UNACKNOWLEDGED_MOTIVE_LABEL };
+  const labelled = claimTruthClassOf(narration.truthClass, declared);
+  return labelled === null ? UNLABELLED : { kind: "summary", text, truthClass: labelled };
 }
 
-function bodyFor(key: JournalSectionKey, entry: LifeJournalEntry): JournalSectionBody | null {
+function bodyFor(key: JournalSectionKey, entry: LifeJournalEntry, declared: Declared): JournalSectionBody | null {
   switch (key) {
     case "sceneSummary":
-      return summaryOrAbsent(entry.sceneSummary);
+      return summaryOrAbsent(entry.sceneSummary, entry.sceneSummaryTruthClass, declared);
     case "contemporaneousClaim":
-      return quoteBody(entry.contemporaneousClaim);
+      return quoteBody(entry.contemporaneousClaim, entry.contemporaneousClaim?.truthClass, declared);
     case "knownAtTheTime":
-      return summaryOrAbsent(entry.knownAtTheTimeSummary);
+      return summaryOrAbsent(entry.knownAtTheTimeSummary, entry.knownAtTheTimeSummaryTruthClass, declared);
     case "missedFacts":
-      return summaryOrAbsent(entry.missedFactsSummary);
+      return summaryOrAbsent(entry.missedFactsSummary, entry.missedFactsSummaryTruthClass, declared);
     case "action":
-      return summaryOrAbsent(entry.actionSummary);
+      return summaryOrAbsent(entry.actionSummary, entry.actionSummaryTruthClass, declared);
     case "consequence":
-      return consequenceBody(entry);
+      return consequenceBody(entry, declared);
     case "currentSelfNarration":
-      return currentSelfNarrationBody(entry);
+      return currentSelfNarrationBody(entry, declared);
     case "recurringPattern": {
       // 只有同類模式至少發生兩次（＝投影給了 ref）才出現這一段；否則整段不存在。
       const ref = textOrNull(entry.recurringPatternRef);
-      return ref === null ? null : { kind: "recurringPattern", patternRef: ref };
+      if (ref === null) return null;
+      const labelled = claimTruthClassOf(entry.recurringPatternTruthClass, declared);
+      return labelled === null ? UNLABELLED : { kind: "recurringPattern", patternRef: ref, truthClass: labelled };
     }
     case "openQuestion":
-      return summaryOrAbsent(entry.openQuestionSummary);
+      return summaryOrAbsent(entry.openQuestionSummary, entry.openQuestionSummaryTruthClass, declared);
   }
 }
 
@@ -221,10 +263,14 @@ function bodyFor(key: JournalSectionKey, entry: LifeJournalEntry): JournalSectio
  * `老毛病又回來了`。其餘段落即使沒有資料也會回傳 `absent`，讓畫面顯示
  * 「這一天沒有這件事」而不是安靜地少一塊。
  */
-export function journalSections(entry: LifeJournalEntry): JournalSectionView[] {
+export function journalSections(
+  entry: LifeJournalEntry,
+  /** 投影 envelope 的 `truthClasses`；有給時，每一段的身分必須在裡面。 */
+  declared?: readonly TruthClass[],
+): JournalSectionView[] {
   const sections: JournalSectionView[] = [];
   for (const { key, title } of JOURNAL_SECTION_ORDER) {
-    const body = bodyFor(key, entry);
+    const body = bodyFor(key, entry, declared);
     if (body === null) continue;
     sections.push({ key, title, body });
   }

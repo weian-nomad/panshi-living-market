@@ -13,8 +13,10 @@
 // 2. **只有真頁可以點**：六節都有自己的頁面，`sectionPath` 非 null 就是一顆「打開」按鈕。
 //    投影若給了 `null`（契約保留給未來新增的節），不做成 disabled 假按鈕，也不自己
 //    組一個路徑，而是一段可讀的說明。
-// 3. **每一節都掛 truth_class**：對應表逐格照 `docs/v5/product-constitution.md`
-//    「角色資料的五種身分」。投影沒有宣告該身分時 fail closed，不自己加標籤。
+// 3. **每一項都掛它自己的 truth_class**：長期矛盾、最近三件事的每一件、每一節的摘要，
+//    各自讀投影在那一項上給的身分（public-v2.yaml 2.1.0 的 `summaryTruthClass`、
+//    `longTermTensionSummaryTruthClass`、`recentHighlightTruthClasses[i]`）。本檔沒有
+//    「哪一節該是哪一種身分」的對照表；缺身分的那一項不顯示並寫出原因。
 //
 // 肖像是 CSS／SVG 幾何佔位；正式角色美術另案處理，這裡不生圖。
 
@@ -24,8 +26,9 @@ import type {
   CharacterArchiveIndex,
   TruthClass,
 } from "../api/generated-v2/types.gen";
+import { ClaimWithTruth } from "./ItemTruthTag";
 import { TruthTag } from "./TruthTag";
-import { DATA_UNAVAILABLE_LABEL, declaredTruthClass, truthClassLabel } from "./format";
+import { DATA_UNAVAILABLE_LABEL } from "./format";
 
 /** experience-spec §9.1 的固定索引順序與段名。 */
 export const ARCHIVE_SECTION_ORDER: readonly { key: ArchiveSectionKey; title: string }[] = [
@@ -36,20 +39,6 @@ export const ARCHIVE_SECTION_ORDER: readonly { key: ArchiveSectionKey; title: st
   { key: "memories", title: "記憶" },
   { key: "life", title: "生平" },
 ];
-
-/**
- * 每一節的資料身分。對應 product-constitution.md「角色資料的五種身分」：
- * 紙上交易與故事投影＝模擬敘事；姓名、關係與人生事件＝虛構設定；
- * 命盤的文化詮釋＝象徵解讀。
- */
-const SECTION_TRUTH_CLASS: Readonly<Record<ArchiveSectionKey, TruthClass>> = {
-  paper: "simulated_narrative",
-  relations: "fictional_setting",
-  chart: "symbolic_interpretation",
-  traits: "fictional_setting",
-  memories: "fictional_setting",
-  life: "fictional_setting",
-};
 
 const TRUTH_CLASS_EXPLANATION: Readonly<Record<TruthClass, string>> = {
   real_fact: "已封存並可回溯到外部來源的事實。",
@@ -155,28 +144,19 @@ function SectionEntry({
     );
   }
 
-  const wanted = SECTION_TRUTH_CLASS[entry.sectionKey];
-  // 與近景共用同一個 fail-closed 閘門（`format.ts` 的 `declaredTruthClass()`）。
-  const truthClass = declaredTruthClass(declaredTruthClasses, wanted);
-
   return (
     <section className="v5-archive__section">
       <h3>{title}</h3>
-      <p className="panshi-paper">{entry.summary}</p>
-
-      {truthClass !== null ? (
-        <TruthTag
-          truthClass={truthClass}
-          explanation={TRUTH_CLASS_EXPLANATION[truthClass]}
-          asOfLabel={entry.asOf}
-          versionLabel={`visibility epoch ${entry.visibilityEpoch}`}
-        />
-      ) : (
-        <p className="v5-archive__entry-only panshi-paper">
-          {DATA_UNAVAILABLE_LABEL}：投影沒有宣告「{truthClassLabel(wanted)}
-          」這個資料身分，所以這裡不掛標籤。
-        </p>
-      )}
+      {/* 摘要的身分是投影在這一節上給的 `summaryTruthClass`；缺了就不顯示摘要。 */}
+      <ClaimWithTruth
+        truthClass={entry.summaryTruthClass}
+        declared={declaredTruthClasses}
+        asOfLabel={entry.asOf}
+        versionLabel={`visibility epoch ${entry.visibilityEpoch}`}
+        withheldClassName="v5-archive__entry-only"
+      >
+        <p className="panshi-paper">{entry.summary}</p>
+      </ClaimWithTruth>
 
       {onOpen === null ? (
         <p className="v5-archive__entry-only panshi-paper">{NO_SECTION_PATH_TEXT}</p>
@@ -207,6 +187,7 @@ export function ArchiveIndexScreen({
   onOpenSection,
   onBackToJournal,
 }: ArchiveIndexScreenProps) {
+  const highlightVersion = `${index.archiveSchemaRevision}／projection v${index.projectionVersion}`;
   const bySectionKey = new Map<ArchiveSectionKey, ArchiveSectionIndexEntry>();
   for (const entry of index.sections) {
     if (!bySectionKey.has(entry.sectionKey)) bySectionKey.set(entry.sectionKey, entry);
@@ -218,7 +199,17 @@ export function ArchiveIndexScreen({
 
       <div className="v5-archive__head">
         <Portrait />
-        <p className="v5-archive__tension panshi-paper">{index.longTermTensionSummary}</p>
+        <div className="v5-archive__tension">
+          <ClaimWithTruth
+            truthClass={index.longTermTensionSummaryTruthClass}
+            declared={index.truthClasses}
+            asOfLabel={index.serverNow}
+            versionLabel={highlightVersion}
+            withheldClassName="v5-archive__entry-only"
+          >
+            <p className="panshi-paper">{index.longTermTensionSummary}</p>
+          </ClaimWithTruth>
+        </div>
       </div>
 
       <div className="v5-archive__truth">
@@ -240,9 +231,18 @@ export function ArchiveIndexScreen({
         </p>
       ) : (
         <ul className="v5-archive__highlights">
-          {index.recentHighlights.map((highlight) => (
-            <li className="panshi-paper" key={highlight}>
-              {highlight}
+          {index.recentHighlights.map((highlight, position) => (
+            // 第 i 件的身分是 `recentHighlightTruthClasses[i]`；那一格缺了就只寫原因。
+            <li className="panshi-paper" key={`${position}-${highlight}`}>
+              <ClaimWithTruth
+                truthClass={index.recentHighlightTruthClasses?.[position]}
+                declared={index.truthClasses}
+                asOfLabel={index.serverNow}
+                versionLabel={highlightVersion}
+                withheldClassName="v5-archive__entry-only"
+              >
+                {highlight}
+              </ClaimWithTruth>
             </li>
           ))}
         </ul>

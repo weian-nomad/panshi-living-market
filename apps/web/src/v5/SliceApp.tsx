@@ -36,6 +36,7 @@ import "./tokens.css";
 import { ArchiveIndexScreen } from "./ArchiveIndexScreen";
 import { ArchiveSectionScreen } from "./ArchiveSectionScreen";
 import { CloseUpScreen } from "./CloseUpScreen";
+import { ClaimWithTruth } from "./ItemTruthTag";
 import { LifeJournalScreen } from "./LifeJournalScreen";
 import { PaperArchiveScreen } from "./PaperArchiveScreen";
 import { WorldScreen } from "./WorldScreen";
@@ -327,50 +328,60 @@ function truthClassesOf(value: SliceData): readonly TruthClass[] {
  * `storyHooks[0].label`；其餘畫面用該角色當下最貼近「這是一個人」的既有句子。
  * 缺資料就回傳 `null`，一律 fail closed，不補一句話。held／withdrawn 沒有可
  * 顯示的內容，也回傳 `null`。
+ *
+ * 這一句也是對外可見的宣稱，所以連同它在投影裡**自己的**資料身分一起回傳
+ *（public-v2.yaml 2.1.0：`labelTruthClass`、`<欄位>TruthClass` 或 item 的
+ * `truthClass`）；外殼不替它挑身分。
  */
-function humanHookOf(value: SliceData): string | null {
+type HumanHookClaim = { text: string; truthClass: unknown };
+
+function humanHookOf(value: SliceData): HumanHookClaim | null {
   switch (value.kind) {
     case "world": {
       if (value.data.dataState === "HELD") return null;
       const hook = value.data.storyHooks[0];
-      return hook ? hook.label : null;
+      return hook ? { text: hook.label, truthClass: hook.labelTruthClass } : null;
     }
     case "closeUp": {
       const data = value.data;
       if (data.dataState === "WITHDRAWN" || data.dataState === "HELD") return null;
-      return data.currentVerbPhrase;
+      return { text: data.currentVerbPhrase, truthClass: data.currentVerbPhraseTruthClass };
     }
     case "journal": {
       const data = value.data;
       if (data.dataState === "WITHDRAWN" || data.dataState === "HELD") return null;
       const latest = data.entries[data.entries.length - 1];
-      return latest ? latest.sceneSummary : null;
+      return latest ? { text: latest.sceneSummary, truthClass: latest.sceneSummaryTruthClass } : null;
     }
     case "archive": {
       const data = value.data;
       if (data.dataState === "WITHDRAWN" || data.dataState === "HELD") return null;
-      return data.longTermTensionSummary;
+      return { text: data.longTermTensionSummary, truthClass: data.longTermTensionSummaryTruthClass };
     }
     case "archivePaper": {
       const data = value.data;
       if (data.dataState === "WITHDRAWN" || data.dataState === "HELD") return null;
       const position = data.positions[0];
-      return position ? position.consequenceSummary : null;
+      return position
+        ? { text: position.consequenceSummary, truthClass: position.consequenceSummaryTruthClass }
+        : null;
     }
     case "archiveRelations": {
       const data = value.data;
       if (data.dataState === "WITHDRAWN" || data.dataState === "HELD") return null;
-      return data.acquaintances[0]?.relationNote ?? null;
+      const acquaintance = data.acquaintances[0];
+      return acquaintance ? { text: acquaintance.relationNote, truthClass: acquaintance.truthClass } : null;
     }
     case "archiveTraits": {
       const data = value.data;
       if (data.dataState === "WITHDRAWN" || data.dataState === "HELD") return null;
-      return data.selfDescription.label;
+      return { text: data.selfDescription.label, truthClass: data.selfDescription.truthClass };
     }
     case "archiveMemories": {
       const data = value.data;
       if (data.dataState === "WITHDRAWN" || data.dataState === "HELD") return null;
-      return data.memories[0]?.note ?? null;
+      const memory = data.memories[0];
+      return memory ? { text: memory.note, truthClass: memory.truthClass } : null;
     }
     case "archiveChart":
     case "archiveLife":
@@ -649,12 +660,33 @@ function CorrectionNotice({
   );
 }
 
-/** 這份投影的資料時間：模擬紀錄用整份的 `asOf`，其餘用 `serverNow`。 */
+/**
+ * 這份投影的資料時間：過期／離線橫幅要秀「資料本身凍結在哪個版本」，不是「伺服器現在幾點」
+ * ——`serverNow` 只是回應當下的時鐘，跟資料截止時間無關（one-character-slice-runbook.md
+ * §6.6 走查記錄過這個混淆）。
+ *
+ * 模擬紀錄與五個深層檔案分節整份文件都帶明確的 `asOf`（截止時間，intraday 固定是前一交易日
+ * 收盤），世界用 `marketClock.asOfTradingDate`（同一顆截止時間，換個位置放）；兩者都是「資料
+ * 本身」的截止時間，直接用。世界還沒有任何一個交易日定案時 `asOfTradingDate` 是 `null`，退回
+ * `serverNow`。近景、人生誌、深層檔案索引目前的契約沒有整份文件層級的截止時間欄位可用，只能
+ * 退回 `serverNow`。
+ */
 export function dataTimeOf(value: SliceData): string {
-  if (value.kind === "archivePaper" && value.data.dataState !== "WITHDRAWN") {
-    return value.data.asOf;
+  switch (value.kind) {
+    case "world":
+      return value.data.marketClock.asOfTradingDate ?? value.data.serverNow;
+    case "archivePaper":
+    case "archiveRelations":
+    case "archiveChart":
+    case "archiveTraits":
+    case "archiveMemories":
+    case "archiveLife": {
+      const { data } = value;
+      return data.dataState === "WITHDRAWN" ? data.serverNow : data.asOf;
+    }
+    default:
+      return value.data.serverNow;
   }
-  return value.data.serverNow;
 }
 
 /** 本來就是空的狀態；held／withdrawn 沒有內容，不算空。 */
@@ -791,7 +823,17 @@ function ReadyScreen({
 function HumanHook({ value }: { value: SliceData }) {
   const hook = humanHookOf(value);
   if (hook === null) return null;
-  return <p className="v5-hook panshi-paper">{hook}</p>;
+  // 這一句掛它自己的身分；缺身分就不顯示，改寫原因（不沿用整頁的身分）。
+  return (
+    <ClaimWithTruth
+      truthClass={hook.truthClass}
+      declared={value.data.truthClasses}
+      asOfLabel={value.data.serverNow}
+      versionLabel={`projection v${value.data.projectionVersion}`}
+    >
+      <p className="v5-hook panshi-paper">{hook.text}</p>
+    </ClaimWithTruth>
+  );
 }
 
 /**

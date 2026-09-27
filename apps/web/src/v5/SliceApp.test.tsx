@@ -6,7 +6,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { EMPTY_POSITION_TEXT } from "./paperCard";
-import { SliceApp, SliceView, loadRoute, type Loadable, type SliceData } from "./SliceApp";
+import { SliceApp, SliceView, dataTimeOf, loadRoute, type Loadable, type SliceData } from "./SliceApp";
 import { createLastKnownCache } from "./lastKnownCache";
 import type { Route } from "./router";
 import {
@@ -199,6 +199,22 @@ describe("[state:stale] 過期", () => {
   it("[state:stale] READY 沒有過期橫幅（反例）", () => {
     expect(render(ready({ kind: "journal", data: lifeJournal() }))).not.toContain('data-state="stale"');
   });
+
+  it("[state:stale] 世界用 marketClock.asOfTradingDate 當資料時間，不是 serverNow", () => {
+    // 世界快照的 `asOfTradingDate`（前一個定案交易日）才是「資料本身」凍結在哪一天；
+    // `serverNow` 只是回應當下的時鐘，過期橫幅講的是前者（one-character-slice-runbook.md §6.6）。
+    const markup = render(ready({ kind: "world", data: world({ dataState: "STALE" }) }));
+    const banner = indexOfOrFail(markup, 'data-state="stale"');
+    const bannerMarkup = markup.slice(banner, markup.indexOf("</section>", banner));
+    expect(bannerMarkup).toContain("2026-03-17");
+    expect(bannerMarkup).not.toContain(TEST_SERVER_NOW);
+  });
+
+  it("[state:stale] dataTimeOf：世界沒有任何定案交易日（asOfTradingDate 為 null）才退回 serverNow", () => {
+    expect(
+      dataTimeOf({ kind: "world", data: world({ dataState: "STALE", marketClock: { marketDate: "2026-03-18", sessionPhase: "pre_market", asOfTradingDate: null, nextBoundaryAt: "2026-03-18T09:00:00+08:00" } }) }),
+    ).toBe(TEST_SERVER_NOW);
+  });
 });
 
 describe("[state:held] 頁面層級覆核", () => {
@@ -208,7 +224,13 @@ describe("[state:held] 頁面層級覆核", () => {
       data: world({
         dataState: "HELD",
         storyHooks: [
-          { hookId: "h-1", characterId: TEST_CHARACTER_ID, sceneRef: "s-1", label: SENTINEL },
+          {
+            hookId: "h-1",
+            characterId: TEST_CHARACTER_ID,
+            sceneRef: "s-1",
+            label: SENTINEL,
+            labelTruthClass: "simulated_narrative",
+          },
         ],
       }),
     },
@@ -286,7 +308,7 @@ describe("[state:corrected] 更正", () => {
     expect(markup).toContain(FAIL_CLOSED_NOTE);
   });
 
-  it("[state:corrected] 近景：列出文件內的來源版本 refs，並連到模擬紀錄的更正段落", () => {
+  it("[state:corrected] 近景：橫幅本體是人話說法，原始 refKind／refId 只在可展開的稽核抽屜裡", () => {
     const markup = render(
       ready({
         kind: "closeUp",
@@ -298,16 +320,41 @@ describe("[state:corrected] 更正", () => {
     );
     const banner = indexOfOrFail(markup, 'data-state="corrected"');
     expect(banner).toBeLessThan(indexOfOrFail(markup, 'class="v5-hook'));
-    expect(markup).toContain("wfm_corrected_s6");
+
+    const detailsStart = indexOfOrFail(markup, "<details");
+    const detailsEnd = indexOfOrFail(markup, "</details>");
+    // 人話說法在 <details> 之外就看得到；原始 id 只出現在 <details> 裡面。
+    expect(markup.slice(banner, detailsStart)).toContain("世界事實清單");
+    expect(markup.slice(banner, detailsStart)).not.toContain("wfm_corrected_s6");
+    expect(markup.indexOf("wfm_corrected_s6")).toBeGreaterThan(detailsStart);
+    expect(markup.indexOf("wfm_corrected_s6")).toBeLessThan(detailsEnd);
     expect(markup).toContain(
       `href="/people/${TEST_CHARACTER_ID}/archive/paper#${PAPER_CORRECTIONS_ANCHOR}"`,
     );
   });
 
-  it("[state:corrected] 世界不屬於某一位人物：列 refs、不給模擬紀錄連結", () => {
+  it("[state:corrected] 沒收錄過的 refKind 落 fallback 說法，不是原始字串", () => {
+    const markup = render(
+      ready({
+        kind: "closeUp",
+        data: closeUp({
+          dataState: "CORRECTED",
+          sourceRevisionSet: [{ refId: "future-ref-001", refKind: "not_yet_known_kind", revision: 1 }],
+        }),
+      }),
+    );
+    const banner = indexOfOrFail(markup, 'data-state="corrected"');
+    const detailsStart = indexOfOrFail(markup, "<details");
+    expect(markup.slice(banner, detailsStart)).toContain("其他來源資料");
+    expect(markup.slice(banner, detailsStart)).not.toContain("not_yet_known_kind");
+  });
+
+  it("[state:corrected] 世界不屬於某一位人物：橫幅本體是人話說法，原始 id 只在稽核抽屜裡", () => {
     const markup = render(ready({ kind: "world", data: world({ dataState: "CORRECTED" }) }));
     expect(markup).toContain('data-state="corrected"');
-    expect(markup).toContain("wfm_test_s5");
+    const detailsStart = indexOfOrFail(markup, "<details");
+    expect(markup.slice(0, detailsStart)).toContain("世界事實清單");
+    expect(markup.indexOf("wfm_test_s5")).toBeGreaterThan(detailsStart);
     expect(markup).not.toContain(`#${PAPER_CORRECTIONS_ANCHOR}`);
   });
 });

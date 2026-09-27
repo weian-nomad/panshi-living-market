@@ -62,6 +62,98 @@ export const DATA_REVISION_KIND_LABEL: Readonly<Record<DataRevisionKind, string>
 };
 
 /**
+ * 非模擬紀錄頁的更正橫幅：`SourceRevisionRef.refKind` 是後端自由字串（contracts/openapi/
+ * public-v2.yaml `SourceRevisionRef`），不是窮舉的 enum。這裡只收錄目前切片實際出現過的
+ * 幾種，換成人話說法；沒收錄的種類落 fallback，不臆測新詞。原始 `refKind`／`refId` 不在
+ * 這裡顯示，只放進下面可展開的稽核抽屜（one-character-slice-runbook.md 相關走查）。
+ * 未經 copy-taste 審稿。
+ */
+export const SOURCE_REF_KIND_LABEL: Readonly<Record<string, string>> = {
+  world_fact_manifest: "世界事實清單",
+  paper_account: "模擬帳戶",
+  paper_position: "模擬部位",
+};
+
+/** `SOURCE_REF_KIND_LABEL` 沒收錄時的說法（未經 copy-taste 審稿）。 */
+export const SOURCE_REF_KIND_FALLBACK = "其他來源資料";
+
+/** 依人話標籤分組後的一個更正分類（`summarizeSourceRevisions` 的輸出）。 */
+export type SourceRevisionCategory = {
+  label: string;
+  count: number;
+};
+
+/** `summarizeSourceRevisions` 的完整輸出；`refs.length === 0` 時上層另有 fail-closed 文案，不叫這個函式。 */
+export type SourceRevisionSummary = {
+  totalCount: number;
+  /** 所有 ref 裡最大的 `revision`（「最新第 M 版」的 M）。 */
+  latestRevision: number;
+  /** 依筆數由多到少；筆數相同時保留第一次出現的順序（`Array.prototype.sort` 穩定排序）。 */
+  categories: readonly SourceRevisionCategory[];
+  /** 橫幅本體的一句摘要（未經 copy-taste 審稿）。 */
+  sentence: string;
+};
+
+/**
+ * 把一份文件的 `sourceRevisionSet`（可能有幾十筆，例如世界頁一次帶 30 筆
+ * `world_fact_manifest`）收成橫幅本體用得到的一句摘要 ＋ 分類計數，原始
+ * `refKind`／`refId` 不在這裡出現，交給呼叫端放進稽核抽屜。
+ *
+ * 分類用**人話標籤**分組，不是原始 `refKind`：兩種沒收錄的 `refKind` 都會落到
+ * 同一個 `SOURCE_REF_KIND_FALLBACK`，分類計數要把它們合併成一筆，不能顯示兩行
+ * 一樣的標籤。
+ *
+ * `refs.length === 0` 回傳 `null`；呼叫端維持既有的「沒有附上可核對的來源版本」
+ * fail-closed 文案，不用這個函式生句子。
+ */
+export function summarizeSourceRevisions(
+  refs: readonly SourceRevisionRef[],
+): SourceRevisionSummary | null {
+  if (refs.length === 0) return null;
+
+  const order: string[] = [];
+  const counts = new Map<string, number>();
+  // `noUncheckedIndexedAccess`：用 for-of 逐一累計最大版本號，不索引 `refs[0]`。
+  let latestRevision = -Infinity;
+  for (const ref of refs) {
+    const label = SOURCE_REF_KIND_LABEL[ref.refKind] ?? SOURCE_REF_KIND_FALLBACK;
+    if (!counts.has(label)) {
+      order.push(label);
+      counts.set(label, 0);
+    }
+    counts.set(label, (counts.get(label) ?? 0) + 1);
+    if (ref.revision > latestRevision) latestRevision = ref.revision;
+  }
+
+  const categories: SourceRevisionCategory[] = order.map((label) => ({
+    label,
+    count: counts.get(label) ?? 0,
+  }));
+  // 穩定排序（ES2019 起 Array#sort 保證穩定）：筆數相同時保留上面 for-of 的出現順序。
+  categories.sort((a, b) => b.count - a.count);
+
+  // `refs.length > 0` 已在上面 return 過，所以 `categories` 至少有一筆；這裡仍走一次
+  // `undefined` 檢查是配合 `noUncheckedIndexedAccess`，不是真的可能發生。
+  const primaryCategory = categories[0];
+  if (primaryCategory === undefined) {
+    return {
+      totalCount: refs.length,
+      latestRevision,
+      categories,
+      sentence: `${refs.length} 項資料有更正，最新第 ${latestRevision} 版。`,
+    };
+  }
+  const primaryLabel = primaryCategory.label;
+  // 未經 copy-taste 審稿：只有一種分類時不用「等」，避免「A 共 A 有更正」這種怪句。
+  const sentence =
+    categories.length === 1
+      ? `${primaryLabel}共 ${refs.length} 項資料有更正，最新第 ${latestRevision} 版。`
+      : `${primaryLabel}等 ${refs.length} 項資料有更正，最新第 ${latestRevision} 版。`;
+
+  return { totalCount: refs.length, latestRevision, categories, sentence };
+}
+
+/**
  * 三種「本來就是空的」狀態。空不是讀取失敗：每一種都要說出**為什麼是空的**，
  * 而且不得用 0 或佔位字串冒充資料。
  */
@@ -164,6 +256,57 @@ export type CorrectedBannerProps =
       onOpenCorrections?: () => void;
     };
 
+/**
+ * 「其他頁」更正橫幅的本體：一句人話摘要 ＋ 依來源種類的分類計數 ＋「看全部更正」
+ * 展開；展開後才看得到逐筆列表，而逐筆列表裡也只有人話標籤，原始 `refKind`／
+ * `refId` 再往下收進巢狀的稽核 `<details>`（一路 fail closed，不臆測、不省略）。
+ *
+ * 用原生 `<details>`／`<summary>` 做展開收合，沒有另外掛 CSS 動畫或
+ * transition，所以 reduced motion 不需要任何額外處理：展開本來就沒有動畫可關。
+ * 這個檔案本來就是純呈現元件（見檔頭），不需要 hook 或 `window.matchMedia`。
+ */
+function SourceRevisionCorrections({ refs }: { refs: readonly SourceRevisionRef[] }) {
+  const summary = summarizeSourceRevisions(refs);
+  if (summary === null) {
+    return <p className="v5-meta">這份文件沒有附上可核對的來源版本。{FAIL_CLOSED_NOTE}</p>;
+  }
+  return (
+    <>
+      {/* 人話摘要句＋分類計數給一般讀者；原始 refKind／refId 完全不在這裡出現。 */}
+      <p className="panshi-paper">{summary.sentence}</p>
+      <ul className="v5-corrections__counts" aria-label="依來源種類分類計數">
+        {summary.categories.map((category) => (
+          <li key={category.label}>
+            {category.label}
+            <span className="panshi-data">（{category.count} 筆）</span>
+          </li>
+        ))}
+      </ul>
+      <details className="v5-corrections__full">
+        <summary>看全部更正</summary>
+        <ul className="v5-corrections" aria-label="這頁依據的來源版本">
+          {refs.map((ref) => (
+            <li key={`${ref.refKind}-${ref.refId}`}>
+              <span className="panshi-paper">{SOURCE_REF_KIND_LABEL[ref.refKind] ?? SOURCE_REF_KIND_FALLBACK}</span>
+              <span className="panshi-data">（第 {ref.revision} 版）</span>
+            </li>
+          ))}
+        </ul>
+        <details className="v5-corrections__audit">
+          <summary>稽核用原始識別碼</summary>
+          <ul className="v5-corrections panshi-data" aria-label="原始來源識別碼">
+            {refs.map((ref) => (
+              <li key={`audit-${ref.refKind}-${ref.refId}`}>
+                {ref.refKind}／{ref.refId}／第 {ref.revision} 版
+              </li>
+            ))}
+          </ul>
+        </details>
+      </details>
+    </>
+  );
+}
+
 export function CorrectedBanner(props: CorrectedBannerProps) {
   return (
     <section className="v5-panel" data-tone="warn" data-state="corrected">
@@ -190,17 +333,7 @@ export function CorrectedBanner(props: CorrectedBannerProps) {
         )
       ) : (
         <>
-          {props.refs.length === 0 ? (
-            <p className="v5-meta">這份文件沒有附上可核對的來源版本。{FAIL_CLOSED_NOTE}</p>
-          ) : (
-            <ul className="v5-corrections panshi-data" aria-label="這頁依據的來源版本">
-              {props.refs.map((ref) => (
-                <li key={`${ref.refKind}-${ref.refId}`}>
-                  {ref.refKind}／{ref.refId}／第 {ref.revision} 版
-                </li>
-              ))}
-            </ul>
-          )}
+          <SourceRevisionCorrections refs={props.refs} />
           {props.correctionsHref === null ? (
             <p className="v5-meta">這頁不屬於某一位人物，沒有對應的模擬紀錄更正段落。</p>
           ) : (

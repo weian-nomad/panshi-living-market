@@ -12,6 +12,7 @@
 
 import type { EvidenceCard } from "../api/generated-v2/types.gen";
 import { ItemTruthTag } from "./ItemTruthTag";
+import { SystemLabel } from "./SystemLabel";
 import { Utterance } from "./Utterance";
 import { DATA_UNAVAILABLE_LABEL, minorUnitsToTwdOrNull } from "./format";
 import { quantityFixed6ToText, unitPriceFixed6ToText } from "./paperCard";
@@ -116,7 +117,7 @@ export function EvidenceCardView({
             <ItemTruthTag truthClass={outcome.truthClass} asOfLabel={outcome.asOf} versionLabel={versionLabel} />
           </>
         ) : (
-          <p className="panshi-paper">{card.paperOutcomeNullReason ?? DATA_UNAVAILABLE_LABEL}</p>
+          <SystemLabel field="paperOutcomeNullReason" text={card.paperOutcomeNullReason} />
         )}
       </section>
 

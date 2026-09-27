@@ -6,9 +6,6 @@ import {
   MINUS_SIGN,
   TRUTH_CLASSES,
   TWD_MINOR_UNIT_DECIMALS,
-  claimTruthClass,
-  consequenceHighlightTruthClass,
-  declaredTruthClass,
   fixed6ToDecimalString,
   formatAsOfIntraday,
   minorUnitsToTwd,
@@ -171,37 +168,6 @@ describe("truth_class presentation", () => {
     const labels = TRUTH_CLASSES.map(truthClassLabel);
     expect(labels).toHaveLength(5);
     expect(new Set(labels).size).toBe(5);
-  });
-
-  it("files paper figures as simulated_narrative, never as fictional_setting", () => {
-    // product-constitution.md「角色資料的五種身分」：紙上交易與故事投影＝模擬敘事。
-    // `ArchiveIndexScreen.tsx` 的 SECTION_TRUTH_CLASS.paper 是同一格；
-    // `CloseUpScreen.tsx` 的 closeUpBlockTruthClass("consequence", …) 走這裡。
-    expect(claimTruthClass("paper_figure")).toBe("simulated_narrative");
-    expect(claimTruthClass("paper_figure")).not.toBe("fictional_setting");
-    expect(consequenceHighlightTruthClass("paper_position")).toBe("simulated_narrative");
-    // 碎片缺席時畫面講的還是紙上持倉，不因為沒數字就降級成設定文案。
-    expect(consequenceHighlightTruthClass(undefined)).toBe("simulated_narrative");
-  });
-
-  it("keeps the non-paper claim kinds on their own identities", () => {
-    expect(claimTruthClass("character_scene")).toBe("fictional_setting");
-    expect(claimTruthClass("natal_chart")).toBe("symbolic_interpretation");
-    expect(consequenceHighlightTruthClass("relationship")).toBe("fictional_setting");
-    expect(consequenceHighlightTruthClass("occupation")).toBe("fictional_setting");
-    expect(consequenceHighlightTruthClass("memory")).toBe("fictional_setting");
-  });
-
-  it("only lets a projection-declared identity through, and never substitutes another", () => {
-    // 切片投影宣告的三種身分（`close-up.json` / `life-journal.json` / `archive.json`）。
-    const declared = ["fictional_setting", "symbolic_interpretation", "simulated_narrative"] as const;
-
-    expect(declaredTruthClass(declared, "simulated_narrative")).toBe("simulated_narrative");
-    expect(declaredTruthClass(declared, "fictional_setting")).toBe("fictional_setting");
-    // 沒宣告就不掛：fail closed，且不得改掛一個有宣告的身分頂替。
-    expect(declaredTruthClass(declared, "real_fact")).toBeNull();
-    expect(declaredTruthClass([], "simulated_narrative")).toBeNull();
-    expect(declaredTruthClass(["fictional_setting"], "simulated_narrative")).toBeNull();
   });
 
   it("keeps all five glyph ids distinct", () => {

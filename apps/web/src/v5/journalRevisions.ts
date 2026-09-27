@@ -20,7 +20,7 @@
 // 本檔是純函式：不碰 DOM、不打 API、不讀時鐘。
 
 import type {
-  CharacterUtterance,
+  ClassifiedCharacterUtterance,
   HeldLifeJournalEntry,
   LifeJournalEntry,
 } from "../api/generated-v2/types.gen";
@@ -34,21 +34,23 @@ export function chapterAnchorId(chapterDate: string): string {
 export type ClaimRevision = {
   /** 改口所在的章節。 */
   entry: LifeJournalEntry;
-  /** 後來的那一句（逐字原話）。 */
-  revision: CharacterUtterance;
+  /** 後來的那一句（逐字原話，帶它自己的資料身分）。 */
+  revision: ClassifiedCharacterUtterance;
   /** 原話所在的章節；它的當時原話與當時已知資料就是比較的左邊。 */
   original: LifeJournalEntry;
-  originalClaim: CharacterUtterance;
+  originalClaim: ClassifiedCharacterUtterance;
   positionRef: string;
 };
 
-function laterUtterance(entry: LifeJournalEntry): CharacterUtterance | null {
+function laterUtterance(entry: LifeJournalEntry): ClassifiedCharacterUtterance | null {
   const narration = entry.currentSelfNarration;
   if (narration && narration.kind === "utterance") {
-    const utterance: CharacterUtterance = {
+    // 身分跟著原話走：沿用那一句自述在投影裡的 `truthClass`，不在這裡補。
+    const utterance: ClassifiedCharacterUtterance = {
       utteranceArtifactId: narration.utteranceArtifactId,
       canonicalTextSha256: narration.canonicalTextSha256,
       canonicalTextUtf8: narration.canonicalTextUtf8,
+      truthClass: narration.truthClass,
     };
     if (isVerifiableUtterance(utterance)) return utterance;
   }
@@ -73,7 +75,7 @@ export function claimRevisions(
     null,
   );
 
-  const originals = new Map<string, { entry: LifeJournalEntry; claim: CharacterUtterance }>();
+  const originals = new Map<string, { entry: LifeJournalEntry; claim: ClassifiedCharacterUtterance }>();
   const blocked = new Set<string>();
   const revisions = new Map<string, ClaimRevision>();
 

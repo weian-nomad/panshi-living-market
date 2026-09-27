@@ -13,6 +13,9 @@
 //   結構化摘要一律不加引號。
 // - 每張主卡下面接一組「原本理由｜現在說法｜紙上代價｜關係後果」並排比較，
 //   讓成本、損益、原始理由與退出條件在同一個視線裡。
+// - 資料身分逐項掛（public-v2.yaml 2.1.0）：帳戶、部位數字、標的、原始理由、原話、
+//   現在說法、後果摘要、每一列交易與每一則更正，各自讀投影在那一項上給的身分。
+//   本檔不替任何一項挑身分；缺身分的那一項不顯示並寫出原因（`ClaimWithTruth`）。
 
 import { useEffect } from "react";
 
@@ -23,10 +26,12 @@ import type {
 } from "../api/generated-v2/types.gen";
 import { ClaimComparison } from "./ClaimComparison";
 import { SignedMoney } from "./EvidenceCardView";
-import { ItemTruthTag } from "./ItemTruthTag";
+import { ClaimWithTruth, ItemTruthTag, WithheldClaim } from "./ItemTruthTag";
 import { TruthTag } from "./TruthTag";
 import { Utterance } from "./Utterance";
-import { DATA_UNAVAILABLE_LABEL, declaredTruthClass, minorUnitsToTwdOrNull, truthClassLabel } from "./format";
+import { SystemLabel } from "./SystemLabel";
+import { claimTruthClassOf, nestedFiguresUsable } from "./claimTruth";
+import { DATA_UNAVAILABLE_LABEL, minorUnitsToTwdOrNull } from "./format";
 import {
   minorUnitsToTwdText,
   paperActionRows,
@@ -118,9 +123,15 @@ const STYLES = `
 }
 `;
 
-function Quote({ quote }: { quote: PaperQuoteView }) {
+/** 一句逐字原話與它自己的資料身分；缺身分就整句不顯示。 */
+function Quote({ quote, asOfLabel, versionLabel }: { quote: PaperQuoteView; asOfLabel: string; versionLabel: string }) {
   return (
-    <>
+    <ClaimWithTruth
+      truthClass={quote.truthClass}
+      asOfLabel={asOfLabel}
+      versionLabel={versionLabel}
+      withheldClassName="v5-paper__attr"
+    >
       <p className="v5-paper__quote">
         <Utterance
           utterance={{
@@ -133,11 +144,11 @@ function Quote({ quote }: { quote: PaperQuoteView }) {
       <p className="v5-paper__attr panshi-data">
         {quote.utteranceArtifactId}／sha256 {quote.digestPrefix}
       </p>
-    </>
+    </ClaimWithTruth>
   );
 }
 
-function CardBody({ body }: { body: PaperCardBody }) {
+function CardBody({ body, asOfLabel, versionLabel }: { body: PaperCardBody; asOfLabel: string; versionLabel: string }) {
   switch (body.kind) {
     case "verb":
       return (
@@ -187,15 +198,19 @@ function CardBody({ body }: { body: PaperCardBody }) {
       return (
         <>
           {/* 結構化理由：不加引號。 */}
-          <p className="panshi-paper">{body.summary}</p>
-          <p className="panshi-data">
-            退出條件（失效條件）：{body.invalidationLabel}
-            {body.invalidationOccurred ? "（已觸發）" : ""}
-          </p>
+          <ClaimWithTruth truthClass={body.summaryTruthClass} asOfLabel={asOfLabel} versionLabel={versionLabel}>
+            <p className="panshi-paper">{body.summary}</p>
+          </ClaimWithTruth>
+          <ClaimWithTruth truthClass={body.invalidationTruthClass} asOfLabel={asOfLabel} versionLabel={versionLabel}>
+            <p className="panshi-data">
+              退出條件（失效條件）：{body.invalidationLabel}
+              {body.invalidationOccurred ? "（已觸發）" : ""}
+            </p>
+          </ClaimWithTruth>
           {body.concurrentClaim === null ? (
             <p className="v5-paper__attr panshi-paper">{body.concurrentClaimAbsenceText}</p>
           ) : (
-            <Quote quote={body.concurrentClaim} />
+            <Quote quote={body.concurrentClaim} asOfLabel={asOfLabel} versionLabel={versionLabel} />
           )}
         </>
       );
@@ -203,12 +218,22 @@ function CardBody({ body }: { body: PaperCardBody }) {
     case "currentClaim":
       return (
         <>
-          {body.quote === null ? null : <Quote quote={body.quote} />}
-          {body.summaryText === null ? null : <p className="panshi-paper">{body.summaryText}</p>}
+          {body.quote === null ? null : <Quote quote={body.quote} asOfLabel={asOfLabel} versionLabel={versionLabel} />}
+          {body.summaryText === null ? null : (
+            <ClaimWithTruth truthClass={body.summaryTruthClass} asOfLabel={asOfLabel} versionLabel={versionLabel}>
+              <p className="panshi-paper">{body.summaryText}</p>
+            </ClaimWithTruth>
+          )}
           {body.absenceText === null ? null : (
             <p className="v5-paper__attr panshi-paper">{body.absenceText}</p>
           )}
-          <p className="panshi-data">{body.newlySupportedFactsText}</p>
+          <ClaimWithTruth
+            truthClass={body.newlySupportedFactsTruthClass}
+            asOfLabel={asOfLabel}
+            versionLabel={versionLabel}
+          >
+            <p className="panshi-data">{body.newlySupportedFactsText}</p>
+          </ClaimWithTruth>
         </>
       );
 
@@ -218,31 +243,20 @@ function CardBody({ body }: { body: PaperCardBody }) {
           {body.items.map((item, index) => (
             <div style={{ display: "contents" }} key={`${item.label}-${index}`}>
               <dt>{item.label}</dt>
-              <dd>{item.text}</dd>
+              <dd>
+                {item.truthClass === undefined ? (
+                  item.text
+                ) : (
+                  <ClaimWithTruth truthClass={item.truthClass} asOfLabel={asOfLabel} versionLabel={versionLabel}>
+                    {item.text}
+                  </ClaimWithTruth>
+                )}
+              </dd>
             </div>
           ))}
         </dl>
       );
   }
-}
-
-/** 模擬紀錄的紙上數字與故事投影＝模擬敘事；投影沒宣告就不掛（同 `declaredTruthClass()`）。 */
-function PaperClaimTag({ archive }: { archive: PaperArchiveProjection }) {
-  const truthClass = declaredTruthClass(archive.truthClasses, "simulated_narrative");
-  if (truthClass === null) {
-    return (
-      <p className="v5-paper__attr panshi-paper">
-        {DATA_UNAVAILABLE_LABEL}：投影沒有宣告「{truthClassLabel("simulated_narrative")}」這個資料身分，所以這裡不掛標籤。
-      </p>
-    );
-  }
-  return (
-    <ItemTruthTag
-      truthClass={truthClass}
-      asOfLabel={archive.asOf}
-      versionLabel={`projection v${archive.projectionVersion}`}
-    />
-  );
 }
 
 /** 一個部位的四欄並排比較（欄內說明未經 copy-taste 審稿）。 */
@@ -255,59 +269,88 @@ function PositionComparison({
 }) {
   const versionLabel = `projection v${archive.projectionVersion}`;
   const narration = position.currentNarration;
+  const declared = archive.truthClasses;
+  // 成本是各 lot 成本相加、掛部位的標籤：每一筆 lot 自己的身分都要過閘門且與部位相同
+  //（2.2.0），否則整個成本改寫「資料未到」，不借部位的身分。
   let costBasis: number | null = 0;
   for (const lot of position.lots) {
     costBasis =
-      costBasis !== null && Number.isSafeInteger(lot.costBasisMinorUnits)
+      costBasis !== null &&
+      Number.isSafeInteger(lot.costBasisMinorUnits) &&
+      nestedFiguresUsable(lot.truthClass, position.truthClass, declared)
         ? costBasis + lot.costBasisMinorUnits
         : null;
   }
   const costText = minorUnitsToTwdOrNull(costBasis);
+  const instrument = claimTruthClassOf(position.instrumentLabelTruthClass, declared);
 
+  // 標的缺身分時標題不帶標的名（替代標題未經 copy-taste 審稿）。
   return (
     <ClaimComparison
-      title={`${position.instrumentLabel}：當時和現在並排`}
+      title={instrument === null ? "當時和現在並排" : `${position.instrumentLabel}：當時和現在並排`}
       columns={{
         originalReason: (
           <>
             {/* 結構化理由：不加引號。 */}
-            <p className="panshi-paper">{position.rationaleSummary}</p>
+            <ClaimWithTruth
+              truthClass={position.rationaleSummaryTruthClass}
+              declared={declared}
+              asOfLabel={archive.asOf}
+              versionLabel={versionLabel}
+            >
+              <p className="panshi-paper">{position.rationaleSummary}</p>
+            </ClaimWithTruth>
             {position.concurrentClaim === undefined ? (
               <p className="v5-paper__attr panshi-paper">當時沒有可核對的公開原話。</p>
             ) : (
-              <p>
-                <Utterance utterance={position.concurrentClaim} />
-              </p>
+              <ClaimWithTruth
+                truthClass={position.concurrentClaim.truthClass}
+                declared={declared}
+                asOfLabel={archive.asOf}
+                versionLabel={versionLabel}
+              >
+                <p>
+                  <Utterance utterance={position.concurrentClaim} />
+                </p>
+              </ClaimWithTruth>
             )}
-            <PaperClaimTag archive={archive} />
           </>
         ),
-        currentClaim: (
-          <>
-            {narration === undefined ? (
-              <p className="v5-paper__attr panshi-paper">他還沒有新的公開說法。</p>
-            ) : narration.kind === "utterance" ? (
-              <p>
-                <Utterance utterance={narration} />
-              </p>
-            ) : (
-              <p className="panshi-paper">{narration.summaryText}</p>
-            )}
-            <PaperClaimTag archive={archive} />
-          </>
-        ),
+        currentClaim:
+          narration === undefined ? (
+            <p className="v5-paper__attr panshi-paper">他還沒有新的公開說法。</p>
+          ) : (
+            <ClaimWithTruth
+              truthClass={narration.truthClass}
+              declared={declared}
+              asOfLabel={archive.asOf}
+              versionLabel={versionLabel}
+            >
+              {narration.kind === "utterance" ? (
+                <p>
+                  <Utterance utterance={narration} />
+                </p>
+              ) : (
+                <p className="panshi-paper">{narration.summaryText}</p>
+              )}
+            </ClaimWithTruth>
+          ),
         paperCost: (
-          <>
+          <ClaimWithTruth
+            truthClass={position.truthClass}
+            declared={declared}
+            asOfLabel={position.markAsOf}
+            versionLabel={versionLabel}
+          >
             <p className="panshi-data">成本 {costText ?? DATA_UNAVAILABLE_LABEL}</p>
             <SignedMoney label="已實現損益" amountMinorUnits={position.realizedPnlMinorUnits} />
             <SignedMoney label="未實現損益" amountMinorUnits={position.unrealizedPnlMinorUnits} />
             <p className="v5-paper__attr panshi-data">資料截至 {position.markAsOf}</p>
-            <PaperClaimTag archive={archive} />
-          </>
+          </ClaimWithTruth>
         ),
         relationship:
           position.influencedBy.length === 0 ? (
-            <p className="panshi-paper">{position.influencedByEmptyReason ?? DATA_UNAVAILABLE_LABEL}</p>
+            <SystemLabel field="influencedByEmptyReason" text={position.influencedByEmptyReason} />
           ) : (
             position.influencedBy.map((influence, index) => (
               <div key={`${influence.displayName}-${index}`}>
@@ -339,6 +382,8 @@ export function PaperArchiveScreen({ archive, onBackToArchiveIndex }: PaperArchi
   }, []);
   const initialCapital = minorUnitsToTwdText(archive.account.initialCapitalMinorUnits);
   const cash = minorUnitsToTwdText(archive.account.cashMinorUnits);
+  const declared = archive.truthClasses;
+  const versionLabel = `projection v${archive.projectionVersion}`;
 
   return (
     <section className="v5-paper" aria-label="模擬紀錄">
@@ -358,41 +403,74 @@ export function PaperArchiveScreen({ archive, onBackToArchiveIndex }: PaperArchi
 
       <section className="v5-paper__account" aria-label="模擬帳戶">
         <h3>模擬帳戶</h3>
-        <dl className="panshi-data">
-          <dt>幣別</dt>
-          <dd>{archive.account.currency}</dd>
-          <dt>起始本金</dt>
-          <dd>{initialCapital ?? DATA_UNAVAILABLE_LABEL}</dd>
-          <dt>現金</dt>
-          <dd>{cash ?? DATA_UNAVAILABLE_LABEL}</dd>
-          <dt>資料截至</dt>
-          <dd>{archive.account.asOf}</dd>
-        </dl>
+        <ClaimWithTruth
+          truthClass={archive.account.truthClass}
+          declared={declared}
+          asOfLabel={archive.account.asOf}
+          versionLabel={versionLabel}
+        >
+          <dl className="panshi-data">
+            <dt>幣別</dt>
+            <dd>{archive.account.currency}</dd>
+            <dt>起始本金</dt>
+            <dd>{initialCapital ?? DATA_UNAVAILABLE_LABEL}</dd>
+            <dt>現金</dt>
+            <dd>{cash ?? DATA_UNAVAILABLE_LABEL}</dd>
+            <dt>資料截至</dt>
+            <dd>{archive.account.asOf}</dd>
+          </dl>
+        </ClaimWithTruth>
       </section>
 
       <h3>持股</h3>
       {archive.positions.length === 0 ? (
         <EmptyStatePanel reason="paper_no_positions" />
       ) : (
-        archive.positions.map((position) => (
-          <article
-            className="v5-paper__card"
-            key={position.positionId}
-            aria-label={`${position.instrumentLabel} 的持股主卡`}
-          >
-            <h3 className="panshi-data">
-              {position.instrumentLabel}／{position.status}
-            </h3>
-            {paperCardSections(archive, position).map((section) => (
-              <section className="v5-paper__step" key={section.key}>
-                <h4>{section.title}</h4>
-                <CardBody body={section.body} />
-              </section>
-            ))}
-            <p className="panshi-paper">{position.consequenceSummary}</p>
-            <PositionComparison archive={archive} position={position} />
-          </article>
-        ))
+        archive.positions.map((position) => {
+          // 標的缺身分時不出現在標題與 aria-label；替代用語未經 copy-taste 審稿。
+          const instrument = claimTruthClassOf(position.instrumentLabelTruthClass, declared);
+          const figures = claimTruthClassOf(position.truthClass, declared);
+          const heading = [instrument === null ? null : position.instrumentLabel, figures === null ? null : position.status]
+            .filter((part): part is string => part !== null)
+            .join("／");
+          return (
+            <article
+              className="v5-paper__card"
+              key={position.positionId}
+              aria-label={instrument === null ? "持股主卡" : `${position.instrumentLabel} 的持股主卡`}
+            >
+              {heading.length === 0 ? null : <h3 className="panshi-data">{heading}</h3>}
+              {instrument === null ? null : (
+                <ItemTruthTag truthClass={instrument} asOfLabel={archive.asOf} versionLabel={versionLabel} />
+              )}
+              {instrument === null || figures === null ? <WithheldClaim className="v5-paper__attr" /> : null}
+              {paperCardSections(archive, position).map((section) => (
+                <section className="v5-paper__step" key={section.key}>
+                  <h4>{section.title}</h4>
+                  {section.truthClass === null ? (
+                    <WithheldClaim className="v5-paper__attr" />
+                  ) : (
+                    <>
+                      <CardBody body={section.body} asOfLabel={archive.asOf} versionLabel={versionLabel} />
+                      {section.truthClass === undefined ? null : (
+                        <ItemTruthTag truthClass={section.truthClass} asOfLabel={archive.asOf} versionLabel={versionLabel} />
+                      )}
+                    </>
+                  )}
+                </section>
+              ))}
+              <ClaimWithTruth
+                truthClass={position.consequenceSummaryTruthClass}
+                declared={declared}
+                asOfLabel={archive.asOf}
+                versionLabel={versionLabel}
+              >
+                <p className="panshi-paper">{position.consequenceSummary}</p>
+              </ClaimWithTruth>
+              <PositionComparison archive={archive} position={position} />
+            </article>
+          );
+        })
       )}
 
       <h3>交易紀錄</h3>
@@ -404,20 +482,29 @@ export function PaperArchiveScreen({ archive, onBackToArchiveIndex }: PaperArchi
               <p className="panshi-paper">{row.statusText}</p>
             ) : (
               <>
-                <p className="panshi-data">
-                  {row.instrumentLabel}／{row.actionLabel}／{row.directionLabel}
-                </p>
-                <div className="v5-paper__figures">
-                  {row.figures.map((figure) => (
-                    <span className="v5-paper__figure" key={figure.label}>
-                      <span className="v5-paper__figure-label panshi-data">{figure.label}</span>
-                      <span className="panshi-data">{figure.text}</span>
-                    </span>
-                  ))}
-                </div>
+                <ClaimWithTruth truthClass={row.instrumentLabelTruthClass} asOfLabel={row.tradingDate} versionLabel={versionLabel}>
+                  <p className="panshi-data">{row.instrumentLabel}</p>
+                </ClaimWithTruth>
+                <ClaimWithTruth truthClass={row.truthClass} asOfLabel={row.tradingDate} versionLabel={versionLabel}>
+                  <p className="panshi-data">
+                    {row.actionLabel}／{row.directionLabel}
+                  </p>
+                  <div className="v5-paper__figures">
+                    {row.figures.map((figure) => (
+                      <span className="v5-paper__figure" key={figure.label}>
+                        <span className="v5-paper__figure-label panshi-data">{figure.label}</span>
+                        <span className="panshi-data">{figure.text}</span>
+                      </span>
+                    ))}
+                  </div>
+                </ClaimWithTruth>
                 {/* 行動前封存的結構化理由：不加引號。 */}
-                <p className="panshi-paper">{row.rationaleSummary}</p>
-                {row.concurrentClaim === null ? null : <Quote quote={row.concurrentClaim} />}
+                <ClaimWithTruth truthClass={row.rationaleSummaryTruthClass} asOfLabel={row.tradingDate} versionLabel={versionLabel}>
+                  <p className="panshi-paper">{row.rationaleSummary}</p>
+                </ClaimWithTruth>
+                {row.concurrentClaim === null ? null : (
+                  <Quote quote={row.concurrentClaim} asOfLabel={row.tradingDate} versionLabel={versionLabel} />
+                )}
               </>
             )}
           </li>
@@ -439,7 +526,14 @@ export function PaperArchiveScreen({ archive, onBackToArchiveIndex }: PaperArchi
                 <p className="v5-paper__row-date panshi-data">
                   {revision.appliedAt}／{DATA_REVISION_KIND_LABEL[revision.kind]}
                 </p>
-                <p className="panshi-paper">{revision.summary}</p>
+                <ClaimWithTruth
+                  truthClass={revision.truthClass}
+                  declared={declared}
+                  asOfLabel={revision.appliedAt}
+                  versionLabel={versionLabel}
+                >
+                  <p className="panshi-paper">{revision.summary}</p>
+                </ClaimWithTruth>
                 <p className="v5-paper__attr panshi-data">
                   {revision.revisionId}
                   {revision.affectedRefs.length === 0 ? "" : `／影響 ${revision.affectedRefs.join("、")}`}

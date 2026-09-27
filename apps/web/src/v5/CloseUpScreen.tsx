@@ -14,10 +14,10 @@
 // `formatAsOfIntraday()`，不自行推算日期。
 //
 // 資料身分**逐項**掛（AGENTS.md「Product invariants」：每一項對外可見的宣稱剛好一個
-// `truth_class`）：場景那一塊是 `fictional_setting`，後果碎片裡的紙上損益是
-// `simulated_narrative`（product-constitution.md 把紙上交易與故事投影歸在這一類，
-// 與 `ArchiveIndexScreen.tsx` 的 `SECTION_TRUTH_CLASS.paper` 同一格）。投影的
-// `truthClasses` 沒有宣告那一種身分時 fail closed：不掛標籤，也不改掛別的身分。
+// `truth_class`）：姓名、年齡、職業、姿態、當下動詞、那句矛盾、後果碎片與承諾，
+// 各自讀投影在那一項上給的身分（public-v2.yaml 2.1.0 的 `<欄位>TruthClass` 或物件的
+// `truthClass`）。本檔沒有「哪一塊該是哪一種身分」的對照表。某一項缺身分、或身分
+// 不在投影 `truthClasses` 裡時 fail closed：那一項不顯示並寫出原因，不改掛別的身分。
 //
 // 沒有模擬部位時改顯示工作／關係／記憶後果，不硬塞空績效（§7.2 最後一條）。
 // reduced motion 時取消微動作，改用描邊與狀態文字（visual-system.md）。
@@ -30,17 +30,11 @@ import type {
   CharacterPoseState,
   RecentConsequenceHighlight,
   TruthClass,
+  UnresolvedCommitment,
 } from "../api/generated-v2/types.gen";
-import { TruthTag } from "./TruthTag";
-import {
-  DATA_UNAVAILABLE_LABEL,
-  claimTruthClass,
-  consequenceHighlightTruthClass,
-  declaredTruthClass,
-  formatAsOfIntraday,
-  percentFixed2ToString,
-  truthClassLabel,
-} from "./format";
+import { ClaimWithTruth, ItemTruthTag, WithheldClaim } from "./ItemTruthTag";
+import { claimTruthClassOf, distinctTruthClasses } from "./claimTruth";
+import { DATA_UNAVAILABLE_LABEL, formatAsOfIntraday, percentFixed2ToString } from "./format";
 import { CLOSEUP_ACTION_LEAD_MS, OUTCOME_REVEAL_MS, WORLD_BREATH_MS } from "./motion";
 import { figureGeometry } from "./scene";
 
@@ -57,40 +51,6 @@ const POSE_LABEL: Readonly<Record<CharacterPoseState, string>> = {
 
 const PORTRAIT_WIDTH = 80;
 const PORTRAIT_HEIGHT = 100;
-
-/**
- * 近景可以掛標籤的兩塊內容。標籤**逐項**掛，不是整頁一顆：
- *
- * - `scene`：姓名、年齡、職業、姿態與那句未解矛盾 ——`fictional_setting`。
- * - `consequence`：後果碎片。內容是紙上部位或紙上承諾時是 `simulated_narrative`
- *   （product-constitution.md「角色資料的五種身分」把紙上交易與故事投影歸在這一類，
- *   `ArchiveIndexScreen.tsx` 的 `SECTION_TRUTH_CLASS.paper` 同一格）；只有在碎片
- *   換成關係／工作／記憶時才是 `fictional_setting`。
- */
-export type CloseUpBlockKey = "scene" | "consequence";
-
-/**
- * 一塊近景內容**應該**是哪一種資料身分。身分表在 `format.ts` 的
- * `CLAIM_TRUTH_CLASS`（product-constitution.md 的五種身分），本檔不自訂對應。
- * 這只是身分歸屬；能不能真的掛標籤還要過 `declaredTruthClass()` 那一關。
- */
-export function closeUpBlockTruthClass(
-  block: CloseUpBlockKey,
-  highlight: RecentConsequenceHighlight | undefined,
-): TruthClass {
-  return block === "scene"
-    ? claimTruthClass("character_scene")
-    : consequenceHighlightTruthClass(highlight?.kind);
-}
-
-const TRUTH_CLASS_EXPLANATION: Readonly<Record<TruthClass, string>> = {
-  real_fact: "已封存並可回溯到外部來源的事實。",
-  statistical_sample: "依分布取樣的統計結果，不是單一個案的事實。",
-  fictional_setting: "虛構設定：這個人、他的職業與人生事件都是這個世界自己的設定。",
-  symbolic_interpretation: "命盤與象徵的文化詮釋，只影響他的注意與解讀，不改動價格資料。",
-  simulated_narrative:
-    "由已封存事件編成的模擬敘事：他的紙上部位與損益，市場事實是 repo 內自有的合成歷史 fixture。",
-};
 
 const STYLES = `
 .v5-closeup { margin: 0 0 16px; }
@@ -294,108 +254,106 @@ function Portrait({ reducedMotion }: { reducedMotion: boolean }) {
   );
 }
 
-/**
- * 一顆逐項標籤。
- *
- * 投影沒有宣告這一塊該有的身分時 **fail closed：不掛標籤**，改寫一句可讀的缺漏說明。
- * 不改掛別的身分、不沿用整頁的身分——那等於替一塊資料換一張假身分證。
- */
-function BlockTruthTag({
-  block,
-  highlight,
-  declared,
-  asOfLabel,
-  versionLabel,
-}: {
-  block: CloseUpBlockKey;
-  highlight: RecentConsequenceHighlight | undefined;
-  declared: readonly TruthClass[];
-  asOfLabel: string;
-  versionLabel: string;
-}) {
-  const wanted = closeUpBlockTruthClass(block, highlight);
-  const truthClass = declaredTruthClass(declared, wanted);
-
-  if (truthClass === null) {
-    return (
-      <p className="v5-closeup__note panshi-paper">
-        {DATA_UNAVAILABLE_LABEL}：投影沒有宣告「{truthClassLabel(wanted)}
-        」這個資料身分，所以這裡不掛標籤。
-      </p>
-    );
-  }
-
-  return (
-    <TruthTag
-      truthClass={truthClass}
-      explanation={TRUTH_CLASS_EXPLANATION[truthClass]}
-      asOfLabel={asOfLabel}
-      versionLabel={versionLabel}
-    />
-  );
-}
-
 /** 一項後果碎片。紙上數字一律附 as_of；沒有紙上後果就換成工作／關係／記憶。 */
 function ConsequenceFragment({
   highlight,
-  fallbackSummary,
+  fallbackCommitment,
   showValues,
   declared,
   versionLabel,
   serverNow,
 }: {
   highlight: RecentConsequenceHighlight | undefined;
-  fallbackSummary: string | null;
+  fallbackCommitment: UnresolvedCommitment | null;
   showValues: boolean;
   declared: readonly TruthClass[];
   versionLabel: string;
   serverNow: string;
 }) {
-  // 紙上碎片的資料時間是它自己的 as_of；其餘碎片沒有市場數字，用投影時間。
-  const asOfLabel =
-    highlight?.kind === "paper_position" ? safeAsOf(highlight.asOf) : safeAsOf(serverNow);
-
-  const tag = (
-    <BlockTruthTag
-      block="consequence"
-      highlight={highlight}
-      declared={declared}
-      asOfLabel={asOfLabel}
-      versionLabel={versionLabel}
-    />
-  );
-
   if (!highlight) {
+    // 沒有碎片時，只有投影自己給的承諾（帶它自己的身分）可以頂上；什麼都沒有就是
+    // 固定的空狀態說明，它不是一項關於他的宣稱，所以不掛身分。
     return (
       <div className="v5-closeup__consequence">
-        <p className="panshi-paper">
-          {fallbackSummary ?? "他目前沒有模擬持倉。沒下手，也是今天的一部分。"}
-        </p>
-        {tag}
+        {fallbackCommitment === null ? (
+          <p className="panshi-paper">他目前沒有模擬持倉。沒下手，也是今天的一部分。</p>
+        ) : (
+          <ClaimWithTruth
+            truthClass={fallbackCommitment.truthClass}
+            declared={declared}
+            asOfLabel={safeAsOf(fallbackCommitment.sealedAt)}
+            versionLabel={versionLabel}
+          >
+            <p className="panshi-paper">{fallbackCommitment.rationaleSummary}</p>
+          </ClaimWithTruth>
+        )}
       </div>
     );
   }
 
-  if (highlight.kind === "paper_position") {
-    return (
-      <div className="v5-closeup__consequence">
-        <p className="v5-closeup__figure">
-          <span className="panshi-paper">模擬損益</span>
-          <span className="panshi-data">
-            {showValues ? safePercent(highlight.unrealizedPnlPercentFixed2) : ""}
-          </span>
-          <span className="v5-closeup__asof panshi-data">{safeAsOf(highlight.asOf)}</span>
-        </p>
-        {tag}
-      </div>
-    );
-  }
+  // 紙上碎片的資料時間是它自己的 as_of；其餘碎片沒有市場數字，用投影時間。
+  const asOfLabel = highlight.kind === "paper_position" ? safeAsOf(highlight.asOf) : safeAsOf(serverNow);
 
   return (
     <div className="v5-closeup__consequence">
-      <p className="panshi-paper">{highlight.summary}</p>
-      {tag}
+      <ClaimWithTruth
+        truthClass={highlight.truthClass}
+        declared={declared}
+        asOfLabel={asOfLabel}
+        versionLabel={versionLabel}
+      >
+        {highlight.kind === "paper_position" ? (
+          <p className="v5-closeup__figure">
+            <span className="panshi-paper">模擬損益</span>
+            <span className="panshi-data">
+              {showValues ? safePercent(highlight.unrealizedPnlPercentFixed2) : ""}
+            </span>
+            <span className="v5-closeup__asof panshi-data">{safeAsOf(highlight.asOf)}</span>
+          </p>
+        ) : (
+          <p className="panshi-paper">{highlight.summary}</p>
+        )}
+      </ClaimWithTruth>
     </div>
+  );
+}
+
+/**
+ * 姓名、年齡、職業同一行。三個欄位各自過身分閘門：缺身分的欄位不顯示，並在下方寫出原因；
+ * 其餘欄位照常顯示。三者身分相同時共用一顆標籤，不同時每種各一顆。
+ */
+function IdentityLine({
+  closeUp,
+  asOfLabel,
+  versionLabel,
+}: {
+  closeUp: CharacterCloseUp;
+  asOfLabel: string;
+  versionLabel: string;
+}) {
+  const declared = closeUp.truthClasses;
+  const name = claimTruthClassOf(closeUp.displayNameTruthClass, declared);
+  const age = claimTruthClassOf(closeUp.ageYearsTruthClass, declared);
+  const occupation = claimTruthClassOf(closeUp.occupationLabelTruthClass, declared);
+  const head = [
+    name === null ? null : closeUp.displayName,
+    age === null ? null : `${closeUp.ageYears} 歲`,
+  ]
+    .filter((part): part is string => part !== null)
+    .join("，");
+  const text = [head, occupation === null ? "" : closeUp.occupationLabel]
+    .filter((part) => part.length > 0)
+    .join("　");
+  const classes = [name, age, occupation];
+
+  return (
+    <>
+      {text.length === 0 ? null : <h2 className="v5-closeup__identity">{text}</h2>}
+      {distinctTruthClasses(classes).map((truthClass) => (
+        <ItemTruthTag key={truthClass} truthClass={truthClass} asOfLabel={asOfLabel} versionLabel={versionLabel} />
+      ))}
+      {classes.includes(null) ? <WithheldClaim className="v5-closeup__note" /> : null}
+    </>
   );
 }
 
@@ -445,8 +403,10 @@ export function CloseUpScreen({
     };
   }, [reducedMotion, closeUp.characterId]);
 
-  const fallbackSummary = closeUp.unresolvedCommitments[0]?.rationaleSummary ?? null;
+  const fallbackCommitment = closeUp.unresolvedCommitments[0] ?? null;
   const versionLabel = `projection v${closeUp.projectionVersion}`;
+  const declared = closeUp.truthClasses;
+  const nowLabel = safeAsOf(closeUp.serverNow);
 
   return (
     <section className="v5-closeup" aria-label="角色近景">
@@ -455,36 +415,49 @@ export function CloseUpScreen({
       <div className="v5-closeup__portrait">
         <Portrait reducedMotion={reducedMotion} />
       </div>
-      <p className="v5-closeup__pose panshi-data">
-        {reducedMotion
-          ? `靜態畫面：他${POSE_LABEL[closeUp.poseState]}。`
-          : `他${POSE_LABEL[closeUp.poseState]}。`}
-      </p>
+      <ClaimWithTruth
+        truthClass={closeUp.poseStateTruthClass}
+        declared={declared}
+        asOfLabel={nowLabel}
+        versionLabel={versionLabel}
+        withheldClassName="v5-closeup__note"
+      >
+        <p className="v5-closeup__pose panshi-data">
+          {reducedMotion
+            ? `靜態畫面：他${POSE_LABEL[closeUp.poseState]}。`
+            : `他${POSE_LABEL[closeUp.poseState]}。`}
+        </p>
+      </ClaimWithTruth>
 
-      <h2 className="v5-closeup__identity">
-        {closeUp.displayName}，{closeUp.ageYears} 歲　{closeUp.occupationLabel}
-      </h2>
-      <p className="v5-closeup__verb panshi-paper">{closeUp.currentVerbPhrase}</p>
+      <IdentityLine closeUp={closeUp} asOfLabel={nowLabel} versionLabel={versionLabel} />
+      <ClaimWithTruth
+        truthClass={closeUp.currentVerbPhraseTruthClass}
+        declared={declared}
+        asOfLabel={nowLabel}
+        versionLabel={versionLabel}
+        withheldClassName="v5-closeup__note"
+      >
+        <p className="v5-closeup__verb panshi-paper">{closeUp.currentVerbPhrase}</p>
+      </ClaimWithTruth>
 
       {revealText ? (
         <>
-          <p className="v5-closeup__tension panshi-paper">{closeUp.unresolvedTensionSummary}</p>
-
-          {/* 場景本身（姓名、職業、姿態、那句矛盾）＝虛構設定。 */}
-          <BlockTruthTag
-            block="scene"
-            highlight={closeUp.recentConsequenceHighlight}
-            declared={closeUp.truthClasses}
-            asOfLabel={safeAsOf(closeUp.serverNow)}
+          {/* 每一項宣稱掛它自己在投影裡的身分，不共用一顆整塊標籤。 */}
+          <ClaimWithTruth
+            truthClass={closeUp.unresolvedTensionSummaryTruthClass}
+            declared={declared}
+            asOfLabel={nowLabel}
             versionLabel={versionLabel}
-          />
+            withheldClassName="v5-closeup__note"
+          >
+            <p className="v5-closeup__tension panshi-paper">{closeUp.unresolvedTensionSummary}</p>
+          </ClaimWithTruth>
 
-          {/* 後果碎片自己帶標籤：紙上數字＝模擬敘事，不跟場景共用一顆。 */}
           <ConsequenceFragment
             highlight={closeUp.recentConsequenceHighlight}
-            fallbackSummary={fallbackSummary}
+            fallbackCommitment={fallbackCommitment}
             showValues={revealValues}
-            declared={closeUp.truthClasses}
+            declared={declared}
             versionLabel={versionLabel}
             serverNow={closeUp.serverNow}
           />

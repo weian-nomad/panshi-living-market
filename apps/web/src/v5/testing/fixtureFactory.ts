@@ -62,7 +62,9 @@ export function worldPosition(overrides: Partial<CharacterWorldPosition> = {}): 
     worldX: 40,
     worldY: 30,
     poseState: "examining",
+    poseStateTruthClass: "simulated_narrative",
     focusHint: null,
+    focusHintTruthClass: null,
     zOrder: 1,
     sceneLayer: "midground",
     detailTier: "high_detail",
@@ -89,6 +91,7 @@ export function world(overrides: Partial<WorldSnapshot> = {}): WorldSnapshot {
         characterId: TEST_CHARACTER_ID,
         sceneRef: "0c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f",
         label: "測試居民在開盤廳又翻開了同一份資料。",
+        labelTruthClass: "simulated_narrative",
       },
     ],
     ...overrides,
@@ -100,12 +103,18 @@ export function closeUp(overrides: Partial<CharacterCloseUp> = {}): CharacterClo
     ...envelope(),
     characterId: TEST_CHARACTER_ID,
     displayName: "測試居民",
+    displayNameTruthClass: "fictional_setting",
     ageYears: 34,
+    ageYearsTruthClass: "fictional_setting",
     occupationLabel: "測試用職業",
+    occupationLabelTruthClass: "fictional_setting",
     sceneRef: "0c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f",
     poseState: "examining",
+    poseStateTruthClass: "simulated_narrative",
     currentVerbPhrase: "正在重看一份測試資料",
+    currentVerbPhraseTruthClass: "simulated_narrative",
     unresolvedTensionSummary: "他說不在意，卻又看了第三次。",
+    unresolvedTensionSummaryTruthClass: "simulated_narrative",
     unresolvedCommitments: [],
     ...overrides,
   };
@@ -119,8 +128,11 @@ export function journalEntry(overrides: Partial<LifeJournalEntry> = {}): LifeJou
     narrativeState: "composed",
     narrativeSegments: [],
     sceneSummary: "他在開盤後又打開了同一份測試資料。",
+    sceneSummaryTruthClass: "simulated_narrative",
     knownAtTheTimeSummary: "他當時看過昨天的公告附註。",
+    knownAtTheTimeSummaryTruthClass: "simulated_narrative",
     actionSummary: "他沒有新增紙上動作。",
+    actionSummaryTruthClass: "simulated_narrative",
     consequence: {},
     evidenceCard: {
       action: {
@@ -145,6 +157,7 @@ export function journalEntry(overrides: Partial<LifeJournalEntry> = {}): LifeJou
     relationshipConsequence: null,
     relationshipConsequenceNullReason: "測試：這一天沒有關係訊號。",
     openQuestionSummary: "他還沒說為什麼一直等。",
+    openQuestionSummaryTruthClass: "simulated_narrative",
     archiveRefs: { paperPositionRefs: [], relationshipDyadRefs: [], memoryRefs: [] },
     ...overrides,
   };
@@ -170,6 +183,7 @@ export function archiveIndex(overrides: Partial<CharacterArchiveIndex> = {}): Ch
     sectionKey,
     viewerAudienceScope: "public_current",
     summary,
+    summaryTruthClass: sectionKey === "chart" ? "symbolic_interpretation" : "simulated_narrative",
     asOf: TEST_AS_OF,
     visibilityEpoch: 3,
     sectionPath:
@@ -181,7 +195,9 @@ export function archiveIndex(overrides: Partial<CharacterArchiveIndex> = {}): Ch
     characterId: TEST_CHARACTER_ID,
     archiveSchemaRevision: "archive-test.1",
     longTermTensionSummary: "他一直說自己只看長期，卻每天盯著同一個數字。",
+    longTermTensionSummaryTruthClass: "simulated_narrative",
     recentHighlights: ["他延後了一次決定。"],
+    recentHighlightTruthClasses: ["simulated_narrative"],
     sections: [
       section("paper", "目前 1 個部位。"),
       section("relations", "和一位同事的關係還沒說開。"),
@@ -197,7 +213,9 @@ export function archiveIndex(overrides: Partial<CharacterArchiveIndex> = {}): Ch
 export function paperPosition(overrides: Partial<PaperPositionPublic> = {}): PaperPositionPublic {
   return {
     positionId: "a243c129-0297-4b54-a16f-256452eab596",
+    truthClass: "simulated_narrative",
     instrumentLabel: "TEST-DEMO",
+    instrumentLabelTruthClass: "fictional_setting",
     status: "open",
     openedAt: "2026-03-03T13:30:00+08:00",
     lastChangedAt: TEST_AS_OF,
@@ -209,6 +227,7 @@ export function paperPosition(overrides: Partial<PaperPositionPublic> = {}): Pap
         sealedPriceMinorUnitsFixed6: 10_000_000_000,
         costBasisMinorUnits: 6_000_000,
         sealedPriceRevisionRef: DIGEST,
+        truthClass: "simulated_narrative",
       },
     ],
     realizedPnlMinorUnits: null,
@@ -217,10 +236,12 @@ export function paperPosition(overrides: Partial<PaperPositionPublic> = {}): Pap
     markAsOf: TEST_AS_OF,
     invalidationCondition: "not_yet_occurred",
     rationaleSummary: "建倉時封存的理由：等兩個交易日看有沒有新證據。",
+    rationaleSummaryTruthClass: "simulated_narrative",
     influencedByCharacterRefs: [],
     influencedBy: [],
     influencedByEmptyReason: "測試：沒有封存事件顯示別人影響這個部位。",
     consequenceSummary: "持有到現在，還沒有新證據。",
+    consequenceSummaryTruthClass: "simulated_narrative",
     ...overrides,
   };
 }
@@ -232,6 +253,7 @@ export function dataRevision(overrides: Partial<DataRevisionNote> = {}): DataRev
     kind: "accounting_correction",
     affectedRefs: ["a243c129-0297-4b54-a16f-256452eab596"],
     summary: "測試更正：成本基礎少算一筆手續費，已重算。",
+    truthClass: "simulated_narrative",
     ...overrides,
   };
 }
@@ -259,6 +281,7 @@ export function paperArchive(overrides: Partial<PaperArchiveProjection> = {}): P
       initialCapitalMinorUnits: 100_000_000,
       correctionRefs: [],
       asOf: TEST_AS_OF,
+      truthClass: "simulated_narrative",
     },
     positions: [],
     historicalActionFills: [],

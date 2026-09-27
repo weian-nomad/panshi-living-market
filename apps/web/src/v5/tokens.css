@@ -195,6 +195,29 @@
 }
 
 /* ------------------------------------------------------------------------ */
+/* 元件：系統說明（public-v2.yaml 2.2.0 `x-panshi-system-label`）             */
+/* 系統說明不是宣稱、不帶資料身分；用資料字族、左側虛線與句首「系統說明」標記， */
+/* 和角色的說法（紙頁字族）區隔。不靠顏色單獨區分。                           */
+/* ------------------------------------------------------------------------ */
+
+.panshi-system-label {
+  margin: 0 0 0.25rem;
+  padding: 0.125rem 0 0.125rem 0.625rem;
+  border-left: 1px dashed var(--rule-paper);
+  font-family: var(--font-data);
+  font-size: 0.8125rem;
+  color: var(--copper-500);
+}
+
+.panshi-system-label__kind {
+  margin-right: 0.5em;
+  padding: 0 0.3em;
+  border: 1px solid var(--rule-paper);
+  border-radius: 2px;
+  font-size: 0.75rem;
+}
+
+/* ------------------------------------------------------------------------ */
 /* Reduced motion（visual-system.md「Reduced motion」）                       */
 /* 取消縮放、景深、視差、漂移與星軌；只留淡入、描邊與狀態文字。               */
 /* 時間上限由 motion.ts 的 REDUCED_FADE_MAX_MS 注入 --panshi-reduced-fade。   */

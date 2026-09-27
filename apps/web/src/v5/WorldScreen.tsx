@@ -26,8 +26,10 @@ import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import type { MarketSessionPhase, WorldSnapshot } from "../api/generated-v2/types.gen";
 import { hitTestWorldPoint, type WorldPoint } from "../interaction";
 import { FollowLayer, offscreenDimStyle } from "./FollowLayer";
+import { ITEM_TRUTH_CLASS_EXPLANATION } from "./ItemTruthTag";
 import { TruthTag } from "./TruthTag";
-import { DATA_UNAVAILABLE_LABEL, formatAsOfIntraday } from "./format";
+import { MISSING_CLAIM_TRUTH_CLASS_TEXT } from "./claimTruth";
+import { DATA_UNAVAILABLE_LABEL, formatAsOfIntraday, truthClassLabel } from "./format";
 import {
   INITIAL_FOLLOW_STATE,
   classifyPointerGesture,
@@ -342,6 +344,7 @@ export function WorldScreen({ snapshot, onOpenCloseUp }: WorldScreenProps) {
   const targets = useMemo(() => worldTargets(snapshot), [snapshot]);
   const signal = marketSignal(snapshot);
   const skipped = unrenderablePositionCount(snapshot);
+  const withheldClaims = figures.reduce((total, figure) => total + figure.withheldClaimCount, 0);
   const cameraOnSubject = isCameraOnSubject(follow);
   const ctaCharacterId = closeUpCtaCharacterId(follow);
   // 跟拍層只認得三個鏡頭階段；其餘階段沒有鏡頭主體可畫。
@@ -402,12 +405,16 @@ export function WorldScreen({ snapshot, onOpenCloseUp }: WorldScreenProps) {
         <p className="panshi-paper">
           一名角色垂直切片：這個世界目前只封存了一個人的完整人生，其餘是無資料的背景。
         </p>
-        <TruthTag
-          truthClass="fictional_setting"
-          explanation="這個世界的角色、標的與市場事實都是 repo 內自有的合成歷史 fixture，不是真實行情，也不指涉真人。"
-          asOfLabel={asOfText(snapshot.marketClock.asOfTradingDate)}
-          versionLabel={`projection v${snapshot.projectionVersion}`}
-        />
+        {/* 這份世界投影自己宣告用到的資料身分；各項線索另外逐項掛自己的身分。 */}
+        {snapshot.truthClasses.map((truthClass) => (
+          <TruthTag
+            key={truthClass}
+            truthClass={truthClass}
+            explanation={ITEM_TRUTH_CLASS_EXPLANATION[truthClass]}
+            asOfLabel={asOfText(snapshot.marketClock.asOfTradingDate)}
+            versionLabel={`projection v${snapshot.projectionVersion}`}
+          />
+        ))}
       </div>
 
       <dl className="v5-world__clock panshi-data">
@@ -643,7 +650,10 @@ export function WorldScreen({ snapshot, onOpenCloseUp }: WorldScreenProps) {
             >
               <span className="v5-sr-only">
                 {figureLabel(figure)}
-                {figure.focusHint === null ? "" : `，${figure.focusHint}`}
+                {figure.hookTruthClass === null ? "" : `（${truthClassLabel(figure.hookTruthClass)}）`}
+                {figure.focusHint === null || figure.focusHintTruthClass === null
+                  ? ""
+                  : `，${figure.focusHint}（${truthClassLabel(figure.focusHintTruthClass)}）`}
               </span>
             </button>
           ))}
@@ -660,6 +670,7 @@ export function WorldScreen({ snapshot, onOpenCloseUp }: WorldScreenProps) {
                     key={`${figure.characterId}-caption`}
                     className="v5-stage__caption panshi-paper"
                     data-anchor={anchor.side}
+                    data-truth-class={figure.hookTruthClass ?? undefined}
                     style={{
                       ...(anchor.side === "end"
                         ? { insetInlineEnd: `${anchor.offsetPercent}%` }
@@ -668,6 +679,13 @@ export function WorldScreen({ snapshot, onOpenCloseUp }: WorldScreenProps) {
                     }}
                   >
                     {figure.hookLabel}
+                    {figure.hookTruthClass === null ? null : (
+                      // 線索自己的資料身分（投影在 `labelTruthClass` 給的），短詞跟在字幕後。
+                      <span className="v5-stage__caption-truth panshi-data">
+                        {"　"}
+                        {truthClassLabel(figure.hookTruthClass)}
+                      </span>
+                    )}
                   </p>
                 );
               })}
@@ -679,6 +697,13 @@ export function WorldScreen({ snapshot, onOpenCloseUp }: WorldScreenProps) {
           </p>
         )}
       </div>
+
+      {/* 缺資料身分而不上字幕的線索數（說明句未經 copy-taste 審稿）。 */}
+      {withheldClaims > 0 ? (
+        <p className="v5-world__hint panshi-data" data-claim-withheld="missing_truth_class">
+          有 {withheldClaims} 項世界線索不顯示。{MISSING_CLAIM_TRUTH_CLASS_TEXT}
+        </p>
+      ) : null}
 
       {skipped > 0 ? (
         <p className="v5-world__hint panshi-data">

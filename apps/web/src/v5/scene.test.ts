@@ -35,7 +35,9 @@ function position(overrides: Partial<CharacterWorldPosition> = {}): CharacterWor
     worldX: 12,
     worldY: 7,
     poseState: "examining",
+    poseStateTruthClass: "simulated_narrative",
     focusHint: "他昨天終於減碼的那批資料",
+    focusHintTruthClass: "simulated_narrative",
     zOrder: 0,
     sceneLayer: "foreground",
     detailTier: "high_detail",
@@ -51,7 +53,7 @@ function snapshot(positions: readonly CharacterWorldPosition[]): WorldSnapshot {
     serverNow: "2026-03-18T10:30:00+08:00",
     dataState: "READY",
     visibilityEpoch: 1,
-    truthClasses: ["fictional_setting"],
+    truthClasses: ["fictional_setting", "simulated_narrative"],
     sourceRevisionSet: [],
     marketClock: {
       marketDate: "2026-03-18",

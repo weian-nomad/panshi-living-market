@@ -18,6 +18,11 @@
 //    不得整項省略。獲利與虧損的 view model 完全對稱，方向同時帶文字與符號，
 //    不靠顏色單獨表意（visual-system.md「獲利與虧損使用同等視覺重量」）。
 // 4. **不做浮點運算**：金額、數量、百分比全部走整數／BigInt。
+// 5. **資料身分逐項讀投影**（public-v2.yaml 2.1.0）：每一段、每一句、每一列帶的
+//    `truthClass` 都是投影在那一項上給的（部位的 `truthClass`、`rationaleSummaryTruthClass`、
+//    原話與說法的 `truthClass`、更正的 `truthClass`……），經 `claimTruthClassOf()` 過閘；
+//    `null` 表示「這是宣稱但缺身分」，畫面必須不顯示並寫出原因；`undefined` 表示這一段
+//    不是宣稱（日期、識別碼）。本檔不替任何一項決定身分。
 //
 // 本檔是純函式：不碰 DOM、不打 API、不讀時鐘。
 
@@ -27,7 +32,9 @@ import type {
   PaperActionFillRecord,
   PaperArchiveProjection,
   PaperPositionPublic,
+  TruthClass,
 } from "../api/generated-v2/types.gen";
+import { claimTruthClassOf, nestedFiguresUsable } from "./claimTruth";
 import {
   DATA_UNAVAILABLE_LABEL,
   formatAsOfIntraday,
@@ -74,7 +81,12 @@ export type PaperQuoteView = {
   utteranceArtifactId: string;
   canonicalTextSha256: string;
   digestPrefix: string;
+  /** 這句原話自己的資料身分；`null`＝缺身分，畫面不顯示這句並寫出原因。 */
+  truthClass: TruthClass | null;
 };
+
+/** 資料節點一格。`truthClass` 是 `undefined` 時它不是宣稱（識別碼、版本、來源）。 */
+export type PaperRefItem = PaperFigure & { truthClass?: TruthClass | null };
 
 export type PaperPnlDirection = "negative" | "positive" | "flat" | "unknown";
 
@@ -97,8 +109,11 @@ export type PaperCardBody =
       kind: "rationale";
       /** 結構化原始理由摘要，**不加引號**。 */
       summary: string;
+      summaryTruthClass: TruthClass | null;
       invalidationLabel: string;
       invalidationOccurred: boolean;
+      /** 失效條件是部位自己的狀態，身分跟部位走。 */
+      invalidationTruthClass: TruthClass | null;
       /** 當時原話（U1）：有 artifact 才逐字顯示。 */
       concurrentClaim: PaperQuoteView | null;
       concurrentClaimAbsenceText: string | null;
@@ -110,15 +125,24 @@ export type PaperCardBody =
       /** 沒有 artifact 時的結構化摘要，**不加引號**。 */
       summaryText: string | null;
       absenceText: string | null;
+      /** 沒有 artifact 時那句結構化說法的資料身分（有 artifact 時身分在 `quote` 上）。 */
+      summaryTruthClass: TruthClass | null;
       /** 改口是否新增了支持事實。 */
       newlySupportedFactsText: string;
+      /** 這個數字擷取自 `consequenceSummary`，身分跟著它走。 */
+      newlySupportedFactsTruthClass: TruthClass | null;
     }
-  | { kind: "refs"; items: PaperFigure[] };
+  | { kind: "refs"; items: PaperRefItem[] };
 
 export type PaperCardSectionView = {
   key: PaperCardSectionKey;
   title: string;
   body: PaperCardBody;
+  /**
+   * 整段是一項宣稱時它的資料身分（人物動詞、持有數字、損益）；`null`＝缺身分，
+   * 整段內容不顯示；`undefined`＝這一段的身分逐句在 `body` 裡，或它不是宣稱。
+   */
+  truthClass?: TruthClass | null;
 };
 
 /** 交易紀錄一列。`withheld` 這一側**完全不帶市場數字**。 */
@@ -132,6 +156,10 @@ export type PaperActionRowView =
       figures: PaperFigure[];
       rationaleSummary: string;
       concurrentClaim: PaperQuoteView | null;
+      /** 動作、方向、數量、信心與成交的資料身分。 */
+      truthClass: TruthClass | null;
+      instrumentLabelTruthClass: TruthClass | null;
+      rationaleSummaryTruthClass: TruthClass | null;
     }
   | { kind: "withheld"; tradingDate: string; statusText: string };
 
@@ -189,7 +217,10 @@ export function unitPriceFixed6ToText(value: number | null | undefined): string 
   return minorUnitsToTwdOrNull(Number(minorUnits));
 }
 
-function quoteOrNull(utterance: CharacterUtterance | undefined): PaperQuoteView | null {
+function quoteOrNull(
+  utterance: CharacterUtterance | undefined,
+  truthClass: TruthClass | null,
+): PaperQuoteView | null {
   if (!utterance) return null;
   const text = utterance.canonicalTextUtf8?.trim() ?? "";
   const digest = utterance.canonicalTextSha256 ?? "";
@@ -202,6 +233,7 @@ function quoteOrNull(utterance: CharacterUtterance | undefined): PaperQuoteView 
     utteranceArtifactId: artifactId,
     canonicalTextSha256: digest,
     digestPrefix: digest.slice(0, DIGEST_PREFIX_LENGTH),
+    truthClass,
   };
 }
 
@@ -244,18 +276,27 @@ function lastAcceptedRecord(projection: PaperArchiveProjection): PaperActionFill
   return latest;
 }
 
-function sumCostBasisMinorUnits(position: PaperPositionPublic): number | null {
+// 部位的持有數量與成本是各 lot 相加、掛部位的標籤。每一筆 lot 的數字自己帶身分
+//（public-v2.yaml 2.2.0），必須過閘門且和部位相同，否則整個總數回 null（畫面寫「資料未到」），
+// 不借部位的身分替 lot 補。
+
+function sumCostBasisMinorUnits(
+  position: PaperPositionPublic,
+  declared: readonly TruthClass[],
+): number | null {
   let total = 0;
   for (const lot of position.lots) {
+    if (!nestedFiguresUsable(lot.truthClass, position.truthClass, declared)) return null;
     if (!Number.isSafeInteger(lot.costBasisMinorUnits)) return null;
     total += lot.costBasisMinorUnits;
   }
   return Number.isSafeInteger(total) ? total : null;
 }
 
-function sumQuantityFixed6(position: PaperPositionPublic): number | null {
+function sumQuantityFixed6(position: PaperPositionPublic, declared: readonly TruthClass[]): number | null {
   let total = 0;
   for (const lot of position.lots) {
+    if (!nestedFiguresUsable(lot.truthClass, position.truthClass, declared)) return null;
     if (!Number.isSafeInteger(lot.quantityFixed6)) return null;
     total += lot.quantityFixed6;
   }
@@ -359,10 +400,11 @@ function holdingBody(
 ): PaperCardBody {
   const figures: PaperFigure[] = [];
 
-  const quantity = quantityFixed6ToText(sumQuantityFixed6(position));
+  const declared = projection.truthClasses;
+  const quantity = quantityFixed6ToText(sumQuantityFixed6(position, declared));
   figures.push({ label: "持有數量", text: quantity === null ? DATA_UNAVAILABLE_LABEL : quantity });
 
-  const costBasis = sumCostBasisMinorUnits(position);
+  const costBasis = sumCostBasisMinorUnits(position, declared);
   const costText = minorUnitsToTwdOrNull(costBasis);
   figures.push({ label: "成本", text: costText === null ? DATA_UNAVAILABLE_LABEL : costText });
 
@@ -384,36 +426,45 @@ function holdingBody(
     text: exposure === null ? DATA_UNAVAILABLE_LABEL : percentFixed2ToString(exposure),
   });
 
+  // 標籤刻意寫「至今」：這是建倉到現在（`markAsOf`）累計的天數，跟 `consequenceSummary`
+  // 裡「持有 N 天後減碼」這種指「減碼前那一段」的天數是兩個不同的量，同頁並排容易混淆
+  // （one-character-slice-runbook.md §6.6）。未經 copy-taste 審稿。
   const days = heldDays(position.openedAt, position.markAsOf);
   figures.push({
-    label: "持有天數",
+    label: "至今持有天數",
     text: days === null ? DATA_UNAVAILABLE_LABEL : `${days}`,
   });
 
   return { kind: "figures", figures };
 }
 
-function rationaleBody(position: PaperPositionPublic): PaperCardBody {
+function rationaleBody(position: PaperPositionPublic, declared: readonly TruthClass[]): PaperCardBody {
   const summary = position.rationaleSummary?.trim() ?? "";
-  const quote = quoteOrNull(position.concurrentClaim);
+  const quote = quoteOrNull(
+    position.concurrentClaim,
+    claimTruthClassOf(position.concurrentClaim?.truthClass, declared),
+  );
   return {
     kind: "rationale",
     summary: summary.length > 0 ? summary : DATA_UNAVAILABLE_LABEL,
+    summaryTruthClass: claimTruthClassOf(position.rationaleSummaryTruthClass, declared),
     invalidationLabel: INVALIDATION_LABEL[position.invalidationCondition],
     invalidationOccurred: position.invalidationCondition === "occurred",
+    invalidationTruthClass: claimTruthClassOf(position.truthClass, declared),
     concurrentClaim: quote,
     concurrentClaimAbsenceText:
       quote === null ? "當時沒有可核對的公開原話，這裡留白，不補一句第一人稱台詞。" : null,
   };
 }
 
-function currentClaimBody(position: PaperPositionPublic): PaperCardBody {
+function currentClaimBody(position: PaperPositionPublic, declared: readonly TruthClass[]): PaperCardBody {
   const narration = position.currentNarration;
   const count = newlySupportedFactCount(position);
   const newlySupportedFactsText =
     count === null
       ? `新增支持事實：${DATA_UNAVAILABLE_LABEL}`
       : `新增支持事實：${count} 筆`;
+  const newlySupportedFactsTruthClass = claimTruthClassOf(position.consequenceSummaryTruthClass, declared);
 
   if (narration === undefined) {
     return {
@@ -421,23 +472,32 @@ function currentClaimBody(position: PaperPositionPublic): PaperCardBody {
       quote: null,
       summaryText: null,
       absenceText: "他還沒有新的公開說法。",
+      summaryTruthClass: null,
       newlySupportedFactsText,
+      newlySupportedFactsTruthClass,
     };
   }
 
+  const narrationTruthClass = claimTruthClassOf(narration.truthClass, declared);
+
   if (narration.kind === "utterance") {
-    const quote = quoteOrNull({
-      utteranceArtifactId: narration.utteranceArtifactId,
-      canonicalTextSha256: narration.canonicalTextSha256,
-      canonicalTextUtf8: narration.canonicalTextUtf8,
-    });
+    const quote = quoteOrNull(
+      {
+        utteranceArtifactId: narration.utteranceArtifactId,
+        canonicalTextSha256: narration.canonicalTextSha256,
+        canonicalTextUtf8: narration.canonicalTextUtf8,
+      },
+      narrationTruthClass,
+    );
     return {
       kind: "currentClaim",
       quote,
       summaryText: null,
       absenceText:
         quote === null ? `${DATA_UNAVAILABLE_LABEL}：這句話無法核對，因此不顯示。` : null,
+      summaryTruthClass: null,
       newlySupportedFactsText,
+      newlySupportedFactsTruthClass,
     };
   }
 
@@ -447,7 +507,9 @@ function currentClaimBody(position: PaperPositionPublic): PaperCardBody {
     quote: null,
     summaryText: summaryText.length > 0 ? summaryText : null,
     absenceText: summaryText.length > 0 ? null : DATA_UNAVAILABLE_LABEL,
+    summaryTruthClass: narrationTruthClass,
     newlySupportedFactsText,
+    newlySupportedFactsTruthClass,
   };
 }
 
@@ -455,7 +517,8 @@ function archiveNodesBody(
   projection: PaperArchiveProjection,
   position: PaperPositionPublic,
 ): PaperCardBody {
-  const items: PaperFigure[] = [];
+  const declared = projection.truthClasses;
+  const items: PaperRefItem[] = [];
 
   items.push({
     label: "關係",
@@ -463,6 +526,8 @@ function archiveNodesBody(
       position.influencedByCharacterRefs.length === 0
         ? "沒有其他角色被記為影響來源。"
         : position.influencedByCharacterRefs.join("、"),
+    // 這一句講的是這個部位自己的影響來源紀錄，身分跟部位走。
+    truthClass: claimTruthClassOf(position.truthClass, declared),
   });
 
   items.push({
@@ -481,7 +546,11 @@ function archiveNodesBody(
   }
 
   for (const revision of projection.dataRevisions) {
-    items.push({ label: `更正（${revision.kind}）`, text: revision.summary });
+    items.push({
+      label: `更正（${revision.kind}）`,
+      text: revision.summary,
+      truthClass: claimTruthClassOf(revision.truthClass, declared),
+    });
   }
 
   return { kind: "refs", items };
@@ -493,11 +562,14 @@ export function paperCardSections(
   position: PaperPositionPublic,
 ): PaperCardSectionView[] {
   const mode = paperDisclosureMode(projection);
+  const declared = projection.truthClasses;
+  // 部位自己的數字與狀態（持有、損益、人物動詞所依據的持倉）共用部位的身分。
+  const positionTruthClass = claimTruthClassOf(position.truthClass, declared);
 
-  return PAPER_CARD_SECTION_ORDER.map(({ key, title }) => {
+  return PAPER_CARD_SECTION_ORDER.map(({ key, title }): PaperCardSectionView => {
     switch (key) {
       case "actorVerb":
-        return { key, title, body: actorVerbBody(projection, position) };
+        return { key, title, body: actorVerbBody(projection, position), truthClass: positionTruthClass };
       case "asOf":
         return {
           key,
@@ -512,11 +584,12 @@ export function paperCardSections(
           },
         };
       case "holding":
-        return { key, title, body: holdingBody(projection, position) };
+        return { key, title, body: holdingBody(projection, position), truthClass: positionTruthClass };
       case "pnl":
         return {
           key,
           title,
+          truthClass: positionTruthClass,
           body: {
             kind: "pnl",
             // 兩項永遠都在：虧損不得因為「不好看」而消失。
@@ -531,9 +604,9 @@ export function paperCardSections(
           },
         };
       case "originalRationale":
-        return { key, title, body: rationaleBody(position) };
+        return { key, title, body: rationaleBody(position, declared) };
       case "currentClaim":
-        return { key, title, body: currentClaimBody(position) };
+        return { key, title, body: currentClaimBody(position, declared) };
       case "archiveNodes":
         return { key, title, body: archiveNodesBody(projection, position) };
     }
@@ -547,6 +620,7 @@ export function paperCardSections(
  * **不產生任何市場數字**。
  */
 export function paperActionRows(projection: PaperArchiveProjection): PaperActionRowView[] {
+  const declared = projection.truthClasses;
   return [...projection.historicalActionFills]
     .sort((left, right) => left.tradingDate.localeCompare(right.tradingDate))
     .map((record): PaperActionRowView => {
@@ -566,8 +640,11 @@ export function paperActionRows(projection: PaperArchiveProjection): PaperAction
         text: quantity === null ? DATA_UNAVAILABLE_LABEL : quantity,
       });
 
+      // 成交價掛整列的標籤；成交自己的身分（2.2.0）要過閘門且和整列相同，否則寫「資料未到」。
       const price =
-        disclosure.fill === null ? null : unitPriceFixed6ToText(disclosure.fill.sealedPriceMinorUnitsFixed6);
+        disclosure.fill === null || !nestedFiguresUsable(disclosure.fill.truthClass, disclosure.truthClass, declared)
+          ? null
+          : unitPriceFixed6ToText(disclosure.fill.sealedPriceMinorUnitsFixed6);
       figures.push({
         label: "模擬成交價",
         text: disclosure.fill === null ? "未成交" : price === null ? DATA_UNAVAILABLE_LABEL : price,
@@ -590,7 +667,13 @@ export function paperActionRows(projection: PaperArchiveProjection): PaperAction
         instrumentLabel: disclosure.instrumentLabel,
         figures,
         rationaleSummary: disclosure.rationaleSummary,
-        concurrentClaim: quoteOrNull(disclosure.concurrentClaim),
+        concurrentClaim: quoteOrNull(
+          disclosure.concurrentClaim,
+          claimTruthClassOf(disclosure.concurrentClaim?.truthClass, declared),
+        ),
+        truthClass: claimTruthClassOf(disclosure.truthClass, declared),
+        instrumentLabelTruthClass: claimTruthClassOf(disclosure.instrumentLabelTruthClass, declared),
+        rationaleSummaryTruthClass: claimTruthClassOf(disclosure.rationaleSummaryTruthClass, declared),
       };
     });
 }

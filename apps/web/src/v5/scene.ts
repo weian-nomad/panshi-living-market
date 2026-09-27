@@ -27,9 +27,11 @@ import type {
   CharacterWorldPosition,
   DetailTier,
   SceneLayer,
+  TruthClass,
   WorldSnapshot,
 } from "../api/generated-v2/types.gen";
 import type { WorldHitTarget } from "../interaction";
+import { claimTruthClassOf } from "./claimTruth";
 import { WORLD_RESIDENTS_EDGE_SILHOUETTE_MAX } from "./motion";
 
 /** 舞台座標系（SVG viewBox 單位）。畫面容器以同比例鎖定，指標座標才能直接換算。 */
@@ -104,13 +106,23 @@ export type SceneFigure = {
   sceneLayer: SceneLayer;
   detailTier: DetailTier;
   zOrder: number;
-  /** 只與當下故事有關的可觀察線索；沒有就是 null，不補字。 */
+  /**
+   * 只與當下故事有關的可觀察線索；沒有、或投影沒有替它標出資料身分時是 null，不補字
+   *（public-v2.yaml 2.1.0 `focusHintTruthClass`）。
+   */
   focusHint: string | null;
+  /** `focusHint` 自己的資料身分；`focusHint` 是 null 時也是 null。 */
+  focusHintTruthClass: TruthClass | null;
   /**
    * 世界快照裡這個人的故事線索標題（`WorldStoryHookRef.label`）。
-   * 世界快照不含姓名，所以介面**不得**自行編一個名字；沒有 label 就用中性稱呼。
+   * 世界快照不含姓名，所以介面**不得**自行編一個名字；沒有 label、或 label 沒有
+   * 資料身分（`labelTruthClass`）就用中性稱呼。
    */
   hookLabel: string | null;
+  /** `hookLabel` 自己的資料身分；`hookLabel` 是 null 時也是 null。 */
+  hookTruthClass: TruthClass | null;
+  /** 這個人身上有幾項線索因為缺資料身分而不顯示（畫面要寫出原因）。 */
+  withheldClaimCount: number;
 };
 
 /** 純裝飾剪影：無姓名、無資料、不可跟拍，也不進 `characterPositions`。 */
@@ -277,11 +289,22 @@ export function facingFromX(footX: number): EdgeSilhouette["facing"] {
   return footX < STAGE_WIDTH / 2 ? "right" : "left";
 }
 
-function hookLabelFor(snapshot: WorldSnapshot, characterId: string): string | null {
+type LabelledClaim = { text: string | null; truthClass: TruthClass | null; withheld: boolean };
+
+/** 一項世界線索與它自己的身分；有字但缺身分就不顯示，並記為 withheld。 */
+function labelledClaim(text: string | null | undefined, truthClass: unknown, declared: readonly TruthClass[]): LabelledClaim {
+  const trimmed = typeof text === "string" ? text.trim() : "";
+  if (trimmed.length === 0) return { text: null, truthClass: null, withheld: false };
+  const labelled = claimTruthClassOf(truthClass, declared);
+  return labelled === null
+    ? { text: null, truthClass: null, withheld: true }
+    : { text: trimmed, truthClass: labelled, withheld: false };
+}
+
+function hookFor(snapshot: WorldSnapshot, characterId: string): LabelledClaim {
   const hook = snapshot.storyHooks.find((entry) => entry.characterId === characterId);
-  if (!hook) return null;
-  const label = hook.label.trim();
-  return label.length > 0 ? label : null;
+  if (!hook) return { text: null, truthClass: null, withheld: false };
+  return labelledClaim(hook.label, hook.labelTruthClass, snapshot.truthClasses);
 }
 
 /**
@@ -293,19 +316,26 @@ export function worldFigures(snapshot: WorldSnapshot): SceneFigure[] {
 
   return snapshot.characterPositions
     .filter(isRenderablePosition)
-    .map((position) => ({
-      characterId: position.characterId,
-      kind: position.detailTier === "edge_silhouette" ? ("silhouette" as const) : ("resident" as const),
-      footX: stageX(position.worldX, camera),
-      footY: stageY(position.worldY, camera),
-      height: figureHeight(stageY(position.worldY, camera)),
-      poseState: position.poseState,
-      sceneLayer: position.sceneLayer,
-      detailTier: position.detailTier,
-      zOrder: position.zOrder,
-      focusHint: position.focusHint,
-      hookLabel: hookLabelFor(snapshot, position.characterId),
-    }))
+    .map((position) => {
+      const hook = hookFor(snapshot, position.characterId);
+      const focus = labelledClaim(position.focusHint, position.focusHintTruthClass, snapshot.truthClasses);
+      return {
+        characterId: position.characterId,
+        kind: position.detailTier === "edge_silhouette" ? ("silhouette" as const) : ("resident" as const),
+        footX: stageX(position.worldX, camera),
+        footY: stageY(position.worldY, camera),
+        height: figureHeight(stageY(position.worldY, camera)),
+        poseState: position.poseState,
+        sceneLayer: position.sceneLayer,
+        detailTier: position.detailTier,
+        zOrder: position.zOrder,
+        focusHint: focus.text,
+        focusHintTruthClass: focus.truthClass,
+        hookLabel: hook.text,
+        hookTruthClass: hook.truthClass,
+        withheldClaimCount: (hook.withheld ? 1 : 0) + (focus.withheld ? 1 : 0),
+      };
+    })
     .sort((left, right) => left.zOrder - right.zOrder);
 }
 

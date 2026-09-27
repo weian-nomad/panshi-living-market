@@ -32,7 +32,9 @@ const POSITION_ID = "a243c129-0297-7b54-e16f-256452eab596";
 function position(overrides: Partial<PaperPositionPublic> = {}): PaperPositionPublic {
   return {
     positionId: POSITION_ID,
+    truthClass: "simulated_narrative",
     instrumentLabel: "PSZS-DEMO",
+    instrumentLabelTruthClass: "fictional_setting",
     status: "open",
     openedAt: "2026-03-03T13:30:00+08:00",
     lastChangedAt: "2026-03-17T13:30:00+08:00",
@@ -44,6 +46,7 @@ function position(overrides: Partial<PaperPositionPublic> = {}): PaperPositionPu
         sealedPriceMinorUnitsFixed6: 10_000_000_000,
         costBasisMinorUnits: 6_000_000,
         sealedPriceRevisionRef: PRICE_DIGEST,
+        truthClass: "simulated_narrative",
       },
     ],
     realizedPnlMinorUnits: -472_000,
@@ -53,16 +56,19 @@ function position(overrides: Partial<PaperPositionPublic> = {}): PaperPositionPu
     invalidationCondition: "occurred",
     rationaleSummary:
       "建倉時封存的理由（thesis-hist-001）：預期兩個交易日內動能延續。失效條件是兩個交易日內沒有新證據。",
+    rationaleSummaryTruthClass: "simulated_narrative",
     concurrentClaim: {
       utteranceArtifactId: "412501f5-f4fc-36fd-a17b-eefa9b711baa",
       canonicalTextSha256: DIGEST_U1,
       canonicalTextUtf8: "看到新的公開資訊，先小部位觀察。",
+      truthClass: "simulated_narrative",
     },
     currentNarration: {
       kind: "utterance",
       utteranceArtifactId: "6e647275-9839-89f0-457d-2942728c9ac2",
       canonicalTextSha256: DIGEST_U2,
       canonicalTextUtf8: "目前沒有新的公開資訊，先維持原本的觀察。",
+      truthClass: "simulated_narrative",
     },
     influencedByCharacterRefs: [],
     // 契約必填（public-v2.yaml `PaperPositionPublic`）：沒有影響來源時附一句原因。
@@ -70,6 +76,7 @@ function position(overrides: Partial<PaperPositionPublic> = {}): PaperPositionPu
     influencedByEmptyReason: "測試：沒有封存事件顯示別人影響這個部位。",
     consequenceSummary:
       "持有 15 天後減碼 400 股，實現虧損 4,720 元；剩下 600 股仍在。引用的理由換過一次，新增支持事實 0 筆。",
+    consequenceSummaryTruthClass: "simulated_narrative",
     ...overrides,
   };
 }
@@ -81,7 +88,9 @@ const ACCEPTED_SELL: PaperActionFillRecord = {
   marketSessionFinalityState: "accepted",
   recordDataState: "READY",
   dailyActionDisclosure: {
+    truthClass: "simulated_narrative",
     instrumentLabel: "PSZS-DEMO",
+    instrumentLabelTruthClass: "fictional_setting",
     action: "SELL",
     direction: "downside",
     quantityFixed6: 400_000_000,
@@ -90,8 +99,10 @@ const ACCEPTED_SELL: PaperActionFillRecord = {
       sealedPriceMinorUnitsFixed6: 8_820_000_000,
       sealedPriceRevisionRef: PRICE_DIGEST,
       filledAt: "2026-03-17T13:30:00+08:00",
+      truthClass: "simulated_narrative",
     },
     rationaleSummary: "他寫下原本的理由已經不成立，並依此減碼。",
+    rationaleSummaryTruthClass: "simulated_narrative",
   },
 };
 
@@ -135,6 +146,7 @@ function projection(
       initialCapitalMinorUnits: 100_000_000,
       correctionRefs: [],
       asOf: "2026-03-17T13:30:00+08:00",
+      truthClass: "simulated_narrative",
     },
     positions: [position()],
     historicalActionFills: [ACCEPTED_SELL, PENDING_TODAY],
@@ -314,6 +326,7 @@ describe("原始理由、失效條件與現在說法", () => {
         utteranceArtifactId: "412501f5-f4fc-36fd-a17b-eefa9b711baa",
         canonicalTextSha256: "not-a-digest",
         canonicalTextUtf8: "看到新的公開資訊，先小部位觀察。",
+        truthClass: "simulated_narrative",
       },
     });
     const body = paperCardSections(projection({ positions: [bare] }), bare)[4]?.body;
@@ -334,7 +347,7 @@ describe("持有、成本、現值、曝險與天數", () => {
       "成本",
       "現值",
       "曝險",
-      "持有天數",
+      "至今持有天數",
     ]);
     expect(body.figures[0]?.text).toBe("600");
     expect(body.figures[1]?.text).toBe("60,000.00");
@@ -347,6 +360,22 @@ describe("持有、成本、現值、曝險與天數", () => {
     expect(heldDays("2026-03-03T13:30:00+08:00", "2026-03-17T13:30:00+08:00")).toBe(15);
     expect(heldDays("2026-03-03T13:30:00+08:00", "2026-03-03T13:30:00+08:00")).toBe(1);
     expect(heldDays("2026-03-03T05:30:00Z", "2026-03-17T13:30:00+08:00")).toBeNull();
+  });
+
+  it("標籤是「至今持有天數」，不會跟 consequenceSummary 裡「持有 N 天後減碼」的天數混淆", () => {
+    // 切片實際資料：建倉 2026-03-03，S5（2026-03-17）減碼過一次，資料截至 2026-04-13。
+    // `consequenceSummary`（原封不動的封存文字）講的是「減碼前那段」＝15 天；
+    // 這一格講的是「到 markAsOf 為止」＝42 天。同一張卡上兩個數字合法地不同，
+    // 標籤必須先把「哪一種持有天數」講清楚（one-character-slice-runbook.md §6.6）。
+    const withLaterMark = position({ markAsOf: "2026-04-13T13:30:00+08:00" });
+    const body = paperCardSections(projection(), withLaterMark)[2]?.body;
+    if (body?.kind !== "figures") throw new Error("unreachable");
+
+    const holdingDaysToDate = body.figures.find((figure) => figure.label === "至今持有天數");
+    expect(holdingDaysToDate?.text).toBe("42");
+    expect(withLaterMark.consequenceSummary).toContain("持有 15 天後減碼");
+    // 沒有任何一格再用籠統、可能被讀成「減碼前持有天數」的「持有天數」當標籤。
+    expect(body.figures.map((figure) => figure.label)).not.toContain("持有天數");
   });
 });
 

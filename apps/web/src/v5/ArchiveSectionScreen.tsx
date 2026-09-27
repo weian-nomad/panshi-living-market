@@ -15,7 +15,11 @@
 // 4. **本命盤只影響注意與解讀**：頁首固定明示，不改價格、不改績效；每個主題也帶著
 //    投影自己的 `effectScopeLabel`。
 // 5. **數字一律是文字**：年齡、日期、把握程度都以文字呈現，不畫長條、不畫量表。
-// 6. **缺就寫缺**：空清單顯示投影附的 `*EmptyReason`，不補一句、不留白。
+// 6. **缺就寫缺**：空清單顯示投影附的 `*EmptyReason`，不補一句、不留白。這些固定句是
+//    系統說明（public-v2.yaml 2.2.0 `x-panshi-system-label`），不是宣稱：以 `SystemLabel`
+//    的系統說明樣式呈現，不掛資料身分。
+// 7. **巢狀項目也掛自己的身分**（2.2.0）：記憶裡提到的人、關係訊號裡他的原話，各自讀
+//    自己的 `truthClass`，不沿用外層那一則；缺了只扣住那一項（`ClaimWithTruth`）。
 //
 // 新增的繁中說明句全部是工程 placeholder，未經 copy-taste 審稿。
 
@@ -32,7 +36,8 @@ import type {
   TraitsArchiveProjection,
   TruthClass,
 } from "../api/generated-v2/types.gen";
-import { ItemTruthTag } from "./ItemTruthTag";
+import { ClaimWithTruth, ItemTruthTag } from "./ItemTruthTag";
+import { SystemLabel } from "./SystemLabel";
 import { Utterance } from "./Utterance";
 import { DATA_UNAVAILABLE_LABEL } from "./format";
 import { chapterAnchorId } from "./journalRevisions";
@@ -60,6 +65,7 @@ const STYLES = `
 .v5-section__group h3 { margin: 0 0 .4rem; font-size: 1rem; font-weight: 500; }
 .v5-section__group h4 { margin: .6rem 0 .25rem; font-size: .8rem; font-weight: 500; color: var(--copper-500); }
 .v5-section__items { margin: 0; padding: 0; list-style: none; }
+.v5-section__people .v5-section__items { margin: 0 0 .2rem .75rem; }
 .v5-section__item { margin: 0 0 .7rem; padding: 0 0 .5rem; border-bottom: 1px dashed var(--rule-paper); }
 .v5-section__item:last-child { border-bottom: 0; }
 .v5-section__item p { margin: 0 0 .2rem; }
@@ -85,6 +91,8 @@ const STYLES = `
 
 type SectionContext = {
   asOf: string;
+  /** 這份投影 envelope 的 `truthClasses`：巢狀項目的身分必須是其中之一。 */
+  declared: readonly TruthClass[];
   versionLabel: string;
   journalPath: string;
   onOpenChapter: (chapterDate: string) => void;
@@ -128,8 +136,9 @@ function ChapterLink({
   );
 }
 
-function EmptyReason({ reason }: { reason: string | null }) {
-  return <p className="v5-section__note panshi-paper">{reason ?? DATA_UNAVAILABLE_LABEL}</p>;
+/** 空清單的原因：系統說明，不是宣稱（不掛資料身分）。 */
+function EmptyReason({ field, reason }: { field: string; reason: string | null }) {
+  return <SystemLabel field={field} text={reason} />;
 }
 
 function Group({ title, children }: { title: string; children: ReactNode }) {
@@ -158,7 +167,7 @@ function Acquaintance({ person, context }: { person: ArchiveAcquaintance; contex
 
       <h4>他在她身邊做過的事（單向觀察）</h4>
       {person.observedInteractions.length === 0 ? (
-        <EmptyReason reason={person.observedInteractionsEmptyReason} />
+        <EmptyReason field="observedInteractionsEmptyReason" reason={person.observedInteractionsEmptyReason} />
       ) : (
         <ul className="v5-section__items">
           {chronological(person.observedInteractions).map((interaction, index) => (
@@ -176,17 +185,24 @@ function Acquaintance({ person, context }: { person: ArchiveAcquaintance; contex
 
       <h4>留下的關係訊號</h4>
       {person.relationshipSignals.length === 0 ? (
-        <EmptyReason reason={person.relationshipSignalsEmptyReason} />
+        <EmptyReason field="relationshipSignalsEmptyReason" reason={person.relationshipSignalsEmptyReason} />
       ) : (
         <ul className="v5-section__items">
           {chronological(person.relationshipSignals).map((signal, index) => (
             <li className="v5-section__item" key={`${signal.sessionDate}-${index}`}>
               <p className="v5-section__date panshi-data">{signal.sessionDate}</p>
               <p className="panshi-paper">{signal.summary}</p>
-              <p>
-                他當時的原話：
-                <Utterance utterance={signal.utterance} />
-              </p>
+              <ClaimWithTruth
+                truthClass={signal.utterance.truthClass}
+                declared={context.declared}
+                asOfLabel={context.asOf}
+                versionLabel={context.versionLabel}
+              >
+                <p>
+                  他當時的原話：
+                  <Utterance utterance={signal.utterance} />
+                </p>
+              </ClaimWithTruth>
               <Tag truthClass={signal.truthClass} context={context} />
               <p>
                 <ChapterLink pointer={signal} context={context} />
@@ -204,7 +220,7 @@ function Acquaintance({ person, context }: { person: ArchiveAcquaintance; contex
 }
 
 function RelationsBody({ section, context }: { section: RelationsArchiveProjection; context: SectionContext }) {
-  if (section.acquaintances.length === 0) return <EmptyReason reason={section.acquaintancesEmptyReason} />;
+  if (section.acquaintances.length === 0) return <EmptyReason field="acquaintancesEmptyReason" reason={section.acquaintancesEmptyReason} />;
   return (
     <>
       {section.acquaintances.map((person) => (
@@ -233,7 +249,7 @@ function ChartBody({ section, context }: { section: ChartArchiveProjection; cont
 
       <Group title="盤面位置">
         {section.placements.length === 0 ? (
-          <EmptyReason reason={section.placementsEmptyReason} />
+          <EmptyReason field="placementsEmptyReason" reason={section.placementsEmptyReason} />
         ) : (
           <ul className="v5-section__items">
             {section.placements.map((placement) => (
@@ -276,7 +292,7 @@ function ChartBody({ section, context }: { section: ChartArchiveProjection; cont
 
             <h4>章節裡的解讀</h4>
             {motif.invocations.length === 0 ? (
-              <EmptyReason reason={motif.invocationsEmptyReason} />
+              <EmptyReason field="invocationsEmptyReason" reason={motif.invocationsEmptyReason} />
             ) : (
               <ul className="v5-section__items">
                 {chronological(motif.invocations).map((invocation, index) => (
@@ -372,7 +388,7 @@ function TraitsBody({ section, context }: { section: TraitsArchiveProjection; co
           每一次發生各記一列，依日期排列；不算次數、不打分數、不排名。
         </p>
         {section.biasOccurrences.length === 0 ? (
-          <EmptyReason reason={section.biasOccurrencesEmptyReason} />
+          <EmptyReason field="biasOccurrencesEmptyReason" reason={section.biasOccurrencesEmptyReason} />
         ) : (
           <ul className="v5-section__items" data-list="bias-occurrences">
             {chronological(section.biasOccurrences).map((occurrence, index) => (
@@ -394,7 +410,7 @@ function TraitsBody({ section, context }: { section: TraitsArchiveProjection; co
 
       <Group title="那一次沒有發生">
         {section.counterExamples.length === 0 ? (
-          <EmptyReason reason={section.counterExamplesEmptyReason} />
+          <EmptyReason field="counterExamplesEmptyReason" reason={section.counterExamplesEmptyReason} />
         ) : (
           <ul className="v5-section__items" data-list="counter-examples">
             {chronological(section.counterExamples).map((example, index) => (
@@ -448,17 +464,33 @@ function Memory({ memory, context }: { memory: ArchiveMemory; context: SectionCo
       </p>
       <p className="panshi-paper">{memory.note}</p>
       {memory.involvedPeople.length === 0 ? null : (
-        <p className="panshi-paper">
-          相關的人：
-          {memory.involvedPeople.map((person) => `${person.displayName}（${person.relationLabel}）`).join("、")}
-        </p>
+        <div className="v5-section__people">
+          <p className="panshi-paper">相關的人：</p>
+          <ul className="v5-section__items">
+            {memory.involvedPeople.map((person, index) => (
+              <li key={`${person.displayName}-${person.relationLabel}-${index}`}>
+                {/* 人名與關係是人物設定，讀這個人自己的身分，不沿用這則記憶的。 */}
+                <ClaimWithTruth
+                  truthClass={person.truthClass}
+                  declared={context.declared}
+                  asOfLabel={context.asOf}
+                  versionLabel={context.versionLabel}
+                >
+                  <p className="panshi-paper">
+                    {person.displayName}（{person.relationLabel}）
+                  </p>
+                </ClaimWithTruth>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
       <p className="v5-section__note panshi-data">
         {VALENCE_LABEL[memory.emotionalValence]}／把握程度 {confidenceBpText(memory.confidenceBp)}／
         {VISIBILITY_LABEL[memory.visibility]}
       </p>
       {memory.reinterpretations.length === 0 ? (
-        <p className="v5-section__note panshi-paper">{memory.reinterpretationsEmptyReason ?? DATA_UNAVAILABLE_LABEL}</p>
+        <SystemLabel field="reinterpretationsEmptyReason" text={memory.reinterpretationsEmptyReason} />
       ) : (
         memory.reinterpretations.map((reading, index) => (
           <div key={`${reading.reinterpretedAt}-${index}`}>
@@ -483,7 +515,7 @@ function Memory({ memory, context }: { memory: ArchiveMemory; context: SectionCo
 }
 
 function MemoriesBody({ section, context }: { section: MemoriesArchiveProjection; context: SectionContext }) {
-  if (section.memories.length === 0) return <EmptyReason reason={section.memoriesEmptyReason} />;
+  if (section.memories.length === 0) return <EmptyReason field="memoriesEmptyReason" reason={section.memoriesEmptyReason} />;
   const before = section.memories.filter((memory) => memory.formedBeforeFirstSession);
   const during = section.memories.filter((memory) => !memory.formedBeforeFirstSession);
   return (
@@ -661,6 +693,7 @@ export function ArchiveSectionScreen({
 }: ArchiveSectionScreenProps) {
   const context: SectionContext = {
     asOf: section.asOf,
+    declared: section.truthClasses,
     versionLabel: `projection v${section.projectionVersion}`,
     journalPath,
     onOpenChapter,
