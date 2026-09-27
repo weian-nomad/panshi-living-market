@@ -101,7 +101,7 @@ export type PaperVersionSet = {
 };
 
 /**
- * An immutable, server-resolved `UtteranceArtifactV1` reference plus its verbatim canonical bytes. Never paired with a second freeform "summary of what they said" string field (system-design.md §11.1, §11.4).
+ * An immutable, server-resolved `UtteranceArtifactV1` reference plus its verbatim canonical bytes. Never paired with a second freeform "summary of what they said" string field (system-design.md §11.1, §11.4). Since 2.2.0 no response references this shape directly: every utterance a response carries is a `ClassifiedCharacterUtterance`. It stays as the named base shape that clients may use for the three artifact fields.
  */
 export type CharacterUtterance = {
     utteranceArtifactId: string;
@@ -110,16 +110,28 @@ export type CharacterUtterance = {
 };
 
 /**
- * A later self-narration that is either a verbatim, artifact-backed quote (when a visible `UtteranceArtifactV1` exists) or an unquoted structured summary (the documented fallback shape from `docs/v5/experience-spec.md` §8.4 — never both, and never a system-authored quote).
+ * A `CharacterUtterance` shown as a visible claim of its own: the same immutable artifact ref and verbatim canonical bytes, plus the claim's own `truthClass` (a character's words are `simulated_narrative`). Added in 2.1.0. Since 2.2.0 every utterance a response carries is classified this way, including one nested inside another classified item (`RelationshipSignalView.utterance`): no utterance inherits the class of the item around it.
+ */
+export type ClassifiedCharacterUtterance = {
+    utteranceArtifactId: string;
+    canonicalTextSha256: Digest;
+    canonicalTextUtf8: string;
+    truthClass: TruthClass;
+};
+
+/**
+ * A later self-narration that is either a verbatim, artifact-backed quote (when a visible `UtteranceArtifactV1` exists) or an unquoted structured summary (the documented fallback shape from `docs/v5/experience-spec.md` §8.4 — never both, and never a system-authored quote). Either variant carries its own `truthClass` (2.1.0).
  */
 export type CharacterNarrationOrSummary = {
     kind: 'utterance';
     utteranceArtifactId: string;
     canonicalTextSha256: Digest;
     canonicalTextUtf8: string;
+    truthClass: TruthClass;
 } | {
     kind: 'summary';
     summaryText: string;
+    truthClass: TruthClass;
 };
 
 /**
@@ -143,6 +155,10 @@ export type WithdrawnCharacterProjection = {
 export type AttentionTarget = {
     targetKind: 'person' | 'object' | 'event' | 'unknown';
     label: string;
+    /**
+     * The truth class of `label` (2.1.0).
+     */
+    truthClass: TruthClass;
 };
 
 export type UnresolvedCommitment = {
@@ -153,6 +169,10 @@ export type UnresolvedCommitment = {
     rationaleSummary: string;
     sealedAt: string;
     stillOpen: boolean;
+    /**
+     * The truth class of this commitment and its `rationaleSummary` (2.1.0).
+     */
+    truthClass: TruthClass;
 };
 
 export type PaperPositionConsequenceHighlight = {
@@ -166,22 +186,38 @@ export type PaperPositionConsequenceHighlight = {
      * Always shown next to any paper figure (experience-spec §7.2); during a trading session this is the previous session's close.
      */
     asOf: string;
+    /**
+     * The truth class of this paper figure (2.1.0).
+     */
+    truthClass: TruthClass;
 };
 
 export type RelationshipConsequenceHighlight = {
     kind: 'relationship';
     dyadArchiveRef: Uuid;
     summary: string;
+    /**
+     * The truth class of `summary` (2.1.0).
+     */
+    truthClass: TruthClass;
 };
 
 export type OccupationConsequenceHighlight = {
     kind: 'occupation';
     summary: string;
+    /**
+     * The truth class of `summary` (2.1.0).
+     */
+    truthClass: TruthClass;
 };
 
 export type MemoryConsequenceHighlight = {
     kind: 'memory';
     summary: string;
+    /**
+     * The truth class of `summary` (2.1.0).
+     */
+    truthClass: TruthClass;
 };
 
 /**
@@ -225,9 +261,17 @@ export type CharacterWorldPosition = {
     worldY: number;
     poseState: CharacterPoseState;
     /**
+     * The truth class of `poseState` (2.1.0).
+     */
+    poseStateTruthClass: TruthClass;
+    /**
      * What/who the character is currently attending to, if known.
      */
     focusHint: string | null;
+    /**
+     * The truth class of `focusHint`; non-null exactly when `focusHint` is non-null (2.1.0).
+     */
+    focusHintTruthClass: TruthClass | null;
     zOrder: number;
     sceneLayer: SceneLayer;
     detailTier: DetailTier;
@@ -242,6 +286,10 @@ export type WorldStoryHookRef = {
     characterId: Uuid;
     sceneRef: Uuid;
     label: string;
+    /**
+     * The truth class of `label` (2.1.0).
+     */
+    labelTruthClass: TruthClass;
 };
 
 export type WorldSnapshot = {
@@ -272,21 +320,45 @@ export type CharacterCloseUp = {
     sourceRevisionSet: Array<SourceRevisionRef>;
     characterId: Uuid;
     displayName: string;
+    /**
+     * The truth class of `displayName` (2.1.0).
+     */
+    displayNameTruthClass: TruthClass;
     ageYears: number;
+    /**
+     * The truth class of `ageYears` (2.1.0): `statistical_sample` only when the age was drawn from a sealed statistical distribution, otherwise the class of the chassis that set it.
+     */
+    ageYearsTruthClass: TruthClass;
     occupationLabel: string;
+    /**
+     * The truth class of `occupationLabel` (2.1.0), on the same rule as `ageYearsTruthClass`.
+     */
+    occupationLabelTruthClass: TruthClass;
     sceneRef: Uuid;
     poseState: CharacterPoseState;
+    /**
+     * The truth class of `poseState` (2.1.0).
+     */
+    poseStateTruthClass: TruthClass;
     /**
      * e.g. "正在偷看他說不在意的價格" (experience-spec §7.1).
      */
     currentVerbPhrase: string;
+    /**
+     * The truth class of `currentVerbPhrase` (2.1.0).
+     */
+    currentVerbPhraseTruthClass: TruthClass;
     currentAttention?: AttentionTarget;
     /**
      * The one unresolved-contradiction main sentence (experience-spec §7.1).
      */
     unresolvedTensionSummary: string;
-    publicClaim?: CharacterUtterance;
-    selfAcknowledgement?: CharacterUtterance;
+    /**
+     * The truth class of `unresolvedTensionSummary` (2.1.0).
+     */
+    unresolvedTensionSummaryTruthClass: TruthClass;
+    publicClaim?: ClassifiedCharacterUtterance;
+    selfAcknowledgement?: ClassifiedCharacterUtterance;
     recentConsequenceHighlight?: RecentConsequenceHighlight;
     unresolvedCommitments: Array<UnresolvedCommitment>;
 };
@@ -305,11 +377,19 @@ export type PaperConsequenceFragment = {
      */
     unrealizedPnlPercentFixed2: number;
     asOf: string;
+    /**
+     * The truth class of these paper figures (2.1.0).
+     */
+    truthClass: TruthClass;
 };
 
 export type LifeJournalConsequence = unknown & {
     paperConsequence?: PaperConsequenceFragment;
     nonPaperConsequenceSummary?: string;
+    /**
+     * The truth class of `nonPaperConsequenceSummary`; present exactly when it is (2.1.0).
+     */
+    nonPaperConsequenceSummaryTruthClass?: TruthClass;
 };
 
 /**
@@ -350,21 +430,37 @@ export type LifeJournalEntry = {
      */
     sceneSummary: string;
     /**
+     * The truth class of `sceneSummary` (2.1.0): the class the chapter's sealed observable segment carries, or, for the fixed `evidence_card_only` label, the class of the story projection it stands in for.
+     */
+    sceneSummaryTruthClass: TruthClass;
+    /**
      * 他當時怎麼說 — original self-statement, never rewritten after the fact; absent if nothing was said.
      */
-    contemporaneousClaim?: CharacterUtterance;
+    contemporaneousClaim?: ClassifiedCharacterUtterance;
     /**
      * 他其實知道什麼 — only material the character had actually encountered by then.
      */
     knownAtTheTimeSummary: string;
     /**
+     * The truth class of `knownAtTheTimeSummary` (2.1.0).
+     */
+    knownAtTheTimeSummaryTruthClass: TruthClass;
+    /**
      * 他漏掉了什麼 — only revealed after close or after the relevant data went public.
      */
     missedFactsSummary?: string;
     /**
+     * The truth class of `missedFactsSummary`; present exactly when it is (2.1.0).
+     */
+    missedFactsSummaryTruthClass?: TruthClass;
+    /**
      * 他做了什麼 — structured summary of the paper action, wait, ask-for-help, concealment, or withdrawal.
      */
     actionSummary: string;
+    /**
+     * The truth class of `actionSummary` (2.1.0).
+     */
+    actionSummaryTruthClass: TruthClass;
     consequence: LifeJournalConsequence;
     currentSelfNarration?: CharacterNarrationOrSummary;
     /**
@@ -372,9 +468,17 @@ export type LifeJournalEntry = {
      */
     recurringPatternRef?: Uuid;
     /**
+     * The truth class of the recurring-pattern claim; present exactly when `recurringPatternRef` is (2.1.0).
+     */
+    recurringPatternTruthClass?: TruthClass;
+    /**
      * 還沒完 — the next unresolved question; never previews the outcome.
      */
     openQuestionSummary: string;
+    /**
+     * The truth class of `openQuestionSummary` (2.1.0).
+     */
+    openQuestionSummaryTruthClass: TruthClass;
     archiveRefs: LifeJournalArchiveRefs;
 };
 
@@ -408,6 +512,10 @@ export type ArchiveSectionIndexEntry = {
      * One-line index summary, e.g. "目前 2 個部位，其中 1 個理由已失效。"
      */
     summary: string;
+    /**
+     * The truth class of `summary` (2.1.0).
+     */
+    summaryTruthClass: TruthClass;
     asOf: string;
     visibilityEpoch: Version;
     /**
@@ -428,9 +536,17 @@ export type CharacterArchiveIndex = {
     archiveSchemaRevision: string;
     longTermTensionSummary: string;
     /**
+     * The truth class of `longTermTensionSummary` (2.1.0).
+     */
+    longTermTensionSummaryTruthClass: TruthClass;
+    /**
      * 最近留下的三件事 (experience-spec §9.1).
      */
     recentHighlights: Array<string>;
+    /**
+     * Parallel to `recentHighlights` and of equal length: `recentHighlightTruthClasses[i]` is the truth class of `recentHighlights[i]` (2.1.0). A highlight with no class at its index is not rendered.
+     */
+    recentHighlightTruthClasses: Array<TruthClass>;
     /**
      * One entry per `ArchiveSectionKey` value.
      */
@@ -459,9 +575,17 @@ export type PaperAccountPublicSummary = {
     initialCapitalMinorUnits: number;
     correctionRefs: Array<Uuid>;
     asOf: string;
+    /**
+     * The truth class of this account's paper figures (2.1.0).
+     */
+    truthClass: TruthClass;
 };
 
 export type PaperLotPublic = {
+    /**
+     * The truth class of this lot's quantity, sealed price and cost basis (2.2.0): his paper figures, `simulated_narrative`, the same class as the position's own figures. A client that cannot read it does not add this lot into any displayed total.
+     */
+    truthClass: TruthClass;
     lotId: Uuid;
     /**
      * Quantity scaled by 1,000,000 (integer fixed-point; never float).
@@ -481,9 +605,17 @@ export type PaperLotPublic = {
 export type PaperPositionPublic = {
     positionId: Uuid;
     /**
+     * The truth class of this position's own figures and states: status, dates, lots, realized and unrealized P&L, mark as-of and invalidation condition (2.1.0).
+     */
+    truthClass: TruthClass;
+    /**
      * Company name/ticker label only — never a recommendation badge.
      */
     instrumentLabel: string;
+    /**
+     * The truth class of `instrumentLabel`, set by the instrument's source (2.1.0).
+     */
+    instrumentLabelTruthClass: TruthClass;
     status: PaperPositionStatus;
     openedAt: string;
     lastChangedAt: string;
@@ -499,9 +631,13 @@ export type PaperPositionPublic = {
      */
     rationaleSummary: string;
     /**
+     * The truth class of `rationaleSummary` (2.1.0).
+     */
+    rationaleSummaryTruthClass: TruthClass;
+    /**
      * 同時原話 — present only if a visible UtteranceArtifactV1 exists.
      */
-    concurrentClaim?: CharacterUtterance;
+    concurrentClaim?: ClassifiedCharacterUtterance;
     currentNarration?: CharacterNarrationOrSummary;
     influencedByCharacterRefs: Array<Uuid>;
     /**
@@ -513,13 +649,25 @@ export type PaperPositionPublic = {
      */
     influencedByEmptyReason: string | null;
     consequenceSummary: string;
+    /**
+     * The truth class of `consequenceSummary` (2.1.0).
+     */
+    consequenceSummaryTruthClass: TruthClass;
 };
 
 /**
  * Same-day ticker-specific action, direction, quantity, confidence, and fill. This object is structurally absent from `PaperActionFillRecord` until `MarketSessionFinalityAccepted` is recorded for that trading day — never present with nulled fields (market-safety.md "當期交易時段不得公開" / "盤後才可公開").
  */
 export type PaperDailyActionDisclosure = {
+    /**
+     * The truth class of the disclosed action, direction, quantity, confidence and fill (2.1.0).
+     */
+    truthClass: TruthClass;
     instrumentLabel: string;
+    /**
+     * The truth class of `instrumentLabel` (2.1.0).
+     */
+    instrumentLabelTruthClass: TruthClass;
     action: PaperActionKind;
     direction: PaperDirection;
     /**
@@ -534,6 +682,10 @@ export type PaperDailyActionDisclosure = {
      * `null` when the order expired unfilled (`PaperOrderExpired`).
      */
     fill: {
+        /**
+         * The truth class of the fill's sealed price (2.2.0): his paper fill, `simulated_narrative`, the same class as the disclosure's other paper figures.
+         */
+        truthClass: TruthClass;
         sealedPriceMinorUnitsFixed6: number;
         sealedPriceRevisionRef: Digest;
         filledAt: string;
@@ -542,7 +694,11 @@ export type PaperDailyActionDisclosure = {
      * Unquoted structured summary sealed before action, never a quote.
      */
     rationaleSummary: string;
-    concurrentClaim?: CharacterUtterance;
+    /**
+     * The truth class of `rationaleSummary` (2.1.0).
+     */
+    rationaleSummaryTruthClass: TruthClass;
+    concurrentClaim?: ClassifiedCharacterUtterance;
 };
 
 /**
@@ -566,6 +722,10 @@ export type DataRevisionNote = {
     kind: DataRevisionKind;
     affectedRefs: Array<Uuid>;
     summary: string;
+    /**
+     * The truth class of this revision note, set by the source of the fact it corrects (2.1.0).
+     */
+    truthClass: TruthClass;
 };
 
 export type PaperArchiveProjection = {
@@ -620,6 +780,10 @@ export type ArchiveSessionPointer = {
 export type ArchivePersonLabel = {
     displayName: string;
     relationLabel: string;
+    /**
+     * The truth class of this person's display name and relationship label (2.2.0). A counterpart is authored chassis, so `fictional_setting`, independent of the class of the memory that mentions them.
+     */
+    truthClass: TruthClass;
 };
 
 /**
@@ -716,10 +880,21 @@ export type RelationshipSignalView = {
     dyadRef: Uuid;
     relationshipSignalRef: Uuid;
     displayName: string;
+    /**
+     * The truth class of `displayName` (2.2.0): the counterpart is authored chassis, `fictional_setting`. `truthClass` below classifies the signal (his act), not who she is.
+     */
+    displayNameTruthClass: TruthClass;
     relationLabel: string;
+    /**
+     * The truth class of `relationLabel` (2.2.0), as `displayNameTruthClass`.
+     */
+    relationLabelTruthClass: TruthClass;
     signalKind: 'public_outcome_attribution';
     summary: string;
-    utterance: CharacterUtterance;
+    /**
+     * The sealed sentence that caused the signal, verbatim, with its own `truthClass` (2.2.0; `CharacterUtterance` before).
+     */
+    utterance: ClassifiedCharacterUtterance;
     consequenceMemoryRefs: Array<Uuid>;
     observedAt: string;
     sessionDate: string;

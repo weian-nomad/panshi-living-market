@@ -4,7 +4,9 @@
       "characterId": "96450815-0db8-f735-a139-5ba222da86b2",
       "detailTier": "high_detail",
       "focusHint": "兩次組會那兩天自己留下的紀錄",
+      "focusHintTruthClass": "simulated_narrative",
       "poseState": "examining",
+      "poseStateTruthClass": "simulated_narrative",
       "sceneLayer": "foreground",
       "sourceEventRefs": [
         "8aabbbbf-2a41-09d0-d7a8-a53cc1ef0e5c"
@@ -195,6 +197,7 @@
       "characterId": "96450815-0db8-f735-a139-5ba222da86b2",
       "hookId": "78771f77-daa5-0065-ddbf-4223f69c881f",
       "label": "開盤廳裡有人在對照自己兩次組會的紀錄",
+      "labelTruthClass": "simulated_narrative",
       "sceneRef": "e9ce0d21-2f4d-07cd-af52-ecdfd02ca0cb"
     }
   ],

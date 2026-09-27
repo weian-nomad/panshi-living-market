@@ -1,8 +1,57 @@
 openapi: 3.1.0
 info:
   title: Panshi Living Market Public API (V5)
-  version: 2.0.0
+  version: 2.2.0
   description: |
+    Changelog:
+
+    - 2.2.0 (additive, minor): closes the per-item truth-class gaps 2.1.0
+      left, and declares the system labels formally. Minor, not patch,
+      because it adds new response fields (a patch would only clarify
+      documentation); it removes and renames nothing, so it is not major.
+      No visible field borrows a truth class from the object above it any
+      more:
+      `ArchivePersonLabel` (the people a memory involves) gains
+      `truthClass` (`fictional_setting`: authored chassis);
+      `RelationshipSignalView` gains `displayNameTruthClass` and
+      `relationLabelTruthClass` (`fictional_setting`), because the signal's
+      own `truthClass` (`simulated_narrative`) classifies his act, not who
+      the counterpart is; `RelationshipSignalView.utterance` moves from
+      `CharacterUtterance` to `ClassifiedCharacterUtterance`
+      (`simulated_narrative`: his words); `PaperLotPublic` and the
+      `PaperDailyActionDisclosure.fill` object gain `truthClass`
+      (`simulated_narrative`: paper figures, the same class as every other
+      paper figure on the page). Every fixed system sentence
+      (`*EmptyReason`, `*NullReason`, `heldReasonLabel`,
+      `tombstoneReasonLabel`) is now marked `x-panshi-system-label: true`.
+      **A system label is not a claim and carries no truth class**: it
+      explains the system (why a list is empty, why a value is null, why a
+      chapter is held) and says nothing about the character or the market.
+      The complete set of sentences a producer may emit in each such field
+      is `contracts/openapi/public-v2-system-labels.json`; a value outside
+      it is a contract violation. Clients render a system label in the
+      system-label style, visually distinct from a claim, and never beside
+      a truth-class tag. That file also lists the numeric keys that are
+      provenance, versioning or scene layout (`nonClaimNumberKeys`); every
+      other number in a response is covered by its own class.
+    - 2.1.0 (additive, minor): every visible claim field outside the
+      deep-archive section items now carries its own truth class. A single
+      prose field `x` gains a sibling `xTruthClass`; an object that is one
+      claim (a consequence highlight, a commitment, a paper position's
+      figures, a data-revision note, a narration) gains `truthClass`; the
+      standalone verbatim claims (`publicClaim`, `selfAcknowledgement`,
+      `contemporaneousClaim`, `concurrentClaim`) move to
+      `ClassifiedCharacterUtterance`, which is `CharacterUtterance` plus
+      `truthClass`; `recentHighlights[i]` is labelled by
+      `recentHighlightTruthClasses[i]`. Every per-item class is one of the
+      classes the envelope `truthClasses` declares. Clients render a claim only
+      beside its own truth class and never infer one from the claim's kind;
+      a claim whose truth class is missing is withheld, not relabelled.
+      Fixed system labels (`*EmptyReason`, `*NullReason`,
+      `heldReasonLabel`, `tombstoneReasonLabel`) make no claim about the
+      character or the market and carry none.
+    - 2.0.0: initial V5 public read surface.
+
     V5 (《盤勢・眾生》) public read-side API surface, scoped to the Phase 2
     one-character vertical slice described in `docs/v5/system-design.md`
     §11.3 and `docs/v5/experience-spec.md` §13. This file is a deliberate
@@ -636,7 +685,10 @@ components:
         An immutable, server-resolved `UtteranceArtifactV1` reference plus
         its verbatim canonical bytes. Never paired with a second freeform
         "summary of what they said" string field (system-design.md §11.1,
-        §11.4).
+        §11.4). Since 2.2.0 no response references this shape directly:
+        every utterance a response carries is a
+        `ClassifiedCharacterUtterance`. It stays as the named base shape
+        that clients may use for the three artifact fields.
       additionalProperties: false
       required: [utteranceArtifactId, canonicalTextSha256, canonicalTextUtf8]
       properties:
@@ -649,17 +701,43 @@ components:
         canonicalTextUtf8:
           type: string
           minLength: 1
+    ClassifiedCharacterUtterance:
+      type: object
+      description: >-
+        A `CharacterUtterance` shown as a visible claim of its own: the same
+        immutable artifact ref and verbatim canonical bytes, plus the
+        claim's own `truthClass` (a character's words are
+        `simulated_narrative`). Added in 2.1.0. Since 2.2.0 every
+        utterance a response carries is classified this way, including one
+        nested inside another classified item
+        (`RelationshipSignalView.utterance`): no utterance inherits the
+        class of the item around it.
+      additionalProperties: false
+      required: [utteranceArtifactId, canonicalTextSha256, canonicalTextUtf8, truthClass]
+      properties:
+        utteranceArtifactId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        canonicalTextSha256:
+          $ref: '#/components/schemas/Digest'
+        canonicalTextUtf8:
+          type: string
+          minLength: 1
+        truthClass:
+          $ref: '#/components/schemas/TruthClass'
     CharacterNarrationOrSummary:
       description: >-
         A later self-narration that is either a verbatim, artifact-backed
         quote (when a visible `UtteranceArtifactV1` exists) or an
         unquoted structured summary (the documented fallback shape from
         `docs/v5/experience-spec.md` §8.4 — never both, and never a
-        system-authored quote).
+        system-authored quote). Either variant carries its own
+        `truthClass` (2.1.0).
       oneOf:
         - type: object
           additionalProperties: false
-          required: [kind, utteranceArtifactId, canonicalTextSha256, canonicalTextUtf8]
+          required: [kind, utteranceArtifactId, canonicalTextSha256, canonicalTextUtf8, truthClass]
           properties:
             kind:
               type: string
@@ -673,9 +751,11 @@ components:
             canonicalTextUtf8:
               type: string
               minLength: 1
+            truthClass:
+              $ref: '#/components/schemas/TruthClass'
         - type: object
           additionalProperties: false
-          required: [kind, summaryText]
+          required: [kind, summaryText, truthClass]
           properties:
             kind:
               type: string
@@ -683,6 +763,8 @@ components:
             summaryText:
               type: string
               minLength: 1
+            truthClass:
+              $ref: '#/components/schemas/TruthClass'
     WithdrawnCharacterProjection:
       type: object
       description: >-
@@ -727,6 +809,7 @@ components:
         characterId:
           $ref: '#/components/schemas/Uuid'
         tombstoneReasonLabel:
+          x-panshi-system-label: true
           type: string
           description: >-
             Policy-safe, non-diagnostic label. Never includes
@@ -736,7 +819,7 @@ components:
     AttentionTarget:
       type: object
       additionalProperties: false
-      required: [targetKind, label]
+      required: [targetKind, label, truthClass]
       properties:
         targetKind:
           type: string
@@ -745,10 +828,13 @@ components:
           type: string
           minLength: 1
           maxLength: 120
+        truthClass:
+          description: The truth class of `label` (2.1.0).
+          $ref: '#/components/schemas/TruthClass'
     UnresolvedCommitment:
       type: object
       additionalProperties: false
-      required: [commitmentId, rationaleSummary, sealedAt, stillOpen]
+      required: [commitmentId, rationaleSummary, sealedAt, stillOpen, truthClass]
       properties:
         commitmentId:
           $ref: '#/components/schemas/Uuid'
@@ -762,10 +848,13 @@ components:
           format: date-time
         stillOpen:
           type: boolean
+        truthClass:
+          description: The truth class of this commitment and its `rationaleSummary` (2.1.0).
+          $ref: '#/components/schemas/TruthClass'
     PaperPositionConsequenceHighlight:
       type: object
       additionalProperties: false
-      required: [kind, positionArchiveRef, unrealizedPnlPercentFixed2, asOf]
+      required: [kind, positionArchiveRef, unrealizedPnlPercentFixed2, asOf, truthClass]
       properties:
         kind:
           type: string
@@ -783,10 +872,13 @@ components:
           description: >-
             Always shown next to any paper figure (experience-spec §7.2);
             during a trading session this is the previous session's close.
+        truthClass:
+          description: The truth class of this paper figure (2.1.0).
+          $ref: '#/components/schemas/TruthClass'
     RelationshipConsequenceHighlight:
       type: object
       additionalProperties: false
-      required: [kind, dyadArchiveRef, summary]
+      required: [kind, dyadArchiveRef, summary, truthClass]
       properties:
         kind:
           type: string
@@ -797,10 +889,13 @@ components:
           type: string
           minLength: 1
           maxLength: 200
+        truthClass:
+          description: The truth class of `summary` (2.1.0).
+          $ref: '#/components/schemas/TruthClass'
     OccupationConsequenceHighlight:
       type: object
       additionalProperties: false
-      required: [kind, summary]
+      required: [kind, summary, truthClass]
       properties:
         kind:
           type: string
@@ -809,10 +904,13 @@ components:
           type: string
           minLength: 1
           maxLength: 200
+        truthClass:
+          description: The truth class of `summary` (2.1.0).
+          $ref: '#/components/schemas/TruthClass'
     MemoryConsequenceHighlight:
       type: object
       additionalProperties: false
-      required: [kind, summary]
+      required: [kind, summary, truthClass]
       properties:
         kind:
           type: string
@@ -821,6 +919,9 @@ components:
           type: string
           minLength: 1
           maxLength: 200
+        truthClass:
+          description: The truth class of `summary` (2.1.0).
+          $ref: '#/components/schemas/TruthClass'
     RecentConsequenceHighlight:
       description: >-
         At most one consequence fragment, shown only when it is this
@@ -884,6 +985,8 @@ components:
         - sceneLayer
         - detailTier
         - sourceEventRefs
+        - poseStateTruthClass
+        - focusHintTruthClass
       properties:
         characterId:
           $ref: '#/components/schemas/Uuid'
@@ -895,12 +998,22 @@ components:
           description: World-space grid coordinate.
         poseState:
           $ref: '#/components/schemas/CharacterPoseState'
+        poseStateTruthClass:
+          description: The truth class of `poseState` (2.1.0).
+          $ref: '#/components/schemas/TruthClass'
         focusHint:
           description: What/who the character is currently attending to, if known.
           oneOf:
             - type: string
               minLength: 1
               maxLength: 120
+            - type: 'null'
+        focusHintTruthClass:
+          description: >-
+            The truth class of `focusHint`; non-null exactly when `focusHint`
+            is non-null (2.1.0).
+          oneOf:
+            - $ref: '#/components/schemas/TruthClass'
             - type: 'null'
         zOrder:
           type: integer
@@ -918,7 +1031,7 @@ components:
         Lightweight public pointer into a scene, never a ranked or
         ticker-labeled recommendation (market-safety.md "今日五幕").
       additionalProperties: false
-      required: [hookId, characterId, sceneRef, label]
+      required: [hookId, characterId, sceneRef, label, labelTruthClass]
       properties:
         hookId:
           $ref: '#/components/schemas/Uuid'
@@ -930,6 +1043,9 @@ components:
           type: string
           minLength: 1
           maxLength: 120
+        labelTruthClass:
+          description: The truth class of `label` (2.1.0).
+          $ref: '#/components/schemas/TruthClass'
     WorldSnapshot:
       type: object
       additionalProperties: false
@@ -1004,6 +1120,12 @@ components:
         - currentVerbPhrase
         - unresolvedTensionSummary
         - unresolvedCommitments
+        - displayNameTruthClass
+        - ageYearsTruthClass
+        - occupationLabelTruthClass
+        - poseStateTruthClass
+        - currentVerbPhraseTruthClass
+        - unresolvedTensionSummaryTruthClass
       properties:
         projectionVersion:
           $ref: '#/components/schemas/Version'
@@ -1031,23 +1153,43 @@ components:
           type: string
           minLength: 1
           maxLength: 40
+        displayNameTruthClass:
+          description: The truth class of `displayName` (2.1.0).
+          $ref: '#/components/schemas/TruthClass'
         ageYears:
           type: integer
           minimum: 0
           maximum: 130
+        ageYearsTruthClass:
+          description: >-
+            The truth class of `ageYears` (2.1.0): `statistical_sample` only
+            when the age was drawn from a sealed statistical distribution,
+            otherwise the class of the chassis that set it.
+          $ref: '#/components/schemas/TruthClass'
         occupationLabel:
           type: string
           minLength: 1
           maxLength: 80
+        occupationLabelTruthClass:
+          description: >-
+            The truth class of `occupationLabel` (2.1.0), on the same rule as
+            `ageYearsTruthClass`.
+          $ref: '#/components/schemas/TruthClass'
         sceneRef:
           $ref: '#/components/schemas/Uuid'
         poseState:
           $ref: '#/components/schemas/CharacterPoseState'
+        poseStateTruthClass:
+          description: The truth class of `poseState` (2.1.0).
+          $ref: '#/components/schemas/TruthClass'
         currentVerbPhrase:
           type: string
           description: e.g. "正在偷看他說不在意的價格" (experience-spec §7.1).
           minLength: 1
           maxLength: 120
+        currentVerbPhraseTruthClass:
+          description: The truth class of `currentVerbPhrase` (2.1.0).
+          $ref: '#/components/schemas/TruthClass'
         currentAttention:
           $ref: '#/components/schemas/AttentionTarget'
         unresolvedTensionSummary:
@@ -1055,10 +1197,13 @@ components:
           description: The one unresolved-contradiction main sentence (experience-spec §7.1).
           minLength: 1
           maxLength: 200
+        unresolvedTensionSummaryTruthClass:
+          description: The truth class of `unresolvedTensionSummary` (2.1.0).
+          $ref: '#/components/schemas/TruthClass'
         publicClaim:
-          $ref: '#/components/schemas/CharacterUtterance'
+          $ref: '#/components/schemas/ClassifiedCharacterUtterance'
         selfAcknowledgement:
-          $ref: '#/components/schemas/CharacterUtterance'
+          $ref: '#/components/schemas/ClassifiedCharacterUtterance'
         recentConsequenceHighlight:
           $ref: '#/components/schemas/RecentConsequenceHighlight'
         unresolvedCommitments:
@@ -1078,6 +1223,7 @@ components:
         - unrealizedPnlMinorUnits
         - unrealizedPnlPercentFixed2
         - asOf
+        - truthClass
       properties:
         positionArchiveRef:
           $ref: '#/components/schemas/Uuid'
@@ -1093,6 +1239,9 @@ components:
         asOf:
           type: string
           format: date-time
+        truthClass:
+          description: The truth class of these paper figures (2.1.0).
+          $ref: '#/components/schemas/TruthClass'
     LifeJournalConsequence:
       type: object
       description: >-
@@ -1107,9 +1256,17 @@ components:
           type: string
           minLength: 1
           maxLength: 300
+        nonPaperConsequenceSummaryTruthClass:
+          description: >-
+            The truth class of `nonPaperConsequenceSummary`; present exactly
+            when it is (2.1.0).
+          $ref: '#/components/schemas/TruthClass'
       anyOf:
         - required: [paperConsequence]
-        - required: [nonPaperConsequenceSummary]
+        - required: [nonPaperConsequenceSummary, nonPaperConsequenceSummaryTruthClass]
+      dependentRequired:
+        nonPaperConsequenceSummary: [nonPaperConsequenceSummaryTruthClass]
+        nonPaperConsequenceSummaryTruthClass: [nonPaperConsequenceSummary]
     LifeJournalArchiveRefs:
       type: object
       description: >-
@@ -1153,6 +1310,15 @@ components:
         - relationshipConsequenceNullReason
         - openQuestionSummary
         - archiveRefs
+        - sceneSummaryTruthClass
+        - knownAtTheTimeSummaryTruthClass
+        - actionSummaryTruthClass
+        - openQuestionSummaryTruthClass
+      dependentRequired:
+        missedFactsSummary: [missedFactsSummaryTruthClass]
+        missedFactsSummaryTruthClass: [missedFactsSummary]
+        recurringPatternRef: [recurringPatternTruthClass]
+        recurringPatternTruthClass: [recurringPatternRef]
       properties:
         entryId:
           $ref: '#/components/schemas/Uuid'
@@ -1187,6 +1353,7 @@ components:
             - $ref: '#/components/schemas/RelationshipSignalView'
             - type: 'null'
         relationshipConsequenceNullReason:
+          x-panshi-system-label: true
           description: Non-null exactly when `relationshipConsequence` is `null`.
           oneOf:
             - type: string
@@ -1201,24 +1368,42 @@ components:
             makes no claim about him.
           minLength: 1
           maxLength: 300
+        sceneSummaryTruthClass:
+          description: >-
+            The truth class of `sceneSummary` (2.1.0): the class the chapter's
+            sealed observable segment carries, or, for the fixed
+            `evidence_card_only` label, the class of the story projection it
+            stands in for.
+          $ref: '#/components/schemas/TruthClass'
         contemporaneousClaim:
           description: "他當時怎麼說 — original self-statement, never rewritten after the fact; absent if nothing was said."
-          $ref: '#/components/schemas/CharacterUtterance'
+          $ref: '#/components/schemas/ClassifiedCharacterUtterance'
         knownAtTheTimeSummary:
           type: string
           description: "他其實知道什麼 — only material the character had actually encountered by then."
           minLength: 1
           maxLength: 400
+        knownAtTheTimeSummaryTruthClass:
+          description: The truth class of `knownAtTheTimeSummary` (2.1.0).
+          $ref: '#/components/schemas/TruthClass'
         missedFactsSummary:
           type: string
           description: "他漏掉了什麼 — only revealed after close or after the relevant data went public."
           minLength: 1
           maxLength: 400
+        missedFactsSummaryTruthClass:
+          description: >-
+            The truth class of `missedFactsSummary`; present exactly when it
+            is (2.1.0).
+          $ref: '#/components/schemas/TruthClass'
         actionSummary:
           type: string
           description: "他做了什麼 — structured summary of the paper action, wait, ask-for-help, concealment, or withdrawal."
           minLength: 1
           maxLength: 300
+        actionSummaryTruthClass:
+          description: The truth class of `actionSummary` (2.1.0).
+          $ref: '#/components/schemas/TruthClass'
         consequence:
           $ref: '#/components/schemas/LifeJournalConsequence'
         currentSelfNarration:
@@ -1226,11 +1411,19 @@ components:
         recurringPatternRef:
           description: "老毛病又回來了 — present only once the same pattern has recurred at least twice."
           $ref: '#/components/schemas/Uuid'
+        recurringPatternTruthClass:
+          description: >-
+            The truth class of the recurring-pattern claim; present exactly
+            when `recurringPatternRef` is (2.1.0).
+          $ref: '#/components/schemas/TruthClass'
         openQuestionSummary:
           type: string
           description: "還沒完 — the next unresolved question; never previews the outcome."
           minLength: 1
           maxLength: 200
+        openQuestionSummaryTruthClass:
+          description: The truth class of `openQuestionSummary` (2.1.0).
+          $ref: '#/components/schemas/TruthClass'
         archiveRefs:
           $ref: '#/components/schemas/LifeJournalArchiveRefs'
     LifeJournalPage:
@@ -1303,6 +1496,7 @@ components:
         - sectionKey
         - viewerAudienceScope
         - summary
+        - summaryTruthClass
         - asOf
         - visibilityEpoch
         - sectionPath
@@ -1319,6 +1513,9 @@ components:
           description: One-line index summary, e.g. "目前 2 個部位，其中 1 個理由已失效。"
           minLength: 1
           maxLength: 200
+        summaryTruthClass:
+          description: The truth class of `summary` (2.1.0).
+          $ref: '#/components/schemas/TruthClass'
         asOf:
           type: string
           format: date-time
@@ -1349,7 +1546,9 @@ components:
         - characterId
         - archiveSchemaRevision
         - longTermTensionSummary
+        - longTermTensionSummaryTruthClass
         - recentHighlights
+        - recentHighlightTruthClasses
         - sections
       properties:
         projectionVersion:
@@ -1382,6 +1581,9 @@ components:
           type: string
           minLength: 1
           maxLength: 200
+        longTermTensionSummaryTruthClass:
+          description: The truth class of `longTermTensionSummary` (2.1.0).
+          $ref: '#/components/schemas/TruthClass'
         recentHighlights:
           type: array
           minItems: 0
@@ -1391,6 +1593,17 @@ components:
             type: string
             minLength: 1
             maxLength: 200
+        recentHighlightTruthClasses:
+          type: array
+          minItems: 0
+          maxItems: 3
+          description: >-
+            Parallel to `recentHighlights` and of equal length:
+            `recentHighlightTruthClasses[i]` is the truth class of
+            `recentHighlights[i]` (2.1.0). A highlight with no class at its
+            index is not rendered.
+          items:
+            $ref: '#/components/schemas/TruthClass'
         sections:
           type: array
           minItems: 6
@@ -1416,6 +1629,7 @@ components:
         - initialCapitalMinorUnits
         - correctionRefs
         - asOf
+        - truthClass
       properties:
         currency:
           type: string
@@ -1434,6 +1648,9 @@ components:
         asOf:
           type: string
           format: date-time
+        truthClass:
+          description: The truth class of this account's paper figures (2.1.0).
+          $ref: '#/components/schemas/TruthClass'
     PaperLotPublic:
       type: object
       additionalProperties: false
@@ -1443,7 +1660,15 @@ components:
         - sealedPriceMinorUnitsFixed6
         - costBasisMinorUnits
         - sealedPriceRevisionRef
+        - truthClass
       properties:
+        truthClass:
+          description: >-
+            The truth class of this lot's quantity, sealed price and cost
+            basis (2.2.0): his paper figures, `simulated_narrative`, the
+            same class as the position's own figures. A client that cannot
+            read it does not add this lot into any displayed total.
+          $ref: '#/components/schemas/TruthClass'
         lotId:
           $ref: '#/components/schemas/Uuid'
         quantityFixed6:
@@ -1480,14 +1705,29 @@ components:
         - influencedBy
         - influencedByEmptyReason
         - consequenceSummary
+        - truthClass
+        - instrumentLabelTruthClass
+        - rationaleSummaryTruthClass
+        - consequenceSummaryTruthClass
       properties:
         positionId:
           $ref: '#/components/schemas/Uuid'
+        truthClass:
+          description: >-
+            The truth class of this position's own figures and states: status,
+            dates, lots, realized and unrealized P&L, mark as-of and
+            invalidation condition (2.1.0).
+          $ref: '#/components/schemas/TruthClass'
         instrumentLabel:
           type: string
           description: Company name/ticker label only — never a recommendation badge.
           minLength: 1
           maxLength: 80
+        instrumentLabelTruthClass:
+          description: >-
+            The truth class of `instrumentLabel`, set by the instrument's
+            source (2.1.0).
+          $ref: '#/components/schemas/TruthClass'
         status:
           $ref: '#/components/schemas/PaperPositionStatus'
         openedAt:
@@ -1527,9 +1767,12 @@ components:
           description: Unquoted structured summary sealed at the time, never a quote.
           minLength: 1
           maxLength: 400
+        rationaleSummaryTruthClass:
+          description: The truth class of `rationaleSummary` (2.1.0).
+          $ref: '#/components/schemas/TruthClass'
         concurrentClaim:
           description: "同時原話 — present only if a visible UtteranceArtifactV1 exists."
-          $ref: '#/components/schemas/CharacterUtterance'
+          $ref: '#/components/schemas/ClassifiedCharacterUtterance'
         currentNarration:
           $ref: '#/components/schemas/CharacterNarrationOrSummary'
         influencedByCharacterRefs:
@@ -1547,6 +1790,7 @@ components:
           items:
             $ref: '#/components/schemas/InfluenceRef'
         influencedByEmptyReason:
+          x-panshi-system-label: true
           description: Non-null exactly when `influencedBy` is empty.
           oneOf:
             - type: string
@@ -1557,6 +1801,9 @@ components:
           type: string
           minLength: 1
           maxLength: 300
+        consequenceSummaryTruthClass:
+          description: The truth class of `consequenceSummary` (2.1.0).
+          $ref: '#/components/schemas/TruthClass'
     PaperDailyActionDisclosure:
       type: object
       description: >-
@@ -1574,11 +1821,22 @@ components:
         - confidencePercentFixed2
         - fill
         - rationaleSummary
+        - truthClass
+        - instrumentLabelTruthClass
+        - rationaleSummaryTruthClass
       properties:
+        truthClass:
+          description: >-
+            The truth class of the disclosed action, direction, quantity,
+            confidence and fill (2.1.0).
+          $ref: '#/components/schemas/TruthClass'
         instrumentLabel:
           type: string
           minLength: 1
           maxLength: 80
+        instrumentLabelTruthClass:
+          description: The truth class of `instrumentLabel` (2.1.0).
+          $ref: '#/components/schemas/TruthClass'
         action:
           $ref: '#/components/schemas/PaperActionKind'
         direction:
@@ -1594,8 +1852,14 @@ components:
           oneOf:
             - type: object
               additionalProperties: false
-              required: [sealedPriceMinorUnitsFixed6, sealedPriceRevisionRef, filledAt]
+              required: [sealedPriceMinorUnitsFixed6, sealedPriceRevisionRef, filledAt, truthClass]
               properties:
+                truthClass:
+                  description: >-
+                    The truth class of the fill's sealed price (2.2.0): his
+                    paper fill, `simulated_narrative`, the same class as
+                    the disclosure's other paper figures.
+                  $ref: '#/components/schemas/TruthClass'
                 sealedPriceMinorUnitsFixed6:
                   type: integer
                 sealedPriceRevisionRef:
@@ -1609,8 +1873,11 @@ components:
           description: Unquoted structured summary sealed before action, never a quote.
           minLength: 1
           maxLength: 400
+        rationaleSummaryTruthClass:
+          description: The truth class of `rationaleSummary` (2.1.0).
+          $ref: '#/components/schemas/TruthClass'
         concurrentClaim:
-          $ref: '#/components/schemas/CharacterUtterance'
+          $ref: '#/components/schemas/ClassifiedCharacterUtterance'
     PaperActionFillRecord:
       type: object
       description: >-
@@ -1643,7 +1910,7 @@ components:
     DataRevisionNote:
       type: object
       additionalProperties: false
-      required: [revisionId, appliedAt, kind, affectedRefs, summary]
+      required: [revisionId, appliedAt, kind, affectedRefs, summary, truthClass]
       properties:
         revisionId:
           type: string
@@ -1662,6 +1929,11 @@ components:
           type: string
           minLength: 1
           maxLength: 300
+        truthClass:
+          description: >-
+            The truth class of this revision note, set by the source of the
+            fact it corrects (2.1.0).
+          $ref: '#/components/schemas/TruthClass'
     PaperArchiveProjection:
       type: object
       additionalProperties: false
@@ -1787,7 +2059,7 @@ components:
         A counterpart resolved to a display name and relationship label.
         The raw canonical acquaintance key is never shown to a viewer.
       additionalProperties: false
-      required: [displayName, relationLabel]
+      required: [displayName, relationLabel, truthClass]
       properties:
         displayName:
           type: string
@@ -1797,6 +2069,13 @@ components:
           type: string
           minLength: 1
           maxLength: 40
+        truthClass:
+          description: >-
+            The truth class of this person's display name and relationship
+            label (2.2.0). A counterpart is authored chassis, so
+            `fictional_setting`, independent of the class of the memory
+            that mentions them.
+          $ref: '#/components/schemas/TruthClass'
     NarrativeSegment:
       description: >-
         One segment of the chapter's sealed `StoryChapterComposed`, in
@@ -2000,6 +2279,7 @@ components:
             - $ref: '#/components/schemas/EvidencePaperOutcome'
             - type: 'null'
         paperOutcomeNullReason:
+          x-panshi-system-label: true
           description: Non-null exactly when `paperOutcome` is `null`.
           oneOf:
             - type: string
@@ -2040,6 +2320,8 @@ components:
         - journalEntryRef
         - truthClass
         - sourceRefs
+        - displayNameTruthClass
+        - relationLabelTruthClass
       properties:
         dyadRef:
           $ref: '#/components/schemas/Uuid'
@@ -2049,10 +2331,19 @@ components:
           type: string
           minLength: 1
           maxLength: 40
+        displayNameTruthClass:
+          description: >-
+            The truth class of `displayName` (2.2.0): the counterpart is
+            authored chassis, `fictional_setting`. `truthClass` below
+            classifies the signal (his act), not who she is.
+          $ref: '#/components/schemas/TruthClass'
         relationLabel:
           type: string
           minLength: 1
           maxLength: 40
+        relationLabelTruthClass:
+          description: The truth class of `relationLabel` (2.2.0), as `displayNameTruthClass`.
+          $ref: '#/components/schemas/TruthClass'
         signalKind:
           type: string
           enum: [public_outcome_attribution]
@@ -2061,7 +2352,10 @@ components:
           minLength: 1
           maxLength: 300
         utterance:
-          $ref: '#/components/schemas/CharacterUtterance'
+          description: >-
+            The sealed sentence that caused the signal, verbatim, with its
+            own `truthClass` (2.2.0; `CharacterUtterance` before).
+          $ref: '#/components/schemas/ClassifiedCharacterUtterance'
         consequenceMemoryRefs:
           type: array
           items:
@@ -2098,6 +2392,7 @@ components:
           type: string
           const: HELD
         heldReasonLabel:
+          x-panshi-system-label: true
           type: string
           minLength: 1
           maxLength: 160
@@ -2215,6 +2510,7 @@ components:
           items:
             $ref: '#/components/schemas/ArchiveObservedInteraction'
         observedInteractionsEmptyReason:
+          x-panshi-system-label: true
           oneOf:
             - type: string
               minLength: 1
@@ -2225,6 +2521,7 @@ components:
           items:
             $ref: '#/components/schemas/RelationshipSignalView'
         relationshipSignalsEmptyReason:
+          x-panshi-system-label: true
           oneOf:
             - type: string
               minLength: 1
@@ -2285,6 +2582,7 @@ components:
           items:
             $ref: '#/components/schemas/ArchiveAcquaintance'
         acquaintancesEmptyReason:
+          x-panshi-system-label: true
           oneOf:
             - type: string
               minLength: 1
@@ -2397,6 +2695,7 @@ components:
           items:
             $ref: '#/components/schemas/ChartMotifInvocation'
         invocationsEmptyReason:
+          x-panshi-system-label: true
           oneOf:
             - type: string
               minLength: 1
@@ -2464,6 +2763,7 @@ components:
           items:
             $ref: '#/components/schemas/ChartPlacement'
         placementsEmptyReason:
+          x-panshi-system-label: true
           oneOf:
             - type: string
               minLength: 1
@@ -2734,6 +3034,7 @@ components:
           items:
             $ref: '#/components/schemas/BiasOccurrence'
         biasOccurrencesEmptyReason:
+          x-panshi-system-label: true
           oneOf:
             - type: string
               minLength: 1
@@ -2744,6 +3045,7 @@ components:
           items:
             $ref: '#/components/schemas/BiasCounterExample'
         counterExamplesEmptyReason:
+          x-panshi-system-label: true
           oneOf:
             - type: string
               minLength: 1
@@ -2839,6 +3141,7 @@ components:
           items:
             $ref: '#/components/schemas/MemoryReinterpretation'
         reinterpretationsEmptyReason:
+          x-panshi-system-label: true
           oneOf:
             - type: string
               minLength: 1
@@ -2901,6 +3204,7 @@ components:
           items:
             $ref: '#/components/schemas/ArchiveMemory'
         memoriesEmptyReason:
+          x-panshi-system-label: true
           oneOf:
             - type: string
               minLength: 1

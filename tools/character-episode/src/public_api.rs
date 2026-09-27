@@ -48,7 +48,18 @@
 //! - **`truth_class` integrity.** This slice's market facts are a
 //!   repo-local synthetic fixture, so the only classes a response may carry
 //!   are `fictional_setting`, `symbolic_interpretation` and
-//!   `simulated_narrative`. `real_fact` may never appear in any field.
+//!   `simulated_narrative`. `real_fact` may never appear in any field. Each
+//!   visible claim carries its own class (a sibling `<field>TruthClass`, or
+//!   `truthClass` on an object that is one claim), set here from what the
+//!   claim is; the envelope `truthClasses` is the set of all of them.
+//!   Since public-v2 2.2.0 no visible field borrows its class from an
+//!   object further up (nested people, quoted sentences, lots and fills
+//!   carry their own). Fixed system sentences (`*EmptyReason`,
+//!   `*NullReason`, `heldReasonLabel`) are not claims and carry no class;
+//!   each one this projection can emit is listed, per field, in
+//!   `contracts/openapi/public-v2-system-labels.json`, and
+//!   `tests/slice_claim_truth_classes.rs` holds every emitted document to
+//!   that list.
 //!
 //! Key order in the emitted JSON is `serde_json`'s stable alphabetical map
 //! order, which is what makes two runs byte-identical. The nine-segment
@@ -106,6 +117,130 @@ const ARCHIVE_SECTION_KEYS: [&str; 6] =
 /// The correction the upstream fixture published mid-session on S7
 /// (2026-03-10).
 const CORRECTION_FACT_REVISION_ID: &str = FACT_ISSUER_CORRECTION;
+
+// -- per-claim truth classes ----------------------------------------------
+//
+// Every visible claim carries its own `truth_class` (public-v2 2.1.0), chosen
+// here by what the claim IS, never by the client. The mapping follows
+// `docs/v5/product-constitution.md` "角色資料的五種身分":
+//
+// - His attention, inner state, actions, words, paper trading, and every
+//   sentence composed from them are `simulated_narrative`.
+// - The chassis he was authored with (name, age, occupation, the
+//   acquaintance, the backstory) is `fictional_setting`. Age and occupation
+//   would be `statistical_sample` only if they had been drawn from a sealed
+//   statistical distribution; this slice's chassis is the hand-authored
+//   worked example of `docs/v5/character-story-engine.md`, so they are not.
+// - A market fact takes the class of its source. Every market fact here is
+//   the repo-owned synthetic historical fixture, whose records are sealed
+//   `fictional_setting` (`contracts/world-fact-manifest/historical-v1/`).
+// - The natal motif's cultural reading is `symbolic_interpretation`.
+//
+// `real_fact` is never a value here: nothing in this slice is one.
+
+/// His attention, actions, words, paper figures and the prose composed from
+/// them.
+const SIMULATED_NARRATIVE: &str = "simulated_narrative";
+
+/// The authored chassis.
+const FICTIONAL_SETTING: &str = "fictional_setting";
+
+/// The natal motif's cultural reading.
+const SYMBOLIC_INTERPRETATION: &str = "symbolic_interpretation";
+
+/// A market fact, by its source: the synthetic historical fixture.
+const SYNTHETIC_FACT_TRUTH_CLASS: &str = FICTIONAL_SETTING;
+
+/// The truth class of each archive section's one-line index summary.
+fn section_summary_truth_class(key: &str) -> &'static str {
+    match key {
+        // Paper figures; his public attributions of the loss; how many
+        // memories the simulated life has sealed; how far his story has run.
+        "paper" | "relations" | "memories" | "life" => SIMULATED_NARRATIVE,
+        "chart" => SYMBOLIC_INTERPRETATION,
+        // The authored four-axis and blood-type chassis and its fixed zero
+        // market weight.
+        "traits" => FICTIONAL_SETTING,
+        other => unreachable!("unknown archive section key {other}"),
+    }
+}
+
+// -- per-item classes of nested items (2.2.0) -----------------------------
+//
+// The section and evidence builders emit a few nested items whose readable
+// fields 2.1.0 left covered only by the object above them: the people a
+// memory involves, the name and relation label on a relationship signal
+// (whose own class is `simulated_narrative`, because the signal is his act),
+// and the verbatim sentence inside a signal. Each gets its own class here,
+// next to the rest of the class mapping, so that no visible field borrows a
+// class from its parent. A shape these functions do not recognise panics:
+// silently skipping it would publish an unclassified claim.
+
+/// The people a memory involves are chassis: `ArchivePersonLabel.truthClass`.
+fn classify_person_label(person: &mut Value) {
+    let person = person
+        .as_object_mut()
+        .expect("an involved person is an object");
+    assert!(
+        person.contains_key("displayName") && person.contains_key("relationLabel"),
+        "an involved person carries a display name and a relation label"
+    );
+    person.insert("truthClass".to_owned(), json!(FICTIONAL_SETTING));
+}
+
+/// A `RelationshipSignalView`: the signal is his act (`simulated_narrative`,
+/// set by its builder), the counterpart's name and relation label are
+/// chassis, and the sentence that caused it is his words.
+fn classify_signal_view(signal: &mut Value) {
+    let signal = signal
+        .as_object_mut()
+        .expect("a relationship signal is an object");
+    assert!(
+        signal.contains_key("displayName") && signal.contains_key("relationLabel"),
+        "a relationship signal names its counterpart"
+    );
+    signal.insert("displayNameTruthClass".to_owned(), json!(FICTIONAL_SETTING));
+    signal.insert("relationLabelTruthClass".to_owned(), json!(FICTIONAL_SETTING));
+    signal
+        .get_mut("utterance")
+        .and_then(Value::as_object_mut)
+        .expect("a relationship signal quotes its sealed utterance")
+        .insert("truthClass".to_owned(), json!(SIMULATED_NARRATIVE));
+}
+
+/// Classify the nested items of one archive detail section document.
+fn classify_section_nested_items(key: &str, mut document: Value) -> Value {
+    match key {
+        "memories" => {
+            for memory in document["memories"]
+                .as_array_mut()
+                .expect("the memories section lists memories")
+            {
+                for person in memory["involvedPeople"]
+                    .as_array_mut()
+                    .expect("a memory lists the people it involves")
+                {
+                    classify_person_label(person);
+                }
+            }
+        }
+        "relations" => {
+            for acquaintance in document["acquaintances"]
+                .as_array_mut()
+                .expect("the relations section lists acquaintances")
+            {
+                for signal in acquaintance["relationshipSignals"]
+                    .as_array_mut()
+                    .expect("an acquaintance lists her relationship signals")
+                {
+                    classify_signal_view(signal);
+                }
+            }
+        }
+        _ => {}
+    }
+    document
+}
 
 // -- folded state ---------------------------------------------------------
 
@@ -881,7 +1016,7 @@ pub fn public_api_documents_with(
         documents.push((
             format!("/api/v2/characters/{character_id}/archive/{key}"),
             format!("v2/characters/{character_id}/archive/{key}.json"),
-            archive_sections::section_document(key, slice, &fold),
+            classify_section_nested_items(key, archive_sections::section_document(key, slice, &fold)),
         ));
     }
 
@@ -993,7 +1128,10 @@ fn world_snapshot(slice: &CharacterSlice, fold: &Fold) -> Value {
             "worldX": 12,
             "worldY": 7,
             "poseState": "examining",
+            "poseStateTruthClass": SIMULATED_NARRATIVE,
             "focusHint": "兩次組會那兩天自己留下的紀錄",
+            // What he is attending to is his attention: simulated.
+            "focusHintTruthClass": SIMULATED_NARRATIVE,
             "zOrder": 0,
             "sceneLayer": "foreground",
             "detailTier": "high_detail",
@@ -1009,6 +1147,7 @@ fn world_snapshot(slice: &CharacterSlice, fold: &Fold) -> Value {
             "characterId": uuid(&fold.character_id),
             "sceneRef": scene_id,
             "label": "開盤廳裡有人在對照自己兩次組會的紀錄",
+            "labelTruthClass": SIMULATED_NARRATIVE,
         }]),
     );
     Value::Object(snapshot)
@@ -1029,24 +1168,41 @@ fn close_up(slice: &CharacterSlice, fold: &Fold) -> Value {
 
     close_up.insert("characterId".to_owned(), json!(uuid(&fold.character_id)));
     close_up.insert("displayName".to_owned(), json!(seed::DISPLAY_NAME));
+    close_up.insert("displayNameTruthClass".to_owned(), json!(FICTIONAL_SETTING));
     close_up.insert("ageYears".to_owned(), json!(seed::AGE_YEARS));
+    close_up.insert("ageYearsTruthClass".to_owned(), json!(FICTIONAL_SETTING));
     close_up.insert("occupationLabel".to_owned(), json!(OCCUPATION_LABEL));
+    close_up.insert("occupationLabelTruthClass".to_owned(), json!(FICTIONAL_SETTING));
     close_up.insert(
         "sceneRef".to_owned(),
         json!(uuid(&derive_id("v5-slice/scene/opening-hall"))),
     );
     close_up.insert("poseState".to_owned(), json!("examining"));
+    close_up.insert("poseStateTruthClass".to_owned(), json!(SIMULATED_NARRATIVE));
     close_up.insert(
         "currentVerbPhrase".to_owned(),
         json!("正在對照兩次組會那兩天自己留下的紀錄"),
     );
     close_up.insert(
+        "currentVerbPhraseTruthClass".to_owned(),
+        json!(SIMULATED_NARRATIVE),
+    );
+    close_up.insert(
         "currentAttention".to_owned(),
-        json!({ "targetKind": "object", "label": "兩次組會那兩天的持股紀錄" }),
+        json!({
+            "targetKind": "object",
+            // Engineering fixture copy, 未經 copy-taste 審稿.
+            "label": "兩次組會那兩天的持股紀錄",
+            "truthClass": SIMULATED_NARRATIVE,
+        }),
     );
     close_up.insert(
         "unresolvedTensionSummary".to_owned(),
         json!(tension_summary(fold)),
+    );
+    close_up.insert(
+        "unresolvedTensionSummaryTruthClass".to_owned(),
+        json!(SIMULATED_NARRATIVE),
     );
     // The sealed artifacts, verbatim: the latest public claim and the latest
     // self-acknowledgement, chosen by their sealed surface. Nothing is
@@ -1079,6 +1235,7 @@ fn close_up(slice: &CharacterSlice, fold: &Fold) -> Value {
                 mark.cost_basis_minor_units,
             ),
             "asOf": taipei_datetime(mark.price_observed_at_unix_micros),
+            "truthClass": SIMULATED_NARRATIVE,
         }),
     );
     let latest_thesis = slice
@@ -1095,6 +1252,7 @@ fn close_up(slice: &CharacterSlice, fold: &Fold) -> Value {
             ),
             "sealedAt": taipei_datetime(latest_thesis.opened_at_unix_micros),
             "stillOpen": true,
+            "truthClass": SIMULATED_NARRATIVE,
         }]),
     );
     Value::Object(close_up)
@@ -1189,8 +1347,11 @@ fn journal_entry(
         "evidenceCard".to_owned(),
         evidence::evidence_card(fold, session, position),
     );
-    let (relationship_consequence, relationship_null_reason) =
+    let (mut relationship_consequence, relationship_null_reason) =
         evidence::relationship_consequence(fold, session);
+    if !relationship_consequence.is_null() {
+        classify_signal_view(&mut relationship_consequence);
+    }
     entry.insert("relationshipConsequence".to_owned(), relationship_consequence);
     entry.insert(
         "relationshipConsequenceNullReason".to_owned(),
@@ -1211,6 +1372,16 @@ fn journal_entry(
             evidence::NARRATIVE_UNAVAILABLE_SCENE_LABEL
         }),
     );
+    // The class the sealed observable segment itself carries; the fixed
+    // fallback label stands in for the story projection that did not arrive.
+    entry.insert(
+        "sceneSummaryTruthClass".to_owned(),
+        json!(if composed {
+            observable_segment_truth_class(session)
+        } else {
+            SIMULATED_NARRATIVE
+        }),
+    );
 
     // 2. 他當時怎麼說 -- only where a sealed PUBLIC claim exists. A
     // self-acknowledgement belongs in segment 7, not here.
@@ -1228,6 +1399,12 @@ fn journal_entry(
         "knownAtTheTimeSummary".to_owned(),
         json!(known_summary(fold, session)),
     );
+    // What he took in is his attention, even where the facts it names are
+    // fixture facts.
+    entry.insert(
+        "knownAtTheTimeSummaryTruthClass".to_owned(),
+        json!(SIMULATED_NARRATIVE),
+    );
 
     // 4. 他漏掉了什麼 -- only ever on a session whose finality has been
     // accepted; before that, what he missed is not yet a public fact.
@@ -1236,6 +1413,10 @@ fn journal_entry(
             "missedFactsSummary".to_owned(),
             json!(missed_summary(fold, session)),
         );
+        entry.insert(
+            "missedFactsSummaryTruthClass".to_owned(),
+            json!(SIMULATED_NARRATIVE),
+        );
     }
 
     // 5. 他做了什麼
@@ -1243,6 +1424,7 @@ fn journal_entry(
         "actionSummary".to_owned(),
         json!(action_summary(slice, fold, session, position)),
     );
+    entry.insert("actionSummaryTruthClass".to_owned(), json!(SIMULATED_NARRATIVE));
 
     // 6. 這個決定留下什麼
     entry.insert("consequence".to_owned(), journal_consequence(session, position));
@@ -1259,8 +1441,14 @@ fn journal_entry(
                 "utteranceArtifactId": uuid(&utterance.artifact_id),
                 "canonicalTextSha256": utterance.canonical_text_sha256_hex,
                 "canonicalTextUtf8": utterance.canonical_text_utf8,
+                "truthClass": SIMULATED_NARRATIVE,
             }),
-            _ => json!({ "kind": "summary", "summaryText": "暫時不知道" }),
+            _ => json!({
+                "kind": "summary",
+                // Engineering fixture copy, 未經 copy-taste 審稿.
+                "summaryText": "暫時不知道",
+                "truthClass": SIMULATED_NARRATIVE,
+            }),
         },
     );
 
@@ -1281,12 +1469,20 @@ fn journal_entry(
                 "v5-slice/recurring-pattern/confirmation-bias"
             ))),
         );
+        entry.insert(
+            "recurringPatternTruthClass".to_owned(),
+            json!(SIMULATED_NARRATIVE),
+        );
     }
 
     // 9. 還沒完
     entry.insert(
         "openQuestionSummary".to_owned(),
         json!(open_question_summary(slice, fold, session, position)),
+    );
+    entry.insert(
+        "openQuestionSummaryTruthClass".to_owned(),
+        json!(SIMULATED_NARRATIVE),
     );
 
     entry.insert(
@@ -1322,6 +1518,7 @@ fn journal_consequence(session: &FoldedSession, position: &FoldedPosition) -> Va
         return json!({
             "nonPaperConsequenceSummary":
                 "他沒有部位，所以這一天沒有損益。留下的是一段他自己記下來、當時沒有讀的早盤。",
+            "nonPaperConsequenceSummaryTruthClass": SIMULATED_NARRATIVE,
         });
     };
     // A settled chapter's paper figure is dated by the close it was computed
@@ -1339,8 +1536,24 @@ fn journal_consequence(session: &FoldedSession, position: &FoldedPosition) -> Va
                 mark.cost_basis_minor_units,
             ),
             "asOf": taipei_datetime(mark.price_observed_at_unix_micros),
+            "truthClass": SIMULATED_NARRATIVE,
         },
     })
+}
+
+/// The truth class the chapter's sealed observable segment carries, as
+/// sealed. A composed chapter without one is not the log this slice emits.
+fn observable_segment_truth_class(session: &FoldedSession) -> &'static str {
+    session
+        .segments
+        .iter()
+        .find_map(|segment| match (&segment.segment_id[..], &segment.body) {
+            ("segment-observable", FoldedSegmentBody::Narrator { truth_class, .. }) => {
+                Some(*truth_class)
+            }
+            _ => None,
+        })
+        .expect("a composed chapter seals a classified observable segment")
 }
 
 fn archive_index(slice: &CharacterSlice, fold: &Fold) -> Value {
@@ -1368,6 +1581,10 @@ fn archive_index(slice: &CharacterSlice, fold: &Fold) -> Value {
             recurrence_count(&slice.bias_observations, BiasKind::ConfirmationBias)
         )),
     );
+    index.insert(
+        "longTermTensionSummaryTruthClass".to_owned(),
+        json!(SIMULATED_NARRATIVE),
+    );
     // 最近留下的三件事: at most three, each checkable against a canonical
     // event rather than against a mood.
     index.insert(
@@ -1384,6 +1601,12 @@ fn archive_index(slice: &CharacterSlice, fold: &Fold) -> Value {
             relationship_highlight(fold),
         ]),
     );
+    // One class per highlight, index for index: a paper figure, a change of
+    // his stated reason, and what he said at two meetings.
+    index.insert(
+        "recentHighlightTruthClasses".to_owned(),
+        json!([SIMULATED_NARRATIVE, SIMULATED_NARRATIVE, SIMULATED_NARRATIVE]),
+    );
 
     let sections: Vec<Value> = ARCHIVE_SECTION_KEYS
         .iter()
@@ -1392,6 +1615,7 @@ fn archive_index(slice: &CharacterSlice, fold: &Fold) -> Value {
                 "sectionKey": key,
                 "viewerAudienceScope": ARCHIVE_SCOPE,
                 "summary": section_summary(key, fold, position),
+                "summaryTruthClass": section_summary_truth_class(key),
                 "asOf": as_of,
                 "visibilityEpoch": fold.visibility_epoch,
                 // Every section has its own endpoint in this slice, so every
@@ -1489,6 +1713,7 @@ fn paper_archive(slice: &CharacterSlice, fold: &Fold) -> Value {
             "initialCapitalMinorUnits": minor_units(fold.initial_cash_fixed),
             "correctionRefs": Value::Array(Vec::new()),
             "asOf": as_of,
+            "truthClass": SIMULATED_NARRATIVE,
         }),
     );
     archive.insert(
@@ -1575,9 +1800,15 @@ fn paper_position(
 
     let mut value = Map::new();
     value.insert("positionId".to_owned(), json!(uuid(&position.position_id)));
+    // His paper position's own figures and states.
+    value.insert("truthClass".to_owned(), json!(SIMULATED_NARRATIVE));
     value.insert(
         "instrumentLabel".to_owned(),
         json!(position.instrument_label),
+    );
+    value.insert(
+        "instrumentLabelTruthClass".to_owned(),
+        json!(SYNTHETIC_FACT_TRUTH_CLASS),
     );
     value.insert(
         "status".to_owned(),
@@ -1611,6 +1842,11 @@ fn paper_position(
                         "sealedPriceMinorUnitsFixed6": minor_units_fixed6(lot.cost_basis_fixed),
                         "costBasisMinorUnits": lot_cost_basis_minor(lot),
                         "sealedPriceRevisionRef": lot.sealed_price_manifest_hash_hex,
+                        // 2.2.0: a lot's quantity, price and cost basis are
+                        // his paper figures, the same class as the position's
+                        // own figures on this page -- carried here, not
+                        // inherited from the position.
+                        "truthClass": SIMULATED_NARRATIVE,
                     })
                 })
                 .collect(),
@@ -1646,6 +1882,10 @@ fn paper_position(
             taipei_date(original.intended_horizon_unix_micros),
         )),
     );
+    value.insert(
+        "rationaleSummaryTruthClass".to_owned(),
+        json!(SIMULATED_NARRATIVE),
+    );
     // 同時原話: U1, verbatim, and only because a sealed artifact exists.
     if let Some(utterance) = fold.utterances.first() {
         value.insert("concurrentClaim".to_owned(), utterance_value(utterance));
@@ -1666,6 +1906,7 @@ fn paper_position(
                 "utteranceArtifactId": uuid(&utterance.artifact_id),
                 "canonicalTextSha256": utterance.canonical_text_sha256_hex,
                 "canonicalTextUtf8": utterance.canonical_text_utf8,
+                "truthClass": SIMULATED_NARRATIVE,
             }),
         );
     }
@@ -1705,6 +1946,10 @@ fn paper_position(
                 "新增支持事實 0 筆"
             },
         )),
+    );
+    value.insert(
+        "consequenceSummaryTruthClass".to_owned(),
+        json!(SIMULATED_NARRATIVE),
     );
     Value::Object(value)
 }
@@ -1747,9 +1992,15 @@ fn action_fill_record(
     // (`docs/v5/market-safety.md` 當期交易時段不得公開).
     if session.finality_accepted {
         let mut disclosure = Map::new();
+        // His disclosed paper action and fill.
+        disclosure.insert("truthClass".to_owned(), json!(SIMULATED_NARRATIVE));
         disclosure.insert(
             "instrumentLabel".to_owned(),
             json!(position.instrument_label),
+        );
+        disclosure.insert(
+            "instrumentLabelTruthClass".to_owned(),
+            json!(SYNTHETIC_FACT_TRUTH_CLASS),
         );
         disclosure.insert("action".to_owned(), json!(action_kind_label(session.action)));
         disclosure.insert(
@@ -1770,12 +2021,19 @@ fn action_fill_record(
                     "sealedPriceMinorUnitsFixed6": minor_units_fixed6(fill.sealed_price_fixed),
                     "sealedPriceRevisionRef": fill.sealed_price_manifest_hash_hex,
                     "filledAt": taipei_datetime(fill.filled_at_unix_micros),
+                    // 2.2.0: his paper fill, the same class as the
+                    // disclosure's other paper figures.
+                    "truthClass": SIMULATED_NARRATIVE,
                 })
             }),
         );
         disclosure.insert(
             "rationaleSummary".to_owned(),
             json!(daily_rationale_summary(slice, fold, session)),
+        );
+        disclosure.insert(
+            "rationaleSummaryTruthClass".to_owned(),
+            json!(SIMULATED_NARRATIVE),
         );
         if let Some(index) = session.utterance_index
             && let Some(utterance) = fold.utterances.get(index)
@@ -1805,6 +2063,8 @@ fn data_revisions(fold: &Fold, position: &FoldedPosition) -> Value {
             "{} 盤中發布的發行人更正公告。它在該時段的互動截止之後才出現，所以只是該時段的結果證據，下一個交易時段才進入他讀得到的範圍。",
             correction.market_date_taipei,
         ),
+        // A note about a fixture fact takes the fact's source class.
+        "truthClass": SYNTHETIC_FACT_TRUTH_CLASS,
     }])
 }
 
@@ -2118,11 +2378,14 @@ fn fact_label(fold: &Fold, fact_revision_id: &str) -> String {
 
 // -- value helpers --------------------------------------------------------
 
+/// A standalone verbatim claim (`ClassifiedCharacterUtterance`): his words,
+/// so `simulated_narrative`.
 fn utterance_value(utterance: &FoldedUtterance) -> Value {
     json!({
         "utteranceArtifactId": uuid(&utterance.artifact_id),
         "canonicalTextSha256": utterance.canonical_text_sha256_hex,
         "canonicalTextUtf8": utterance.canonical_text_utf8,
+        "truthClass": SIMULATED_NARRATIVE,
     })
 }
 

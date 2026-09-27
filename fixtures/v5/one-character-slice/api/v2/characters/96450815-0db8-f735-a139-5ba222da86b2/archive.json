@@ -3,7 +3,13 @@
   "characterId": "96450815-0db8-f735-a139-5ba222da86b2",
   "dataState": "READY",
   "longTermTensionSummary": "他說自己靠證據做事，卻連續 10 個交易時段沒有打開同一份反面資料。",
+  "longTermTensionSummaryTruthClass": "simulated_narrative",
   "projectionVersion": 393,
+  "recentHighlightTruthClasses": [
+    "simulated_narrative",
+    "simulated_narrative",
+    "simulated_narrative"
+  ],
   "recentHighlights": [
     "模擬紀錄：1 個部位仍在，原始失效條件已發生，已實現虧損 4,720 元。",
     "說法：引用的理由換過 1 次，新增支持事實 0 筆。",
@@ -15,6 +21,7 @@
       "sectionKey": "paper",
       "sectionPath": "/api/v2/characters/96450815-0db8-f735-a139-5ba222da86b2/archive/paper",
       "summary": "目前 1 個部位（PSZS-DEMO），原始失效條件已發生。",
+      "summaryTruthClass": "simulated_narrative",
       "viewerAudienceScope": "subscriber_archive",
       "visibilityEpoch": 1
     },
@@ -23,6 +30,7 @@
       "sectionKey": "relations",
       "sectionPath": "/api/v2/characters/96450815-0db8-f735-a139-5ba222da86b2/archive/relations",
       "summary": "同組同事一人。他在公開場合把虧損歸到她身上 1 次；她沒有被封存成角色，所以這裡只記得下他自己的可觀察動作與那一次留下的關係訊號。",
+      "summaryTruthClass": "simulated_narrative",
       "viewerAudienceScope": "subscriber_archive",
       "visibilityEpoch": 1
     },
@@ -31,6 +39,7 @@
       "sectionKey": "chart",
       "sectionPath": "/api/v2/characters/96450815-0db8-f735-a139-5ba222da86b2/archive/chart",
       "summary": "單一象徵主題「控制與認可」，已在 2026-03-05 收盤到期。",
+      "summaryTruthClass": "symbolic_interpretation",
       "viewerAudienceScope": "subscriber_archive",
       "visibilityEpoch": 1
     },
@@ -39,6 +48,7 @@
       "sectionKey": "traits",
       "sectionPath": "/api/v2/characters/96450815-0db8-f735-a139-5ba222da86b2/archive/traits",
       "summary": "四軸偏好與血型只影響自述與社交語氣，對市場項的權重固定為 0。",
+      "summaryTruthClass": "fictional_setting",
       "viewerAudienceScope": "subscriber_archive",
       "visibilityEpoch": 1
     },
@@ -47,6 +57,7 @@
       "sectionKey": "memories",
       "sectionPath": "/api/v2/characters/96450815-0db8-f735-a139-5ba222da86b2/archive/memories",
       "summary": "10 則已封存記憶，其中三則在第一個交易時段之前就存在。",
+      "summaryTruthClass": "simulated_narrative",
       "viewerAudienceScope": "subscriber_archive",
       "visibilityEpoch": 1
     },
@@ -55,6 +66,7 @@
       "sectionKey": "life",
       "sectionPath": "/api/v2/characters/96450815-0db8-f735-a139-5ba222da86b2/archive/life",
       "summary": "30 個交易時段，29 章已出版；今天還沒有結束。",
+      "summaryTruthClass": "simulated_narrative",
       "viewerAudienceScope": "subscriber_archive",
       "visibilityEpoch": 1
     }

@@ -5,7 +5,8 @@
     "correctionRefs": [],
     "currency": "TWD",
     "initialCapitalMinorUnits": 100000000,
-    "reservedCashMinorUnits": 0
+    "reservedCashMinorUnits": 0,
+    "truthClass": "simulated_narrative"
   },
   "appliedAudienceScope": "subscriber_archive",
   "asOf": "2026-04-13T13:30:00+08:00",
@@ -18,7 +19,8 @@
       "appliedAt": "2026-03-10T11:25:00+08:00",
       "kind": "fact_correction",
       "revisionId": "fact-hist-001-s07-correction",
-      "summary": "2026-03-10 盤中發布的發行人更正公告。它在該時段的互動截止之後才出現，所以只是該時段的結果證據，下一個交易時段才進入他讀得到的範圍。"
+      "summary": "2026-03-10 盤中發布的發行人更正公告。它在該時段的互動截止之後才出現，所以只是該時段的結果證據，下一個交易時段才進入他讀得到的範圍。",
+      "truthClass": "fictional_setting"
     }
   ],
   "dataState": "READY",
@@ -30,8 +32,11 @@
         "direction": "no_action",
         "fill": null,
         "instrumentLabel": "PSZS-DEMO",
+        "instrumentLabelTruthClass": "fictional_setting",
         "quantityFixed6": 0,
-        "rationaleSummary": "沒有部位，也沒有下單意圖。"
+        "rationaleSummary": "沒有部位，也沒有下單意圖。",
+        "rationaleSummaryTruthClass": "simulated_narrative",
+        "truthClass": "simulated_narrative"
       },
       "marketSessionFinalityState": "accepted",
       "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
@@ -45,6 +50,7 @@
         "concurrentClaim": {
           "canonicalTextSha256": "63788173170b52c6b78a36df6b4dc0d324e7dc13f71a48055dc9175b6a4046c2",
           "canonicalTextUtf8": "看到新的公開資訊，先小部位觀察。",
+          "truthClass": "simulated_narrative",
           "utteranceArtifactId": "412501f5-f4fc-36fd-a17b-eefa9b711baa"
         },
         "confidencePercentFixed2": 5000,
@@ -52,11 +58,15 @@
         "fill": {
           "filledAt": "2026-03-03T13:30:00+08:00",
           "sealedPriceMinorUnitsFixed6": 10000000000,
-          "sealedPriceRevisionRef": "193845e4c18d5d052b8386917eeaa6261d47e72752dfacf0b6215ceae9703923"
+          "sealedPriceRevisionRef": "193845e4c18d5d052b8386917eeaa6261d47e72752dfacf0b6215ceae9703923",
+          "truthClass": "simulated_narrative"
         },
         "instrumentLabel": "PSZS-DEMO",
+        "instrumentLabelTruthClass": "fictional_setting",
         "quantityFixed6": 1000000000,
-        "rationaleSummary": "預期兩個交易日內動能延續；失效條件是兩個交易日內沒有新證據。"
+        "rationaleSummary": "預期兩個交易日內動能延續；失效條件是兩個交易日內沒有新證據。",
+        "rationaleSummaryTruthClass": "simulated_narrative",
+        "truthClass": "simulated_narrative"
       },
       "marketSessionFinalityState": "accepted",
       "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
@@ -71,8 +81,11 @@
         "direction": "no_action",
         "fill": null,
         "instrumentLabel": "PSZS-DEMO",
+        "instrumentLabelTruthClass": "fictional_setting",
         "quantityFixed6": 0,
-        "rationaleSummary": "理由未變，仍然是兩個交易日內動能延續；他沒有補上新的支持資料。"
+        "rationaleSummary": "理由未變，仍然是兩個交易日內動能延續；他沒有補上新的支持資料。",
+        "rationaleSummaryTruthClass": "simulated_narrative",
+        "truthClass": "simulated_narrative"
       },
       "marketSessionFinalityState": "accepted",
       "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
@@ -87,8 +100,11 @@
         "direction": "no_action",
         "fill": null,
         "instrumentLabel": "PSZS-DEMO",
+        "instrumentLabelTruthClass": "fictional_setting",
         "quantityFixed6": 0,
-        "rationaleSummary": "理由未變，仍然是兩個交易日內動能延續；他沒有補上新的支持資料。"
+        "rationaleSummary": "理由未變，仍然是兩個交易日內動能延續；他沒有補上新的支持資料。",
+        "rationaleSummaryTruthClass": "simulated_narrative",
+        "truthClass": "simulated_narrative"
       },
       "marketSessionFinalityState": "accepted",
       "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
@@ -103,8 +119,11 @@
         "direction": "no_action",
         "fill": null,
         "instrumentLabel": "PSZS-DEMO",
+        "instrumentLabelTruthClass": "fictional_setting",
         "quantityFixed6": 0,
-        "rationaleSummary": "理由未變，仍然是兩個交易日內動能延續；他沒有補上新的支持資料。"
+        "rationaleSummary": "理由未變，仍然是兩個交易日內動能延續；他沒有補上新的支持資料。",
+        "rationaleSummaryTruthClass": "simulated_narrative",
+        "truthClass": "simulated_narrative"
       },
       "marketSessionFinalityState": "accepted",
       "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
@@ -119,8 +138,11 @@
         "direction": "no_action",
         "fill": null,
         "instrumentLabel": "PSZS-DEMO",
+        "instrumentLabelTruthClass": "fictional_setting",
         "quantityFixed6": 0,
-        "rationaleSummary": "理由未變，仍然是兩個交易日內動能延續；他沒有補上新的支持資料。"
+        "rationaleSummary": "理由未變，仍然是兩個交易日內動能延續；他沒有補上新的支持資料。",
+        "rationaleSummaryTruthClass": "simulated_narrative",
+        "truthClass": "simulated_narrative"
       },
       "marketSessionFinalityState": "accepted",
       "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
@@ -134,14 +156,18 @@
         "concurrentClaim": {
           "canonicalTextSha256": "97d3e7281cce7aae83e0397c20ceac0f3ee61c84cacc4fb24295d508d6349976",
           "canonicalTextUtf8": "目前沒有新的公開資訊，先維持原本的觀察。",
+          "truthClass": "simulated_narrative",
           "utteranceArtifactId": "6e647275-9839-89f0-457d-2942728c9ac2"
         },
         "confidencePercentFixed2": 4600,
         "direction": "no_action",
         "fill": null,
         "instrumentLabel": "PSZS-DEMO",
+        "instrumentLabelTruthClass": "fictional_setting",
         "quantityFixed6": 0,
-        "rationaleSummary": "引用的理由改成長期治理價值；支持事實與建倉當時相比新增 0 筆。"
+        "rationaleSummary": "引用的理由改成長期治理價值；支持事實與建倉當時相比新增 0 筆。",
+        "rationaleSummaryTruthClass": "simulated_narrative",
+        "truthClass": "simulated_narrative"
       },
       "marketSessionFinalityState": "accepted",
       "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
@@ -156,8 +182,11 @@
         "direction": "no_action",
         "fill": null,
         "instrumentLabel": "PSZS-DEMO",
+        "instrumentLabelTruthClass": "fictional_setting",
         "quantityFixed6": 0,
-        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。",
+        "rationaleSummaryTruthClass": "simulated_narrative",
+        "truthClass": "simulated_narrative"
       },
       "marketSessionFinalityState": "accepted",
       "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
@@ -172,8 +201,11 @@
         "direction": "no_action",
         "fill": null,
         "instrumentLabel": "PSZS-DEMO",
+        "instrumentLabelTruthClass": "fictional_setting",
         "quantityFixed6": 0,
-        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。",
+        "rationaleSummaryTruthClass": "simulated_narrative",
+        "truthClass": "simulated_narrative"
       },
       "marketSessionFinalityState": "accepted",
       "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
@@ -188,8 +220,11 @@
         "direction": "no_action",
         "fill": null,
         "instrumentLabel": "PSZS-DEMO",
+        "instrumentLabelTruthClass": "fictional_setting",
         "quantityFixed6": 0,
-        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。",
+        "rationaleSummaryTruthClass": "simulated_narrative",
+        "truthClass": "simulated_narrative"
       },
       "marketSessionFinalityState": "accepted",
       "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
@@ -204,8 +239,11 @@
         "direction": "no_action",
         "fill": null,
         "instrumentLabel": "PSZS-DEMO",
+        "instrumentLabelTruthClass": "fictional_setting",
         "quantityFixed6": 0,
-        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。",
+        "rationaleSummaryTruthClass": "simulated_narrative",
+        "truthClass": "simulated_narrative"
       },
       "marketSessionFinalityState": "accepted",
       "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
@@ -219,6 +257,7 @@
         "concurrentClaim": {
           "canonicalTextSha256": "fb75e3ec250c150991ab031492203484fd5ec123bcab1b7b3995373e5fa50ab2",
           "canonicalTextUtf8": "原本的理由已經不成立，先減碼。",
+          "truthClass": "simulated_narrative",
           "utteranceArtifactId": "4a8aea98-d9f3-d681-2c39-65b9c519d304"
         },
         "confidencePercentFixed2": 3400,
@@ -226,11 +265,15 @@
         "fill": {
           "filledAt": "2026-03-17T13:30:00+08:00",
           "sealedPriceMinorUnitsFixed6": 8820000000,
-          "sealedPriceRevisionRef": "a68ec706e9a9cd246a2314986159d949dd6693316b6c5b81ba40467e028d08e7"
+          "sealedPriceRevisionRef": "a68ec706e9a9cd246a2314986159d949dd6693316b6c5b81ba40467e028d08e7",
+          "truthClass": "simulated_narrative"
         },
         "instrumentLabel": "PSZS-DEMO",
+        "instrumentLabelTruthClass": "fictional_setting",
         "quantityFixed6": 400000000,
-        "rationaleSummary": "他寫下原本的理由已經不成立，並依此減碼。"
+        "rationaleSummary": "他寫下原本的理由已經不成立，並依此減碼。",
+        "rationaleSummaryTruthClass": "simulated_narrative",
+        "truthClass": "simulated_narrative"
       },
       "marketSessionFinalityState": "accepted",
       "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
@@ -245,8 +288,11 @@
         "direction": "no_action",
         "fill": null,
         "instrumentLabel": "PSZS-DEMO",
+        "instrumentLabelTruthClass": "fictional_setting",
         "quantityFixed6": 0,
-        "rationaleSummary": "理由未變，仍然是長期治理價值；他重看了已公開的資料，沒有新增支持資料。"
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他重看了已公開的資料，沒有新增支持資料。",
+        "rationaleSummaryTruthClass": "simulated_narrative",
+        "truthClass": "simulated_narrative"
       },
       "marketSessionFinalityState": "accepted",
       "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
@@ -261,8 +307,11 @@
         "direction": "no_action",
         "fill": null,
         "instrumentLabel": "PSZS-DEMO",
+        "instrumentLabelTruthClass": "fictional_setting",
         "quantityFixed6": 0,
-        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。",
+        "rationaleSummaryTruthClass": "simulated_narrative",
+        "truthClass": "simulated_narrative"
       },
       "marketSessionFinalityState": "accepted",
       "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
@@ -277,8 +326,11 @@
         "direction": "no_action",
         "fill": null,
         "instrumentLabel": "PSZS-DEMO",
+        "instrumentLabelTruthClass": "fictional_setting",
         "quantityFixed6": 0,
-        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。",
+        "rationaleSummaryTruthClass": "simulated_narrative",
+        "truthClass": "simulated_narrative"
       },
       "marketSessionFinalityState": "accepted",
       "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
@@ -293,8 +345,11 @@
         "direction": "no_action",
         "fill": null,
         "instrumentLabel": "PSZS-DEMO",
+        "instrumentLabelTruthClass": "fictional_setting",
         "quantityFixed6": 0,
-        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。",
+        "rationaleSummaryTruthClass": "simulated_narrative",
+        "truthClass": "simulated_narrative"
       },
       "marketSessionFinalityState": "accepted",
       "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
@@ -309,8 +364,11 @@
         "direction": "no_action",
         "fill": null,
         "instrumentLabel": "PSZS-DEMO",
+        "instrumentLabelTruthClass": "fictional_setting",
         "quantityFixed6": 0,
-        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。",
+        "rationaleSummaryTruthClass": "simulated_narrative",
+        "truthClass": "simulated_narrative"
       },
       "marketSessionFinalityState": "accepted",
       "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
@@ -325,8 +383,11 @@
         "direction": "no_action",
         "fill": null,
         "instrumentLabel": "PSZS-DEMO",
+        "instrumentLabelTruthClass": "fictional_setting",
         "quantityFixed6": 0,
-        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。",
+        "rationaleSummaryTruthClass": "simulated_narrative",
+        "truthClass": "simulated_narrative"
       },
       "marketSessionFinalityState": "accepted",
       "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
@@ -341,8 +402,11 @@
         "direction": "no_action",
         "fill": null,
         "instrumentLabel": "PSZS-DEMO",
+        "instrumentLabelTruthClass": "fictional_setting",
         "quantityFixed6": 0,
-        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。",
+        "rationaleSummaryTruthClass": "simulated_narrative",
+        "truthClass": "simulated_narrative"
       },
       "marketSessionFinalityState": "accepted",
       "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
@@ -356,14 +420,18 @@
         "concurrentClaim": {
           "canonicalTextSha256": "b97ec2c36a068a52bcf5bd12773e2589301f8ff9e8660b4e859d490165754143",
           "canonicalTextUtf8": "這一段會虧，是因為那陣子旁邊的人一直在講它。",
+          "truthClass": "simulated_narrative",
           "utteranceArtifactId": "74d3bb5e-beb0-031f-9dc7-769d9399e776"
         },
         "confidencePercentFixed2": 3400,
         "direction": "no_action",
         "fill": null,
         "instrumentLabel": "PSZS-DEMO",
+        "instrumentLabelTruthClass": "fictional_setting",
         "quantityFixed6": 0,
-        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。",
+        "rationaleSummaryTruthClass": "simulated_narrative",
+        "truthClass": "simulated_narrative"
       },
       "marketSessionFinalityState": "accepted",
       "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
@@ -378,8 +446,11 @@
         "direction": "no_action",
         "fill": null,
         "instrumentLabel": "PSZS-DEMO",
+        "instrumentLabelTruthClass": "fictional_setting",
         "quantityFixed6": 0,
-        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。",
+        "rationaleSummaryTruthClass": "simulated_narrative",
+        "truthClass": "simulated_narrative"
       },
       "marketSessionFinalityState": "accepted",
       "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
@@ -394,8 +465,11 @@
         "direction": "no_action",
         "fill": null,
         "instrumentLabel": "PSZS-DEMO",
+        "instrumentLabelTruthClass": "fictional_setting",
         "quantityFixed6": 0,
-        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。",
+        "rationaleSummaryTruthClass": "simulated_narrative",
+        "truthClass": "simulated_narrative"
       },
       "marketSessionFinalityState": "accepted",
       "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
@@ -410,8 +484,11 @@
         "direction": "no_action",
         "fill": null,
         "instrumentLabel": "PSZS-DEMO",
+        "instrumentLabelTruthClass": "fictional_setting",
         "quantityFixed6": 0,
-        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。",
+        "rationaleSummaryTruthClass": "simulated_narrative",
+        "truthClass": "simulated_narrative"
       },
       "marketSessionFinalityState": "accepted",
       "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
@@ -426,8 +503,11 @@
         "direction": "no_action",
         "fill": null,
         "instrumentLabel": "PSZS-DEMO",
+        "instrumentLabelTruthClass": "fictional_setting",
         "quantityFixed6": 0,
-        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。",
+        "rationaleSummaryTruthClass": "simulated_narrative",
+        "truthClass": "simulated_narrative"
       },
       "marketSessionFinalityState": "accepted",
       "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
@@ -442,8 +522,11 @@
         "direction": "no_action",
         "fill": null,
         "instrumentLabel": "PSZS-DEMO",
+        "instrumentLabelTruthClass": "fictional_setting",
         "quantityFixed6": 0,
-        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。",
+        "rationaleSummaryTruthClass": "simulated_narrative",
+        "truthClass": "simulated_narrative"
       },
       "marketSessionFinalityState": "accepted",
       "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
@@ -457,14 +540,18 @@
         "concurrentClaim": {
           "canonicalTextSha256": "2d807e8e1105c7fe4e1160858893e2e859d99bb0581fb2ef991d67c9360666ce",
           "canonicalTextUtf8": "這一段是我自己判斷錯了，不是別人的問題。",
+          "truthClass": "simulated_narrative",
           "utteranceArtifactId": "4431acbb-338d-854d-d14c-699be8e6a31e"
         },
         "confidencePercentFixed2": 3400,
         "direction": "no_action",
         "fill": null,
         "instrumentLabel": "PSZS-DEMO",
+        "instrumentLabelTruthClass": "fictional_setting",
         "quantityFixed6": 0,
-        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。",
+        "rationaleSummaryTruthClass": "simulated_narrative",
+        "truthClass": "simulated_narrative"
       },
       "marketSessionFinalityState": "accepted",
       "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
@@ -479,8 +566,11 @@
         "direction": "no_action",
         "fill": null,
         "instrumentLabel": "PSZS-DEMO",
+        "instrumentLabelTruthClass": "fictional_setting",
         "quantityFixed6": 0,
-        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。",
+        "rationaleSummaryTruthClass": "simulated_narrative",
+        "truthClass": "simulated_narrative"
       },
       "marketSessionFinalityState": "accepted",
       "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
@@ -495,8 +585,11 @@
         "direction": "no_action",
         "fill": null,
         "instrumentLabel": "PSZS-DEMO",
+        "instrumentLabelTruthClass": "fictional_setting",
         "quantityFixed6": 0,
-        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。",
+        "rationaleSummaryTruthClass": "simulated_narrative",
+        "truthClass": "simulated_narrative"
       },
       "marketSessionFinalityState": "accepted",
       "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
@@ -511,8 +604,11 @@
         "direction": "no_action",
         "fill": null,
         "instrumentLabel": "PSZS-DEMO",
+        "instrumentLabelTruthClass": "fictional_setting",
         "quantityFixed6": 0,
-        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。",
+        "rationaleSummaryTruthClass": "simulated_narrative",
+        "truthClass": "simulated_narrative"
       },
       "marketSessionFinalityState": "accepted",
       "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
@@ -553,19 +649,23 @@
       "concurrentClaim": {
         "canonicalTextSha256": "63788173170b52c6b78a36df6b4dc0d324e7dc13f71a48055dc9175b6a4046c2",
         "canonicalTextUtf8": "看到新的公開資訊，先小部位觀察。",
+        "truthClass": "simulated_narrative",
         "utteranceArtifactId": "412501f5-f4fc-36fd-a17b-eefa9b711baa"
       },
       "consequenceSummary": "持有 15 天後減碼 400 股，實現虧損 4,720 元；剩下 600 股仍在，未實現虧損 7,680 元。引用的理由換過一次，新增支持事實 0 筆。",
+      "consequenceSummaryTruthClass": "simulated_narrative",
       "currentNarration": {
         "canonicalTextSha256": "97d3e7281cce7aae83e0397c20ceac0f3ee61c84cacc4fb24295d508d6349976",
         "canonicalTextUtf8": "目前沒有新的公開資訊，先維持原本的觀察。",
         "kind": "utterance",
+        "truthClass": "simulated_narrative",
         "utteranceArtifactId": "6e647275-9839-89f0-457d-2942728c9ac2"
       },
       "influencedBy": [],
       "influencedByCharacterRefs": [],
       "influencedByEmptyReason": "沒有任何封存事件記錄別人影響過這個部位的決定；他在組會上的歸因是他自己的說法，記在關係頁。",
       "instrumentLabel": "PSZS-DEMO",
+      "instrumentLabelTruthClass": "fictional_setting",
       "invalidationCondition": "occurred",
       "lastChangedAt": "2026-03-17T13:30:00+08:00",
       "lots": [
@@ -574,15 +674,18 @@
           "lotId": "2c0f86ae-898a-be81-12f7-d5c706175959",
           "quantityFixed6": 600000000,
           "sealedPriceMinorUnitsFixed6": 10000000000,
-          "sealedPriceRevisionRef": "193845e4c18d5d052b8386917eeaa6261d47e72752dfacf0b6215ceae9703923"
+          "sealedPriceRevisionRef": "193845e4c18d5d052b8386917eeaa6261d47e72752dfacf0b6215ceae9703923",
+          "truthClass": "simulated_narrative"
         }
       ],
       "markAsOf": "2026-04-13T13:30:00+08:00",
       "openedAt": "2026-03-03T13:30:00+08:00",
       "positionId": "a243c129-0297-7b54-e16f-256452eab596",
       "rationaleSummary": "建倉時封存的理由（thesis-hist-001）：預期兩個交易日內動能延續。失效條件是兩個交易日內沒有新證據，預定期限到 2026-03-05 收盤，當時信心 50%。",
+      "rationaleSummaryTruthClass": "simulated_narrative",
       "realizedPnlMinorUnits": -472000,
       "status": "open",
+      "truthClass": "simulated_narrative",
       "unrealizedPnlMinorUnits": -768000,
       "unrealizedPnlPercentFixed2": -1280
     }

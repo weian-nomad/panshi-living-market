@@ -229,7 +229,8 @@
       "involvedPeople": [
         {
           "displayName": "陳小雨",
-          "relationLabel": "同組同事"
+          "relationLabel": "同組同事",
+          "truthClass": "fictional_setting"
         }
       ],
       "journalEntryRef": "d5b6a025-8874-4db8-e04b-73e771df8ffd",
@@ -265,7 +266,8 @@
       "involvedPeople": [
         {
           "displayName": "陳小雨",
-          "relationLabel": "同組同事"
+          "relationLabel": "同組同事",
+          "truthClass": "fictional_setting"
         }
       ],
       "journalEntryRef": "c66659ee-1557-8675-fe86-9cb3123facea",

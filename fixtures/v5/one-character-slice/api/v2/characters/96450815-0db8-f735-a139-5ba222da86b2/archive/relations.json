@@ -132,10 +132,12 @@
             "6dfd7ac4-24a2-2b0b-14c4-4fb81d84b465"
           ],
           "displayName": "陳小雨",
+          "displayNameTruthClass": "fictional_setting",
           "dyadRef": "63bbcc07-6fce-2ffe-a787-a22f85916546",
           "journalEntryRef": "c66659ee-1557-8675-fe86-9cb3123facea",
           "observedAt": "2026-03-27T10:41:00+08:00",
           "relationLabel": "同組同事",
+          "relationLabelTruthClass": "fictional_setting",
           "relationshipSignalRef": "0eea9eff-cd1e-8865-4040-21606cc777c0",
           "sessionDate": "2026-03-27",
           "signalKind": "public_outcome_attribution",
@@ -164,6 +166,7 @@
           "utterance": {
             "canonicalTextSha256": "b97ec2c36a068a52bcf5bd12773e2589301f8ff9e8660b4e859d490165754143",
             "canonicalTextUtf8": "這一段會虧，是因為那陣子旁邊的人一直在講它。",
+            "truthClass": "simulated_narrative",
             "utteranceArtifactId": "74d3bb5e-beb0-031f-9dc7-769d9399e776"
           }
         }

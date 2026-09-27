@@ -1,0 +1,109 @@
+{
+  "contract": "contracts/openapi/public-v2.yaml",
+  "contractVersion": "2.2.0",
+  "description": "The complete set of fixed system sentences a public-v2 projection may emit in a field marked `x-panshi-system-label: true`, keyed by field name. A system label describes the system (why a list is empty, why a value is null, why a chapter is held); it is not a claim about the character or the market and carries no truth class. A value outside its field's list is a contract violation: consumers and audits reject it rather than render it. `nonClaimNumberKeys` names the numeric keys that are provenance, versioning or scene layout rather than claims, and so carry no truth class either; every other number in a projection is covered by its own `truthClass` or a sibling `<field>TruthClass`.",
+  "copyReview": "The sentences below are engineering placeholder copy, 未經 copy-taste 審稿.",
+  "systemLabels": {
+    "acquaintancesEmptyReason": [
+      "人物底盤沒有任何熟人節點。"
+    ],
+    "biasOccurrencesEmptyReason": [
+      "這段期間沒有任何有事件證據的偏誤。"
+    ],
+    "counterExamplesEmptyReason": [
+      "這段期間沒有可回看的反例。"
+    ],
+    "heldReasonLabel": [
+      "這一章暫時不公開，可見性確認之後才會出現。"
+    ],
+    "influencedByEmptyReason": [
+      "沒有任何封存事件記錄別人影響過這個部位的決定；他在組會上的歸因是他自己的說法，記在關係頁。"
+    ],
+    "invocationsEmptyReason": [
+      "沒有任何章節封存過這個主題的象徵解讀。"
+    ],
+    "memoriesEmptyReason": [
+      "沒有任何可公開到這個檔案的已封存記憶。"
+    ],
+    "observedInteractionsEmptyReason": [
+      "沒有封存任何他和她之間的可觀察互動。"
+    ],
+    "paperOutcomeNullReason": [
+      "這一天他沒有部位，也沒有成交，所以沒有紙上後果。"
+    ],
+    "placementsEmptyReason": [
+      "完整盤面還沒有由封存的出生資料計算；這一版人物底盤只封存了一個象徵主題，不另補星座位置。"
+    ],
+    "reinterpretationsEmptyReason": [
+      "沒有封存任何重新解讀；這則記憶還是形成時的版本。"
+    ],
+    "relationshipConsequenceNullReason": [
+      "這一天沒有留下關係訊號。"
+    ],
+    "relationshipSignalsEmptyReason": [
+      "他沒有在公開場合留下任何指向她的關係訊號。"
+    ],
+    "tombstoneReasonLabel": []
+  },
+  "nonClaimNumberKeys": {
+    "globalPosition": "sourceRefs[]: the cited canonical event's position in the log (provenance).",
+    "paperAccountVersion": "paperVersionSet: the paper account stream version the figures were read at (versioning).",
+    "projectionVersion": "Envelope: projection version (versioning).",
+    "revision": "sourceRevisionSet[]: the revision of a source the projection was computed from (provenance).",
+    "sourceGlobalPosition": "Envelope: the log position the projection was computed through (provenance).",
+    "visibilityEpoch": "Envelope and archive index sections[]: visibility epoch (versioning).",
+    "worldTickId": "World snapshot: the world clock tick the snapshot was taken at (versioning).",
+    "worldX": "World snapshot characterPositions[]: scene layout coordinate for rendering; never shown as text.",
+    "worldY": "World snapshot characterPositions[]: scene layout coordinate for rendering; never shown as text.",
+    "zOrder": "World snapshot characterPositions[]: scene draw order for rendering; never shown as text."
+  },
+  "requiredSiblingTruthClasses": {
+    "note": "Every property `x` that a public-v2.yaml schema pairs with a sibling property `xTruthClass`, keyed by that schema. Wherever an object of that schema carries a non-null `x`, it must carry its own non-null `xTruthClass`; it never falls back to the object's `truthClass` (2.2.0: nothing borrows identity from an outer or neighbouring class). A string value pins the class the sibling must equal; null means the contract lets the class vary with the source, so any class the slice allows is accepted, but the sibling itself is still mandatory. A displayed person's name and relationship label are authored chassis, so they are pinned to `fictional_setting` wherever the schema gives them a sibling. The audit re-derives the schema/property pairs from public-v2.yaml and refuses if this map and the contract disagree.",
+    "schemas": {
+      "CharacterWorldPosition": {
+        "poseState": null,
+        "focusHint": null
+      },
+      "WorldStoryHookRef": {
+        "label": null
+      },
+      "CharacterCloseUp": {
+        "displayName": "fictional_setting",
+        "ageYears": null,
+        "occupationLabel": null,
+        "poseState": null,
+        "currentVerbPhrase": null,
+        "unresolvedTensionSummary": null
+      },
+      "LifeJournalConsequence": {
+        "nonPaperConsequenceSummary": null
+      },
+      "LifeJournalEntry": {
+        "sceneSummary": null,
+        "knownAtTheTimeSummary": null,
+        "missedFactsSummary": null,
+        "actionSummary": null,
+        "openQuestionSummary": null
+      },
+      "ArchiveSectionIndexEntry": {
+        "summary": null
+      },
+      "CharacterArchiveIndex": {
+        "longTermTensionSummary": null
+      },
+      "PaperPositionPublic": {
+        "instrumentLabel": null,
+        "rationaleSummary": null,
+        "consequenceSummary": null
+      },
+      "PaperDailyActionDisclosure": {
+        "instrumentLabel": null,
+        "rationaleSummary": null
+      },
+      "RelationshipSignalView": {
+        "displayName": "fictional_setting",
+        "relationLabel": "fictional_setting"
+      }
+    }
+  }
+}

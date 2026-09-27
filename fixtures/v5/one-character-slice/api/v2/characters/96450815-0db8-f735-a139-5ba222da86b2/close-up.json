@@ -1,31 +1,40 @@
 {
   "ageYears": 28,
+  "ageYearsTruthClass": "fictional_setting",
   "characterId": "96450815-0db8-f735-a139-5ba222da86b2",
   "currentAttention": {
     "label": "兩次組會那兩天的持股紀錄",
-    "targetKind": "object"
+    "targetKind": "object",
+    "truthClass": "simulated_narrative"
   },
   "currentVerbPhrase": "正在對照兩次組會那兩天自己留下的紀錄",
+  "currentVerbPhraseTruthClass": "simulated_narrative",
   "dataState": "READY",
   "displayName": "陸硯之",
+  "displayNameTruthClass": "fictional_setting",
   "occupationLabel": "企業研究助理",
+  "occupationLabelTruthClass": "fictional_setting",
   "poseState": "examining",
+  "poseStateTruthClass": "simulated_narrative",
   "projectionVersion": 393,
   "publicClaim": {
     "canonicalTextSha256": "2d807e8e1105c7fe4e1160858893e2e859d99bb0581fb2ef991d67c9360666ce",
     "canonicalTextUtf8": "這一段是我自己判斷錯了，不是別人的問題。",
+    "truthClass": "simulated_narrative",
     "utteranceArtifactId": "4431acbb-338d-854d-d14c-699be8e6a31e"
   },
   "recentConsequenceHighlight": {
     "asOf": "2026-04-13T13:30:00+08:00",
     "kind": "paper_position",
     "positionArchiveRef": "a243c129-0297-7b54-e16f-256452eab596",
+    "truthClass": "simulated_narrative",
     "unrealizedPnlPercentFixed2": -1280
   },
   "sceneRef": "e9ce0d21-2f4d-07cd-af52-ecdfd02ca0cb",
   "selfAcknowledgement": {
     "canonicalTextSha256": "fb75e3ec250c150991ab031492203484fd5ec123bcab1b7b3995373e5fa50ab2",
     "canonicalTextUtf8": "原本的理由已經不成立，先減碼。",
+    "truthClass": "simulated_narrative",
     "utteranceArtifactId": "4a8aea98-d9f3-d681-2c39-65b9c519d304"
   },
   "serverNow": "2026-04-14T10:30:00+08:00",
@@ -202,9 +211,11 @@
       "commitmentId": "c47edfda-cb1b-b6a8-8108-70c853ada794",
       "rationaleSummary": "改寫後的理由（thesis-hist-002）：長期治理價值。失效條件仍然是兩個交易日內沒有新證據，新增支持事實 0 筆。",
       "sealedAt": "2026-03-10T10:30:00+08:00",
-      "stillOpen": true
+      "stillOpen": true,
+      "truthClass": "simulated_narrative"
     }
   ],
   "unresolvedTensionSummary": "他在 2026-03-27 的組會上把虧損說成別人的關係，2026-04-08 又在組會上說是自己判斷錯了；第一次那句話，他還沒有收回。",
+  "unresolvedTensionSummaryTruthClass": "simulated_narrative",
   "visibilityEpoch": 1
 }

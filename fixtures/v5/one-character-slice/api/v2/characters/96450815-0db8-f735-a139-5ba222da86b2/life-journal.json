@@ -5,6 +5,7 @@
   "entries": [
     {
       "actionSummary": "沒有下單，也還沒有部位。他選擇繼續等。",
+      "actionSummaryTruthClass": "simulated_narrative",
       "archiveRefs": {
         "memoryRefs": [
           "302b6ffc-eddb-12a5-f8e5-2e35a30289d1"
@@ -14,11 +15,13 @@
       },
       "chapterDate": "2026-03-02",
       "consequence": {
-        "nonPaperConsequenceSummary": "他沒有部位，所以這一天沒有損益。留下的是一段他自己記下來、當時沒有讀的早盤。"
+        "nonPaperConsequenceSummary": "他沒有部位，所以這一天沒有損益。留下的是一段他自己記下來、當時沒有讀的早盤。",
+        "nonPaperConsequenceSummaryTruthClass": "simulated_narrative"
       },
       "currentSelfNarration": {
         "kind": "summary",
-        "summaryText": "暫時不知道"
+        "summaryText": "暫時不知道",
+        "truthClass": "simulated_narrative"
       },
       "entryId": "25bc76d5-0b74-aad4-a091-c41c67b93237",
       "entryVisibility": "PUBLIC",
@@ -56,7 +59,9 @@
         "relationshipRefs": []
       },
       "knownAtTheTimeSummary": "這一天他沒有把注意力放在任何一則當時已公開的資料上；他讀的是前一個交易時段的公告附註。",
+      "knownAtTheTimeSummaryTruthClass": "simulated_narrative",
       "missedFactsSummary": "收盤結果被接受之後才看得出來：早盤那一段動能事實當時就在他讀得到的清單裡，他沒有打開。",
+      "missedFactsSummaryTruthClass": "simulated_narrative",
       "narrativeSegments": [
         {
           "kind": "narrator",
@@ -103,12 +108,15 @@
       ],
       "narrativeState": "composed",
       "openQuestionSummary": "他會怎麼處理這個他自己記下來的錯過？",
+      "openQuestionSummaryTruthClass": "simulated_narrative",
       "relationshipConsequence": null,
       "relationshipConsequenceNullReason": "這一天沒有留下關係訊號。",
-      "sceneSummary": "他把昨天的附註看完，早盤那一段結束之後才抬頭。"
+      "sceneSummary": "他把昨天的附註看完，早盤那一段結束之後才抬頭。",
+      "sceneSummaryTruthClass": "simulated_narrative"
     },
     {
       "actionSummary": "模擬買進 PSZS-DEMO 1,000 股，成交價 100.00，名目金額 100,000 元；占模擬資產 10%，也是他自己寫下的曝險上限的 82%。",
+      "actionSummaryTruthClass": "simulated_narrative",
       "archiveRefs": {
         "memoryRefs": [
           "a0508ad7-060b-cae1-789e-e1a8f5714735"
@@ -124,6 +132,7 @@
           "asOf": "2026-03-03T13:30:00+08:00",
           "heldDays": 1,
           "positionArchiveRef": "a243c129-0297-7b54-e16f-256452eab596",
+          "truthClass": "simulated_narrative",
           "unrealizedPnlMinorUnits": 0,
           "unrealizedPnlPercentFixed2": 0
         }
@@ -131,11 +140,13 @@
       "contemporaneousClaim": {
         "canonicalTextSha256": "63788173170b52c6b78a36df6b4dc0d324e7dc13f71a48055dc9175b6a4046c2",
         "canonicalTextUtf8": "看到新的公開資訊，先小部位觀察。",
+        "truthClass": "simulated_narrative",
         "utteranceArtifactId": "412501f5-f4fc-36fd-a17b-eefa9b711baa"
       },
       "currentSelfNarration": {
         "kind": "summary",
-        "summaryText": "暫時不知道"
+        "summaryText": "暫時不知道",
+        "truthClass": "simulated_narrative"
       },
       "entryId": "0cc0a7c7-0c49-028a-8218-50ba629437e4",
       "entryVisibility": "PUBLIC",
@@ -215,7 +226,9 @@
         "relationshipRefs": []
       },
       "knownAtTheTimeSummary": "他當時確實讀進去的公開資料：早盤那一段動能事實、2026-03-02 的封存收盤價。",
+      "knownAtTheTimeSummaryTruthClass": "simulated_narrative",
       "missedFactsSummary": "收盤結果被接受之後才看得出來：同業存貨天數上升到 64.5 天的反面事實當時就在他讀得到的清單裡，他沒有打開。",
+      "missedFactsSummaryTruthClass": "simulated_narrative",
       "narrativeSegments": [
         {
           "kind": "narrator",
@@ -284,12 +297,15 @@
       ],
       "narrativeState": "composed",
       "openQuestionSummary": "他寫下的失效條件是兩個交易日內沒有新證據。兩個交易日之後呢？",
+      "openQuestionSummaryTruthClass": "simulated_narrative",
       "relationshipConsequence": null,
       "relationshipConsequenceNullReason": "這一天沒有留下關係訊號。",
-      "sceneSummary": "他先把同事的提醒滑掉，下單之後才回頭補看昨天的材料。"
+      "sceneSummary": "他先把同事的提醒滑掉，下單之後才回頭補看昨天的材料。",
+      "sceneSummaryTruthClass": "simulated_narrative"
     },
     {
       "actionSummary": "沒有下單。他繼續持有 1,000 股。",
+      "actionSummaryTruthClass": "simulated_narrative",
       "archiveRefs": {
         "memoryRefs": [],
         "paperPositionRefs": [
@@ -303,13 +319,15 @@
           "asOf": "2026-03-04T13:30:00+08:00",
           "heldDays": 2,
           "positionArchiveRef": "a243c129-0297-7b54-e16f-256452eab596",
+          "truthClass": "simulated_narrative",
           "unrealizedPnlMinorUnits": -360000,
           "unrealizedPnlPercentFixed2": -360
         }
       },
       "currentSelfNarration": {
         "kind": "summary",
-        "summaryText": "暫時不知道"
+        "summaryText": "暫時不知道",
+        "truthClass": "simulated_narrative"
       },
       "entryId": "b9728167-f578-a33f-fe98-15463ec0ace0",
       "entryVisibility": "PUBLIC",
@@ -354,7 +372,9 @@
         "relationshipRefs": []
       },
       "knownAtTheTimeSummary": "他當時確實讀進去的公開資料：2026-03-03 的封存收盤價。",
+      "knownAtTheTimeSummaryTruthClass": "simulated_narrative",
       "missedFactsSummary": "收盤結果被接受之後才看得出來：同業存貨天數上升到 64.5 天的反面事實當時就在他讀得到的清單裡，他沒有打開。",
+      "missedFactsSummaryTruthClass": "simulated_narrative",
       "narrativeSegments": [
         {
           "kind": "narrator",
@@ -401,12 +421,15 @@
       ],
       "narrativeState": "composed",
       "openQuestionSummary": "同一份反面資料已經連續 2 個交易時段沒有被打開。他要到什麼時候才會讀它？",
+      "openQuestionSummaryTruthClass": "simulated_narrative",
       "relationshipConsequence": null,
       "relationshipConsequenceNullReason": "這一天沒有留下關係訊號。",
-      "sceneSummary": "他把持股頁面開著，沒有動作，也沒有再打開那份同業存貨的資料。"
+      "sceneSummary": "他把持股頁面開著，沒有動作，也沒有再打開那份同業存貨的資料。",
+      "sceneSummaryTruthClass": "simulated_narrative"
     },
     {
       "actionSummary": "沒有下單。他繼續持有 1,000 股。",
+      "actionSummaryTruthClass": "simulated_narrative",
       "archiveRefs": {
         "memoryRefs": [],
         "paperPositionRefs": [
@@ -420,13 +443,15 @@
           "asOf": "2026-03-05T13:30:00+08:00",
           "heldDays": 3,
           "positionArchiveRef": "a243c129-0297-7b54-e16f-256452eab596",
+          "truthClass": "simulated_narrative",
           "unrealizedPnlMinorUnits": -650000,
           "unrealizedPnlPercentFixed2": -650
         }
       },
       "currentSelfNarration": {
         "kind": "summary",
-        "summaryText": "暫時不知道"
+        "summaryText": "暫時不知道",
+        "truthClass": "simulated_narrative"
       },
       "entryId": "606986fd-38db-c5f2-f506-b8ad08008576",
       "entryVisibility": "PUBLIC",
@@ -471,7 +496,9 @@
         "relationshipRefs": []
       },
       "knownAtTheTimeSummary": "他當時確實讀進去的公開資料：2026-03-04 的封存收盤價。",
+      "knownAtTheTimeSummaryTruthClass": "simulated_narrative",
       "missedFactsSummary": "收盤結果被接受之後才看得出來：同業存貨天數上升到 64.5 天的反面事實當時就在他讀得到的清單裡，他沒有打開。",
+      "missedFactsSummaryTruthClass": "simulated_narrative",
       "narrativeSegments": [
         {
           "kind": "narrator",
@@ -518,13 +545,17 @@
       ],
       "narrativeState": "composed",
       "openQuestionSummary": "他自己寫的期限在這個時段收盤到期了。他會改動作，還是改說法？",
+      "openQuestionSummaryTruthClass": "simulated_narrative",
       "recurringPatternRef": "63265832-2b3a-c6d5-446b-c404f3d2a160",
+      "recurringPatternTruthClass": "simulated_narrative",
       "relationshipConsequence": null,
       "relationshipConsequenceNullReason": "這一天沒有留下關係訊號。",
-      "sceneSummary": "他把持股頁面開著，沒有動作，也沒有再打開那份同業存貨的資料。"
+      "sceneSummary": "他把持股頁面開著，沒有動作，也沒有再打開那份同業存貨的資料。",
+      "sceneSummaryTruthClass": "simulated_narrative"
     },
     {
       "actionSummary": "沒有下單。他繼續持有 1,000 股。",
+      "actionSummaryTruthClass": "simulated_narrative",
       "archiveRefs": {
         "memoryRefs": [],
         "paperPositionRefs": [
@@ -538,13 +569,15 @@
           "asOf": "2026-03-06T13:30:00+08:00",
           "heldDays": 4,
           "positionArchiveRef": "a243c129-0297-7b54-e16f-256452eab596",
+          "truthClass": "simulated_narrative",
           "unrealizedPnlMinorUnits": -590000,
           "unrealizedPnlPercentFixed2": -590
         }
       },
       "currentSelfNarration": {
         "kind": "summary",
-        "summaryText": "暫時不知道"
+        "summaryText": "暫時不知道",
+        "truthClass": "simulated_narrative"
       },
       "entryId": "70739f27-8179-886a-d391-373bc5f9aa20",
       "entryVisibility": "PUBLIC",
@@ -589,7 +622,9 @@
         "relationshipRefs": []
       },
       "knownAtTheTimeSummary": "他當時確實讀進去的公開資料：2026-03-05 的封存收盤價。",
+      "knownAtTheTimeSummaryTruthClass": "simulated_narrative",
       "missedFactsSummary": "收盤結果被接受之後才看得出來：同業存貨天數上升到 64.5 天的反面事實當時就在他讀得到的清單裡，他沒有打開。",
+      "missedFactsSummaryTruthClass": "simulated_narrative",
       "narrativeSegments": [
         {
           "kind": "narrator",
@@ -622,13 +657,17 @@
       ],
       "narrativeState": "composed",
       "openQuestionSummary": "同一份反面資料已經連續 4 個交易時段沒有被打開。他要到什麼時候才會讀它？",
+      "openQuestionSummaryTruthClass": "simulated_narrative",
       "recurringPatternRef": "63265832-2b3a-c6d5-446b-c404f3d2a160",
+      "recurringPatternTruthClass": "simulated_narrative",
       "relationshipConsequence": null,
       "relationshipConsequenceNullReason": "這一天沒有留下關係訊號。",
-      "sceneSummary": "他看到前一個收盤又往下，把持股頁面開著，還是沒有打開那份同業存貨的資料。"
+      "sceneSummary": "他看到前一個收盤又往下，把持股頁面開著，還是沒有打開那份同業存貨的資料。",
+      "sceneSummaryTruthClass": "simulated_narrative"
     },
     {
       "actionSummary": "沒有下單。他繼續持有 1,000 股。",
+      "actionSummaryTruthClass": "simulated_narrative",
       "archiveRefs": {
         "memoryRefs": [],
         "paperPositionRefs": [
@@ -642,13 +681,15 @@
           "asOf": "2026-03-09T13:30:00+08:00",
           "heldDays": 7,
           "positionArchiveRef": "a243c129-0297-7b54-e16f-256452eab596",
+          "truthClass": "simulated_narrative",
           "unrealizedPnlMinorUnits": -720000,
           "unrealizedPnlPercentFixed2": -720
         }
       },
       "currentSelfNarration": {
         "kind": "summary",
-        "summaryText": "暫時不知道"
+        "summaryText": "暫時不知道",
+        "truthClass": "simulated_narrative"
       },
       "entryId": "8d1ef90e-57cb-e278-f110-3027715b65ca",
       "entryVisibility": "PUBLIC",
@@ -693,7 +734,9 @@
         "relationshipRefs": []
       },
       "knownAtTheTimeSummary": "他當時確實讀進去的公開資料：2026-03-06 的封存收盤價。",
+      "knownAtTheTimeSummaryTruthClass": "simulated_narrative",
       "missedFactsSummary": "收盤結果被接受之後才看得出來：同業存貨天數上升到 64.5 天的反面事實當時就在他讀得到的清單裡，他沒有打開。",
+      "missedFactsSummaryTruthClass": "simulated_narrative",
       "narrativeSegments": [
         {
           "kind": "narrator",
@@ -726,13 +769,17 @@
       ],
       "narrativeState": "composed",
       "openQuestionSummary": "同一份反面資料已經連續 5 個交易時段沒有被打開。他要到什麼時候才會讀它？",
+      "openQuestionSummaryTruthClass": "simulated_narrative",
       "recurringPatternRef": "63265832-2b3a-c6d5-446b-c404f3d2a160",
+      "recurringPatternTruthClass": "simulated_narrative",
       "relationshipConsequence": null,
       "relationshipConsequenceNullReason": "這一天沒有留下關係訊號。",
-      "sceneSummary": "他把持股頁面開著，沒有動作，也沒有再打開那份同業存貨的資料。"
+      "sceneSummary": "他把持股頁面開著，沒有動作，也沒有再打開那份同業存貨的資料。",
+      "sceneSummaryTruthClass": "simulated_narrative"
     },
     {
       "actionSummary": "沒有下單。他把引用的理由從 thesis-hist-001 換成 thesis-hist-002，新增支持事實 0 筆。",
+      "actionSummaryTruthClass": "simulated_narrative",
       "archiveRefs": {
         "memoryRefs": [
           "ac49f05c-d392-e237-17e1-15bb4ef30195"
@@ -748,6 +795,7 @@
           "asOf": "2026-03-10T13:30:00+08:00",
           "heldDays": 8,
           "positionArchiveRef": "a243c129-0297-7b54-e16f-256452eab596",
+          "truthClass": "simulated_narrative",
           "unrealizedPnlMinorUnits": -840000,
           "unrealizedPnlPercentFixed2": -840
         }
@@ -755,11 +803,13 @@
       "contemporaneousClaim": {
         "canonicalTextSha256": "97d3e7281cce7aae83e0397c20ceac0f3ee61c84cacc4fb24295d508d6349976",
         "canonicalTextUtf8": "目前沒有新的公開資訊，先維持原本的觀察。",
+        "truthClass": "simulated_narrative",
         "utteranceArtifactId": "6e647275-9839-89f0-457d-2942728c9ac2"
       },
       "currentSelfNarration": {
         "kind": "summary",
-        "summaryText": "暫時不知道"
+        "summaryText": "暫時不知道",
+        "truthClass": "simulated_narrative"
       },
       "entryId": "54608a5e-3a1c-6e2f-0365-3fba97e670fb",
       "entryVisibility": "PUBLIC",
@@ -833,7 +883,9 @@
         "relationshipRefs": []
       },
       "knownAtTheTimeSummary": "他當時確實讀進去的公開資料：2026-03-09 的封存收盤價。",
+      "knownAtTheTimeSummaryTruthClass": "simulated_narrative",
       "missedFactsSummary": "收盤結果被接受之後才看得出來：同業存貨天數上升到 64.5 天的反面事實當時就在他讀得到的清單裡，他沒有打開。",
+      "missedFactsSummaryTruthClass": "simulated_narrative",
       "narrativeSegments": [
         {
           "kind": "narrator",
@@ -888,13 +940,17 @@
       ],
       "narrativeState": "composed",
       "openQuestionSummary": "同一份反面資料已經連續 6 個交易時段沒有被打開。他要到什麼時候才會讀它？",
+      "openQuestionSummaryTruthClass": "simulated_narrative",
       "recurringPatternRef": "63265832-2b3a-c6d5-446b-c404f3d2a160",
+      "recurringPatternTruthClass": "simulated_narrative",
       "relationshipConsequence": null,
       "relationshipConsequenceNullReason": "這一天沒有留下關係訊號。",
-      "sceneSummary": "他繞開同事的座位，把筆記標題改掉，支持資料沒有增加。"
+      "sceneSummary": "他繞開同事的座位，把筆記標題改掉，支持資料沒有增加。",
+      "sceneSummaryTruthClass": "simulated_narrative"
     },
     {
       "actionSummary": "沒有下單。他繼續持有 1,000 股。",
+      "actionSummaryTruthClass": "simulated_narrative",
       "archiveRefs": {
         "memoryRefs": [],
         "paperPositionRefs": [
@@ -908,13 +964,15 @@
           "asOf": "2026-03-11T13:30:00+08:00",
           "heldDays": 9,
           "positionArchiveRef": "a243c129-0297-7b54-e16f-256452eab596",
+          "truthClass": "simulated_narrative",
           "unrealizedPnlMinorUnits": -910000,
           "unrealizedPnlPercentFixed2": -910
         }
       },
       "currentSelfNarration": {
         "kind": "summary",
-        "summaryText": "暫時不知道"
+        "summaryText": "暫時不知道",
+        "truthClass": "simulated_narrative"
       },
       "entryId": "168ca363-b491-649b-e37c-5b05b4879ac2",
       "entryVisibility": "PUBLIC",
@@ -959,7 +1017,9 @@
         "relationshipRefs": []
       },
       "knownAtTheTimeSummary": "他當時確實讀進去的公開資料：2026-03-10 的封存收盤價。",
+      "knownAtTheTimeSummaryTruthClass": "simulated_narrative",
       "missedFactsSummary": "收盤結果被接受之後才看得出來：同業存貨天數上升到 64.5 天的反面事實、發行人更正公告當時就在他讀得到的清單裡，他沒有打開。",
+      "missedFactsSummaryTruthClass": "simulated_narrative",
       "narrativeSegments": [
         {
           "kind": "narrator",
@@ -992,13 +1052,17 @@
       ],
       "narrativeState": "composed",
       "openQuestionSummary": "同一份反面資料已經連續 7 個交易時段沒有被打開。他要到什麼時候才會讀它？",
+      "openQuestionSummaryTruthClass": "simulated_narrative",
       "recurringPatternRef": "63265832-2b3a-c6d5-446b-c404f3d2a160",
+      "recurringPatternTruthClass": "simulated_narrative",
       "relationshipConsequence": null,
       "relationshipConsequenceNullReason": "這一天沒有留下關係訊號。",
-      "sceneSummary": "他看到前一個收盤又往下，把持股頁面開著，還是沒有打開那份同業存貨的資料。"
+      "sceneSummary": "他看到前一個收盤又往下，把持股頁面開著，還是沒有打開那份同業存貨的資料。",
+      "sceneSummaryTruthClass": "simulated_narrative"
     },
     {
       "actionSummary": "沒有下單。他繼續持有 1,000 股。",
+      "actionSummaryTruthClass": "simulated_narrative",
       "archiveRefs": {
         "memoryRefs": [],
         "paperPositionRefs": [
@@ -1012,13 +1076,15 @@
           "asOf": "2026-03-12T13:30:00+08:00",
           "heldDays": 10,
           "positionArchiveRef": "a243c129-0297-7b54-e16f-256452eab596",
+          "truthClass": "simulated_narrative",
           "unrealizedPnlMinorUnits": -870000,
           "unrealizedPnlPercentFixed2": -870
         }
       },
       "currentSelfNarration": {
         "kind": "summary",
-        "summaryText": "暫時不知道"
+        "summaryText": "暫時不知道",
+        "truthClass": "simulated_narrative"
       },
       "entryId": "43bb9568-0ed3-3966-0d98-69e278aef1cd",
       "entryVisibility": "PUBLIC",
@@ -1063,7 +1129,9 @@
         "relationshipRefs": []
       },
       "knownAtTheTimeSummary": "他當時確實讀進去的公開資料：2026-03-11 的封存收盤價。",
+      "knownAtTheTimeSummaryTruthClass": "simulated_narrative",
       "missedFactsSummary": "收盤結果被接受之後才看得出來：同業存貨天數上升到 64.5 天的反面事實、發行人更正公告當時就在他讀得到的清單裡，他沒有打開。",
+      "missedFactsSummaryTruthClass": "simulated_narrative",
       "narrativeSegments": [
         {
           "kind": "narrator",
@@ -1096,13 +1164,17 @@
       ],
       "narrativeState": "composed",
       "openQuestionSummary": "同一份反面資料已經連續 8 個交易時段沒有被打開。他要到什麼時候才會讀它？",
+      "openQuestionSummaryTruthClass": "simulated_narrative",
       "recurringPatternRef": "63265832-2b3a-c6d5-446b-c404f3d2a160",
+      "recurringPatternTruthClass": "simulated_narrative",
       "relationshipConsequence": null,
       "relationshipConsequenceNullReason": "這一天沒有留下關係訊號。",
-      "sceneSummary": "他看到前一個收盤又往下，把持股頁面開著，還是沒有打開那份同業存貨的資料。"
+      "sceneSummary": "他看到前一個收盤又往下，把持股頁面開著，還是沒有打開那份同業存貨的資料。",
+      "sceneSummaryTruthClass": "simulated_narrative"
     },
     {
       "actionSummary": "沒有下單。他繼續持有 1,000 股。",
+      "actionSummaryTruthClass": "simulated_narrative",
       "archiveRefs": {
         "memoryRefs": [],
         "paperPositionRefs": [
@@ -1116,13 +1188,15 @@
           "asOf": "2026-03-13T13:30:00+08:00",
           "heldDays": 11,
           "positionArchiveRef": "a243c129-0297-7b54-e16f-256452eab596",
+          "truthClass": "simulated_narrative",
           "unrealizedPnlMinorUnits": -980000,
           "unrealizedPnlPercentFixed2": -980
         }
       },
       "currentSelfNarration": {
         "kind": "summary",
-        "summaryText": "暫時不知道"
+        "summaryText": "暫時不知道",
+        "truthClass": "simulated_narrative"
       },
       "entryId": "ccb9ee46-83c9-af6d-056b-d877a9b938c6",
       "entryVisibility": "PUBLIC",
@@ -1167,7 +1241,9 @@
         "relationshipRefs": []
       },
       "knownAtTheTimeSummary": "他當時確實讀進去的公開資料：2026-03-12 的封存收盤價。",
+      "knownAtTheTimeSummaryTruthClass": "simulated_narrative",
       "missedFactsSummary": "收盤結果被接受之後才看得出來：同業存貨天數上升到 64.5 天的反面事實、發行人更正公告當時就在他讀得到的清單裡，他沒有打開。",
+      "missedFactsSummaryTruthClass": "simulated_narrative",
       "narrativeSegments": [
         {
           "kind": "narrator",
@@ -1200,13 +1276,17 @@
       ],
       "narrativeState": "composed",
       "openQuestionSummary": "同一份反面資料已經連續 9 個交易時段沒有被打開。他要到什麼時候才會讀它？",
+      "openQuestionSummaryTruthClass": "simulated_narrative",
       "recurringPatternRef": "63265832-2b3a-c6d5-446b-c404f3d2a160",
+      "recurringPatternTruthClass": "simulated_narrative",
       "relationshipConsequence": null,
       "relationshipConsequenceNullReason": "這一天沒有留下關係訊號。",
-      "sceneSummary": "他把持股頁面開著，沒有動作，也沒有再打開那份同業存貨的資料。"
+      "sceneSummary": "他把持股頁面開著，沒有動作，也沒有再打開那份同業存貨的資料。",
+      "sceneSummaryTruthClass": "simulated_narrative"
     },
     {
       "actionSummary": "沒有下單。他繼續持有 1,000 股。",
+      "actionSummaryTruthClass": "simulated_narrative",
       "archiveRefs": {
         "memoryRefs": [],
         "paperPositionRefs": [
@@ -1220,13 +1300,15 @@
           "asOf": "2026-03-16T13:30:00+08:00",
           "heldDays": 14,
           "positionArchiveRef": "a243c129-0297-7b54-e16f-256452eab596",
+          "truthClass": "simulated_narrative",
           "unrealizedPnlMinorUnits": -1060000,
           "unrealizedPnlPercentFixed2": -1060
         }
       },
       "currentSelfNarration": {
         "kind": "summary",
-        "summaryText": "暫時不知道"
+        "summaryText": "暫時不知道",
+        "truthClass": "simulated_narrative"
       },
       "entryId": "f44b5628-9218-d3ba-2a74-bd1459b298b9",
       "entryVisibility": "PUBLIC",
@@ -1271,7 +1353,9 @@
         "relationshipRefs": []
       },
       "knownAtTheTimeSummary": "他當時確實讀進去的公開資料：2026-03-13 的封存收盤價。",
+      "knownAtTheTimeSummaryTruthClass": "simulated_narrative",
       "missedFactsSummary": "收盤結果被接受之後才看得出來：同業存貨天數上升到 64.5 天的反面事實、發行人更正公告當時就在他讀得到的清單裡，他沒有打開。",
+      "missedFactsSummaryTruthClass": "simulated_narrative",
       "narrativeSegments": [
         {
           "kind": "narrator",
@@ -1304,13 +1388,17 @@
       ],
       "narrativeState": "composed",
       "openQuestionSummary": "同一份反面資料已經連續 10 個交易時段沒有被打開。他要到什麼時候才會讀它？",
+      "openQuestionSummaryTruthClass": "simulated_narrative",
       "recurringPatternRef": "63265832-2b3a-c6d5-446b-c404f3d2a160",
+      "recurringPatternTruthClass": "simulated_narrative",
       "relationshipConsequence": null,
       "relationshipConsequenceNullReason": "這一天沒有留下關係訊號。",
-      "sceneSummary": "他看到前一個收盤又往下，把持股頁面開著，還是沒有打開那份同業存貨的資料。"
+      "sceneSummary": "他看到前一個收盤又往下，把持股頁面開著，還是沒有打開那份同業存貨的資料。",
+      "sceneSummaryTruthClass": "simulated_narrative"
     },
     {
       "actionSummary": "模擬賣出 PSZS-DEMO 400 股，成交價 88.20，實現虧損 4,720 元；剩下 600 股仍在。",
+      "actionSummaryTruthClass": "simulated_narrative",
       "archiveRefs": {
         "memoryRefs": [
           "1bbeb6ac-86fd-27eb-6f88-168e8e4de0bc"
@@ -1326,6 +1414,7 @@
           "asOf": "2026-03-17T13:30:00+08:00",
           "heldDays": 15,
           "positionArchiveRef": "a243c129-0297-7b54-e16f-256452eab596",
+          "truthClass": "simulated_narrative",
           "unrealizedPnlMinorUnits": -708000,
           "unrealizedPnlPercentFixed2": -1180
         }
@@ -1334,6 +1423,7 @@
         "canonicalTextSha256": "fb75e3ec250c150991ab031492203484fd5ec123bcab1b7b3995373e5fa50ab2",
         "canonicalTextUtf8": "原本的理由已經不成立，先減碼。",
         "kind": "utterance",
+        "truthClass": "simulated_narrative",
         "utteranceArtifactId": "4a8aea98-d9f3-d681-2c39-65b9c519d304"
       },
       "entryId": "8836dbab-cca9-a653-9e18-96a51cafdf1a",
@@ -1420,7 +1510,9 @@
         "relationshipRefs": []
       },
       "knownAtTheTimeSummary": "他當時確實讀進去的公開資料：發行人更正公告、同業存貨天數上升到 64.5 天的反面事實、2026-03-16 的封存收盤價。",
+      "knownAtTheTimeSummaryTruthClass": "simulated_narrative",
       "missedFactsSummary": "這一天他沒有漏掉任何一則當時已公開的高顯著性資料。",
+      "missedFactsSummaryTruthClass": "simulated_narrative",
       "narrativeSegments": [
         {
           "kind": "narrator",
@@ -1475,12 +1567,15 @@
       ],
       "narrativeState": "composed",
       "openQuestionSummary": "他還沒有說，為什麼撐了 15 天。",
+      "openQuestionSummaryTruthClass": "simulated_narrative",
       "relationshipConsequence": null,
       "relationshipConsequenceNullReason": "這一天沒有留下關係訊號。",
-      "sceneSummary": "他重看了那份同業存貨的資料，減碼四百股，然後主動走回同事的座位旁。"
+      "sceneSummary": "他重看了那份同業存貨的資料，減碼四百股，然後主動走回同事的座位旁。",
+      "sceneSummaryTruthClass": "simulated_narrative"
     },
     {
       "actionSummary": "沒有下單。他重看了資料，繼續持有 600 股。",
+      "actionSummaryTruthClass": "simulated_narrative",
       "archiveRefs": {
         "memoryRefs": [],
         "paperPositionRefs": [
@@ -1494,13 +1589,15 @@
           "asOf": "2026-03-18T13:30:00+08:00",
           "heldDays": 16,
           "positionArchiveRef": "a243c129-0297-7b54-e16f-256452eab596",
+          "truthClass": "simulated_narrative",
           "unrealizedPnlMinorUnits": -684000,
           "unrealizedPnlPercentFixed2": -1140
         }
       },
       "currentSelfNarration": {
         "kind": "summary",
-        "summaryText": "暫時不知道"
+        "summaryText": "暫時不知道",
+        "truthClass": "simulated_narrative"
       },
       "entryId": "64731b0d-b9d6-699f-8fa8-c131e937862d",
       "entryVisibility": "PUBLIC",
@@ -1545,7 +1642,9 @@
         "relationshipRefs": []
       },
       "knownAtTheTimeSummary": "他當時確實讀進去的公開資料：同業存貨天數上升到 64.5 天的反面事實、2026-03-17 的封存收盤價。",
+      "knownAtTheTimeSummaryTruthClass": "simulated_narrative",
       "missedFactsSummary": "這一天他沒有漏掉任何一則當時已公開的高顯著性資料。",
+      "missedFactsSummaryTruthClass": "simulated_narrative",
       "narrativeSegments": [
         {
           "kind": "narrator",
@@ -1578,12 +1677,15 @@
       ],
       "narrativeState": "composed",
       "openQuestionSummary": "剩下的 600 股還在。下一次被問到時，他會怎麼說明它們？",
+      "openQuestionSummaryTruthClass": "simulated_narrative",
       "relationshipConsequence": null,
       "relationshipConsequenceNullReason": "這一天沒有留下關係訊號。",
-      "sceneSummary": "他在重看前一天終於減碼的那批資料。"
+      "sceneSummary": "他在重看前一天終於減碼的那批資料。",
+      "sceneSummaryTruthClass": "simulated_narrative"
     },
     {
       "actionSummary": "沒有下單。他繼續持有 600 股。",
+      "actionSummaryTruthClass": "simulated_narrative",
       "archiveRefs": {
         "memoryRefs": [],
         "paperPositionRefs": [
@@ -1597,13 +1699,15 @@
           "asOf": "2026-03-19T13:30:00+08:00",
           "heldDays": 17,
           "positionArchiveRef": "a243c129-0297-7b54-e16f-256452eab596",
+          "truthClass": "simulated_narrative",
           "unrealizedPnlMinorUnits": -654000,
           "unrealizedPnlPercentFixed2": -1090
         }
       },
       "currentSelfNarration": {
         "kind": "summary",
-        "summaryText": "暫時不知道"
+        "summaryText": "暫時不知道",
+        "truthClass": "simulated_narrative"
       },
       "entryId": "a1ac13dc-abf0-33a7-bc81-aa2e9246aa7e",
       "entryVisibility": "PUBLIC",
@@ -1648,7 +1752,9 @@
         "relationshipRefs": []
       },
       "knownAtTheTimeSummary": "他當時確實讀進去的公開資料：2026-03-18 的封存收盤價。",
+      "knownAtTheTimeSummaryTruthClass": "simulated_narrative",
       "missedFactsSummary": "這一天他沒有漏掉任何一則當時已公開的高顯著性資料。",
+      "missedFactsSummaryTruthClass": "simulated_narrative",
       "narrativeSegments": [
         {
           "kind": "narrator",
@@ -1681,12 +1787,15 @@
       ],
       "narrativeState": "composed",
       "openQuestionSummary": "剩下的 600 股還在。下一次被問到時，他會怎麼說明它們？",
+      "openQuestionSummaryTruthClass": "simulated_narrative",
       "relationshipConsequence": null,
       "relationshipConsequenceNullReason": "這一天沒有留下關係訊號。",
-      "sceneSummary": "他照著自己記下的檢查時點看了一次報價，沒有動作。"
+      "sceneSummary": "他照著自己記下的檢查時點看了一次報價，沒有動作。",
+      "sceneSummaryTruthClass": "simulated_narrative"
     },
     {
       "actionSummary": "沒有下單。他繼續持有 600 股。",
+      "actionSummaryTruthClass": "simulated_narrative",
       "archiveRefs": {
         "memoryRefs": [],
         "paperPositionRefs": [
@@ -1700,13 +1809,15 @@
           "asOf": "2026-03-20T13:30:00+08:00",
           "heldDays": 18,
           "positionArchiveRef": "a243c129-0297-7b54-e16f-256452eab596",
+          "truthClass": "simulated_narrative",
           "unrealizedPnlMinorUnits": -666000,
           "unrealizedPnlPercentFixed2": -1110
         }
       },
       "currentSelfNarration": {
         "kind": "summary",
-        "summaryText": "暫時不知道"
+        "summaryText": "暫時不知道",
+        "truthClass": "simulated_narrative"
       },
       "entryId": "b8b91bf3-842d-e670-e416-a9c49581a5e5",
       "entryVisibility": "PUBLIC",
@@ -1751,7 +1862,9 @@
         "relationshipRefs": []
       },
       "knownAtTheTimeSummary": "他當時確實讀進去的公開資料：2026-03-19 的封存收盤價。",
+      "knownAtTheTimeSummaryTruthClass": "simulated_narrative",
       "missedFactsSummary": "這一天他沒有漏掉任何一則當時已公開的高顯著性資料。",
+      "missedFactsSummaryTruthClass": "simulated_narrative",
       "narrativeSegments": [
         {
           "kind": "narrator",
@@ -1784,12 +1897,15 @@
       ],
       "narrativeState": "composed",
       "openQuestionSummary": "剩下的 600 股還在。下一次被問到時，他會怎麼說明它們？",
+      "openQuestionSummaryTruthClass": "simulated_narrative",
       "relationshipConsequence": null,
       "relationshipConsequenceNullReason": "這一天沒有留下關係訊號。",
-      "sceneSummary": "他照著自己記下的檢查時點看了一次報價，沒有動作。"
+      "sceneSummary": "他照著自己記下的檢查時點看了一次報價，沒有動作。",
+      "sceneSummaryTruthClass": "simulated_narrative"
     },
     {
       "actionSummary": "沒有下單。他繼續持有 600 股。",
+      "actionSummaryTruthClass": "simulated_narrative",
       "archiveRefs": {
         "memoryRefs": [],
         "paperPositionRefs": [
@@ -1803,13 +1919,15 @@
           "asOf": "2026-03-23T13:30:00+08:00",
           "heldDays": 21,
           "positionArchiveRef": "a243c129-0297-7b54-e16f-256452eab596",
+          "truthClass": "simulated_narrative",
           "unrealizedPnlMinorUnits": -702000,
           "unrealizedPnlPercentFixed2": -1170
         }
       },
       "currentSelfNarration": {
         "kind": "summary",
-        "summaryText": "暫時不知道"
+        "summaryText": "暫時不知道",
+        "truthClass": "simulated_narrative"
       },
       "entryId": "b6b3480b-d146-6901-40ce-23788f07cea0",
       "entryVisibility": "PUBLIC",
@@ -1854,7 +1972,9 @@
         "relationshipRefs": []
       },
       "knownAtTheTimeSummary": "他當時確實讀進去的公開資料：2026-03-20 的封存收盤價。",
+      "knownAtTheTimeSummaryTruthClass": "simulated_narrative",
       "missedFactsSummary": "這一天他沒有漏掉任何一則當時已公開的高顯著性資料。",
+      "missedFactsSummaryTruthClass": "simulated_narrative",
       "narrativeSegments": [
         {
           "kind": "narrator",
@@ -1887,12 +2007,15 @@
       ],
       "narrativeState": "composed",
       "openQuestionSummary": "剩下的 600 股還在。下一次被問到時，他會怎麼說明它們？",
+      "openQuestionSummaryTruthClass": "simulated_narrative",
       "relationshipConsequence": null,
       "relationshipConsequenceNullReason": "這一天沒有留下關係訊號。",
-      "sceneSummary": "他看到前一個收盤又往下，照著自己記下的檢查時點看了一次報價，沒有動作。"
+      "sceneSummary": "他看到前一個收盤又往下，照著自己記下的檢查時點看了一次報價，沒有動作。",
+      "sceneSummaryTruthClass": "simulated_narrative"
     },
     {
       "actionSummary": "沒有下單。他繼續持有 600 股。",
+      "actionSummaryTruthClass": "simulated_narrative",
       "archiveRefs": {
         "memoryRefs": [
           "5ca9884b-04f1-90ba-5a3d-1404817f2d27"
@@ -1908,13 +2031,15 @@
           "asOf": "2026-03-24T13:30:00+08:00",
           "heldDays": 22,
           "positionArchiveRef": "a243c129-0297-7b54-e16f-256452eab596",
+          "truthClass": "simulated_narrative",
           "unrealizedPnlMinorUnits": -744000,
           "unrealizedPnlPercentFixed2": -1240
         }
       },
       "currentSelfNarration": {
         "kind": "summary",
-        "summaryText": "暫時不知道"
+        "summaryText": "暫時不知道",
+        "truthClass": "simulated_narrative"
       },
       "entryId": "d5b6a025-8874-4db8-e04b-73e771df8ffd",
       "entryVisibility": "PUBLIC",
@@ -1972,7 +2097,9 @@
         "relationshipRefs": []
       },
       "knownAtTheTimeSummary": "他當時確實讀進去的公開資料：2026-03-23 的封存收盤價。",
+      "knownAtTheTimeSummaryTruthClass": "simulated_narrative",
       "missedFactsSummary": "這一天他沒有漏掉任何一則當時已公開的高顯著性資料。",
+      "missedFactsSummaryTruthClass": "simulated_narrative",
       "narrativeSegments": [
         {
           "kind": "narrator",
@@ -2005,12 +2132,15 @@
       ],
       "narrativeState": "composed",
       "openQuestionSummary": "剩下的 600 股還在。下一次被問到時，他會怎麼說明它們？",
+      "openQuestionSummaryTruthClass": "simulated_narrative",
       "relationshipConsequence": null,
       "relationshipConsequenceNullReason": "這一天沒有留下關係訊號。",
-      "sceneSummary": "他在茶水間遇到同組同事，先開口提起那個部位還在看。"
+      "sceneSummary": "他在茶水間遇到同組同事，先開口提起那個部位還在看。",
+      "sceneSummaryTruthClass": "simulated_narrative"
     },
     {
       "actionSummary": "沒有下單。他繼續持有 600 股。",
+      "actionSummaryTruthClass": "simulated_narrative",
       "archiveRefs": {
         "memoryRefs": [],
         "paperPositionRefs": [
@@ -2024,13 +2154,15 @@
           "asOf": "2026-03-25T13:30:00+08:00",
           "heldDays": 23,
           "positionArchiveRef": "a243c129-0297-7b54-e16f-256452eab596",
+          "truthClass": "simulated_narrative",
           "unrealizedPnlMinorUnits": -786000,
           "unrealizedPnlPercentFixed2": -1310
         }
       },
       "currentSelfNarration": {
         "kind": "summary",
-        "summaryText": "暫時不知道"
+        "summaryText": "暫時不知道",
+        "truthClass": "simulated_narrative"
       },
       "entryId": "a372e41e-263c-ebd4-6828-cc378b8ceb0f",
       "entryVisibility": "PUBLIC",
@@ -2075,7 +2207,9 @@
         "relationshipRefs": []
       },
       "knownAtTheTimeSummary": "他當時確實讀進去的公開資料：2026-03-24 的封存收盤價。",
+      "knownAtTheTimeSummaryTruthClass": "simulated_narrative",
       "missedFactsSummary": "這一天他沒有漏掉任何一則當時已公開的高顯著性資料。",
+      "missedFactsSummaryTruthClass": "simulated_narrative",
       "narrativeSegments": [
         {
           "kind": "narrator",
@@ -2108,12 +2242,15 @@
       ],
       "narrativeState": "composed",
       "openQuestionSummary": "剩下的 600 股還在。下一次被問到時，他會怎麼說明它們？",
+      "openQuestionSummaryTruthClass": "simulated_narrative",
       "relationshipConsequence": null,
       "relationshipConsequenceNullReason": "這一天沒有留下關係訊號。",
-      "sceneSummary": "他看到前一個收盤又往下，照著自己記下的檢查時點看了一次報價，沒有動作。"
+      "sceneSummary": "他看到前一個收盤又往下，照著自己記下的檢查時點看了一次報價，沒有動作。",
+      "sceneSummaryTruthClass": "simulated_narrative"
     },
     {
       "actionSummary": "沒有下單。他繼續持有 600 股。",
+      "actionSummaryTruthClass": "simulated_narrative",
       "archiveRefs": {
         "memoryRefs": [],
         "paperPositionRefs": [
@@ -2127,13 +2264,15 @@
           "asOf": "2026-03-26T13:30:00+08:00",
           "heldDays": 24,
           "positionArchiveRef": "a243c129-0297-7b54-e16f-256452eab596",
+          "truthClass": "simulated_narrative",
           "unrealizedPnlMinorUnits": -834000,
           "unrealizedPnlPercentFixed2": -1390
         }
       },
       "currentSelfNarration": {
         "kind": "summary",
-        "summaryText": "暫時不知道"
+        "summaryText": "暫時不知道",
+        "truthClass": "simulated_narrative"
       },
       "entryId": "ece78972-1e28-b299-9d20-b2e626c32c5e",
       "entryVisibility": "PUBLIC",
@@ -2178,7 +2317,9 @@
         "relationshipRefs": []
       },
       "knownAtTheTimeSummary": "他當時確實讀進去的公開資料：2026-03-25 的封存收盤價。",
+      "knownAtTheTimeSummaryTruthClass": "simulated_narrative",
       "missedFactsSummary": "這一天他沒有漏掉任何一則當時已公開的高顯著性資料。",
+      "missedFactsSummaryTruthClass": "simulated_narrative",
       "narrativeSegments": [
         {
           "kind": "narrator",
@@ -2211,12 +2352,15 @@
       ],
       "narrativeState": "composed",
       "openQuestionSummary": "剩下的 600 股還在。下一次被問到時，他會怎麼說明它們？",
+      "openQuestionSummaryTruthClass": "simulated_narrative",
       "relationshipConsequence": null,
       "relationshipConsequenceNullReason": "這一天沒有留下關係訊號。",
-      "sceneSummary": "他看到前一個收盤又往下，照著自己記下的檢查時點看了一次報價，沒有動作。"
+      "sceneSummary": "他看到前一個收盤又往下，照著自己記下的檢查時點看了一次報價，沒有動作。",
+      "sceneSummaryTruthClass": "simulated_narrative"
     },
     {
       "actionSummary": "沒有下單。他繼續持有 600 股。",
+      "actionSummaryTruthClass": "simulated_narrative",
       "archiveRefs": {
         "memoryRefs": [
           "6dfd7ac4-24a2-2b0b-14c4-4fb81d84b465"
@@ -2234,6 +2378,7 @@
           "asOf": "2026-03-27T13:30:00+08:00",
           "heldDays": 25,
           "positionArchiveRef": "a243c129-0297-7b54-e16f-256452eab596",
+          "truthClass": "simulated_narrative",
           "unrealizedPnlMinorUnits": -858000,
           "unrealizedPnlPercentFixed2": -1430
         }
@@ -2241,11 +2386,13 @@
       "contemporaneousClaim": {
         "canonicalTextSha256": "b97ec2c36a068a52bcf5bd12773e2589301f8ff9e8660b4e859d490165754143",
         "canonicalTextUtf8": "這一段會虧，是因為那陣子旁邊的人一直在講它。",
+        "truthClass": "simulated_narrative",
         "utteranceArtifactId": "74d3bb5e-beb0-031f-9dc7-769d9399e776"
       },
       "currentSelfNarration": {
         "kind": "summary",
-        "summaryText": "暫時不知道"
+        "summaryText": "暫時不知道",
+        "truthClass": "simulated_narrative"
       },
       "entryId": "c66659ee-1557-8675-fe86-9cb3123facea",
       "entryVisibility": "PUBLIC",
@@ -2333,7 +2480,9 @@
         ]
       },
       "knownAtTheTimeSummary": "他當時確實讀進去的公開資料：2026-03-26 的封存收盤價。",
+      "knownAtTheTimeSummaryTruthClass": "simulated_narrative",
       "missedFactsSummary": "這一天他沒有漏掉任何一則當時已公開的高顯著性資料。",
+      "missedFactsSummaryTruthClass": "simulated_narrative",
       "narrativeSegments": [
         {
           "kind": "narrator",
@@ -2388,15 +2537,18 @@
       ],
       "narrativeState": "composed",
       "openQuestionSummary": "他在組會上把虧損歸到別人身上。他會收回那句話嗎？",
+      "openQuestionSummaryTruthClass": "simulated_narrative",
       "relationshipConsequence": {
         "consequenceMemoryRefs": [
           "6dfd7ac4-24a2-2b0b-14c4-4fb81d84b465"
         ],
         "displayName": "陳小雨",
+        "displayNameTruthClass": "fictional_setting",
         "dyadRef": "63bbcc07-6fce-2ffe-a787-a22f85916546",
         "journalEntryRef": "c66659ee-1557-8675-fe86-9cb3123facea",
         "observedAt": "2026-03-27T10:41:00+08:00",
         "relationLabel": "同組同事",
+        "relationLabelTruthClass": "fictional_setting",
         "relationshipSignalRef": "0eea9eff-cd1e-8865-4040-21606cc777c0",
         "sessionDate": "2026-03-27",
         "signalKind": "public_outcome_attribution",
@@ -2425,14 +2577,17 @@
         "utterance": {
           "canonicalTextSha256": "b97ec2c36a068a52bcf5bd12773e2589301f8ff9e8660b4e859d490165754143",
           "canonicalTextUtf8": "這一段會虧，是因為那陣子旁邊的人一直在講它。",
+          "truthClass": "simulated_narrative",
           "utteranceArtifactId": "74d3bb5e-beb0-031f-9dc7-769d9399e776"
         }
       },
       "relationshipConsequenceNullReason": null,
-      "sceneSummary": "組會上被問到那個部位時，他先看了同組同事一眼才開口。"
+      "sceneSummary": "組會上被問到那個部位時，他先看了同組同事一眼才開口。",
+      "sceneSummaryTruthClass": "simulated_narrative"
     },
     {
       "actionSummary": "沒有下單。他繼續持有 600 股。",
+      "actionSummaryTruthClass": "simulated_narrative",
       "archiveRefs": {
         "memoryRefs": [],
         "paperPositionRefs": [
@@ -2446,13 +2601,15 @@
           "asOf": "2026-03-30T13:30:00+08:00",
           "heldDays": 28,
           "positionArchiveRef": "a243c129-0297-7b54-e16f-256452eab596",
+          "truthClass": "simulated_narrative",
           "unrealizedPnlMinorUnits": -828000,
           "unrealizedPnlPercentFixed2": -1380
         }
       },
       "currentSelfNarration": {
         "kind": "summary",
-        "summaryText": "暫時不知道"
+        "summaryText": "暫時不知道",
+        "truthClass": "simulated_narrative"
       },
       "entryId": "52435d2b-7273-cd65-6c8c-ab3aa74fd5b5",
       "entryVisibility": "PUBLIC",
@@ -2497,7 +2654,9 @@
         "relationshipRefs": []
       },
       "knownAtTheTimeSummary": "他當時確實讀進去的公開資料：2026-03-27 的封存收盤價。",
+      "knownAtTheTimeSummaryTruthClass": "simulated_narrative",
       "missedFactsSummary": "這一天他沒有漏掉任何一則當時已公開的高顯著性資料。",
+      "missedFactsSummaryTruthClass": "simulated_narrative",
       "narrativeSegments": [
         {
           "kind": "narrator",
@@ -2530,12 +2689,15 @@
       ],
       "narrativeState": "composed",
       "openQuestionSummary": "他在 2026-03-27 組會上的那句話還沒有收回。剩下的 600 股還在。",
+      "openQuestionSummaryTruthClass": "simulated_narrative",
       "relationshipConsequence": null,
       "relationshipConsequenceNullReason": "這一天沒有留下關係訊號。",
-      "sceneSummary": "他看到前一個收盤又往下，照著自己記下的檢查時點看了一次報價，沒有動作。"
+      "sceneSummary": "他看到前一個收盤又往下，照著自己記下的檢查時點看了一次報價，沒有動作。",
+      "sceneSummaryTruthClass": "simulated_narrative"
     },
     {
       "actionSummary": "沒有下單。他繼續持有 600 股。",
+      "actionSummaryTruthClass": "simulated_narrative",
       "archiveRefs": {
         "memoryRefs": [],
         "paperPositionRefs": [
@@ -2549,13 +2711,15 @@
           "asOf": "2026-03-31T13:30:00+08:00",
           "heldDays": 29,
           "positionArchiveRef": "a243c129-0297-7b54-e16f-256452eab596",
+          "truthClass": "simulated_narrative",
           "unrealizedPnlMinorUnits": -792000,
           "unrealizedPnlPercentFixed2": -1320
         }
       },
       "currentSelfNarration": {
         "kind": "summary",
-        "summaryText": "暫時不知道"
+        "summaryText": "暫時不知道",
+        "truthClass": "simulated_narrative"
       },
       "entryId": "4700464e-32dc-1b93-8236-24fd958dca87",
       "entryVisibility": "PUBLIC",
@@ -2600,7 +2764,9 @@
         "relationshipRefs": []
       },
       "knownAtTheTimeSummary": "他當時確實讀進去的公開資料：2026-03-30 的封存收盤價。",
+      "knownAtTheTimeSummaryTruthClass": "simulated_narrative",
       "missedFactsSummary": "這一天他沒有漏掉任何一則當時已公開的高顯著性資料。",
+      "missedFactsSummaryTruthClass": "simulated_narrative",
       "narrativeSegments": [
         {
           "kind": "narrator",
@@ -2633,12 +2799,15 @@
       ],
       "narrativeState": "composed",
       "openQuestionSummary": "他在 2026-03-27 組會上的那句話還沒有收回。剩下的 600 股還在。",
+      "openQuestionSummaryTruthClass": "simulated_narrative",
       "relationshipConsequence": null,
       "relationshipConsequenceNullReason": "這一天沒有留下關係訊號。",
-      "sceneSummary": "他照著自己記下的檢查時點看了一次報價，沒有動作。"
+      "sceneSummary": "他照著自己記下的檢查時點看了一次報價，沒有動作。",
+      "sceneSummaryTruthClass": "simulated_narrative"
     },
     {
       "actionSummary": "沒有下單。他繼續持有 600 股。",
+      "actionSummaryTruthClass": "simulated_narrative",
       "archiveRefs": {
         "memoryRefs": [],
         "paperPositionRefs": [
@@ -2652,13 +2821,15 @@
           "asOf": "2026-04-01T13:30:00+08:00",
           "heldDays": 30,
           "positionArchiveRef": "a243c129-0297-7b54-e16f-256452eab596",
+          "truthClass": "simulated_narrative",
           "unrealizedPnlMinorUnits": -774000,
           "unrealizedPnlPercentFixed2": -1290
         }
       },
       "currentSelfNarration": {
         "kind": "summary",
-        "summaryText": "暫時不知道"
+        "summaryText": "暫時不知道",
+        "truthClass": "simulated_narrative"
       },
       "entryId": "a25f4c6e-1d99-29a6-0bee-4af5a3c3fa28",
       "entryVisibility": "PUBLIC",
@@ -2703,7 +2874,9 @@
         "relationshipRefs": []
       },
       "knownAtTheTimeSummary": "他當時確實讀進去的公開資料：2026-03-31 的封存收盤價。",
+      "knownAtTheTimeSummaryTruthClass": "simulated_narrative",
       "missedFactsSummary": "這一天他沒有漏掉任何一則當時已公開的高顯著性資料。",
+      "missedFactsSummaryTruthClass": "simulated_narrative",
       "narrativeSegments": [
         {
           "kind": "narrator",
@@ -2736,12 +2909,15 @@
       ],
       "narrativeState": "composed",
       "openQuestionSummary": "他在 2026-03-27 組會上的那句話還沒有收回。剩下的 600 股還在。",
+      "openQuestionSummaryTruthClass": "simulated_narrative",
       "relationshipConsequence": null,
       "relationshipConsequenceNullReason": "這一天沒有留下關係訊號。",
-      "sceneSummary": "他照著自己記下的檢查時點看了一次報價，沒有動作。"
+      "sceneSummary": "他照著自己記下的檢查時點看了一次報價，沒有動作。",
+      "sceneSummaryTruthClass": "simulated_narrative"
     },
     {
       "actionSummary": "沒有下單。他繼續持有 600 股。",
+      "actionSummaryTruthClass": "simulated_narrative",
       "archiveRefs": {
         "memoryRefs": [],
         "paperPositionRefs": [
@@ -2755,13 +2931,15 @@
           "asOf": "2026-04-02T13:30:00+08:00",
           "heldDays": 31,
           "positionArchiveRef": "a243c129-0297-7b54-e16f-256452eab596",
+          "truthClass": "simulated_narrative",
           "unrealizedPnlMinorUnits": -750000,
           "unrealizedPnlPercentFixed2": -1250
         }
       },
       "currentSelfNarration": {
         "kind": "summary",
-        "summaryText": "暫時不知道"
+        "summaryText": "暫時不知道",
+        "truthClass": "simulated_narrative"
       },
       "entryId": "ed25568a-69ad-17e9-0249-733053055fe3",
       "entryVisibility": "PUBLIC",
@@ -2806,7 +2984,9 @@
         "relationshipRefs": []
       },
       "knownAtTheTimeSummary": "他當時確實讀進去的公開資料：2026-04-01 的封存收盤價。",
+      "knownAtTheTimeSummaryTruthClass": "simulated_narrative",
       "missedFactsSummary": "這一天他沒有漏掉任何一則當時已公開的高顯著性資料。",
+      "missedFactsSummaryTruthClass": "simulated_narrative",
       "narrativeSegments": [
         {
           "kind": "narrator",
@@ -2839,12 +3019,15 @@
       ],
       "narrativeState": "composed",
       "openQuestionSummary": "他在 2026-03-27 組會上的那句話還沒有收回。剩下的 600 股還在。",
+      "openQuestionSummaryTruthClass": "simulated_narrative",
       "relationshipConsequence": null,
       "relationshipConsequenceNullReason": "這一天沒有留下關係訊號。",
-      "sceneSummary": "他照著自己記下的檢查時點看了一次報價，沒有動作。"
+      "sceneSummary": "他照著自己記下的檢查時點看了一次報價，沒有動作。",
+      "sceneSummaryTruthClass": "simulated_narrative"
     },
     {
       "actionSummary": "沒有下單。他繼續持有 600 股。",
+      "actionSummaryTruthClass": "simulated_narrative",
       "archiveRefs": {
         "memoryRefs": [],
         "paperPositionRefs": [
@@ -2858,13 +3041,15 @@
           "asOf": "2026-04-07T13:30:00+08:00",
           "heldDays": 36,
           "positionArchiveRef": "a243c129-0297-7b54-e16f-256452eab596",
+          "truthClass": "simulated_narrative",
           "unrealizedPnlMinorUnits": -792000,
           "unrealizedPnlPercentFixed2": -1320
         }
       },
       "currentSelfNarration": {
         "kind": "summary",
-        "summaryText": "暫時不知道"
+        "summaryText": "暫時不知道",
+        "truthClass": "simulated_narrative"
       },
       "entryId": "a6a1f3e1-04bd-0433-63fe-bbdd28ccf6e8",
       "entryVisibility": "PUBLIC",
@@ -2909,7 +3094,9 @@
         "relationshipRefs": []
       },
       "knownAtTheTimeSummary": "他當時確實讀進去的公開資料：2026-04-02 的封存收盤價。",
+      "knownAtTheTimeSummaryTruthClass": "simulated_narrative",
       "missedFactsSummary": "這一天他沒有漏掉任何一則當時已公開的高顯著性資料。",
+      "missedFactsSummaryTruthClass": "simulated_narrative",
       "narrativeSegments": [
         {
           "kind": "narrator",
@@ -2942,12 +3129,15 @@
       ],
       "narrativeState": "composed",
       "openQuestionSummary": "他在 2026-03-27 組會上的那句話還沒有收回。剩下的 600 股還在。",
+      "openQuestionSummaryTruthClass": "simulated_narrative",
       "relationshipConsequence": null,
       "relationshipConsequenceNullReason": "這一天沒有留下關係訊號。",
-      "sceneSummary": "他照著自己記下的檢查時點看了一次報價，沒有動作。"
+      "sceneSummary": "他照著自己記下的檢查時點看了一次報價，沒有動作。",
+      "sceneSummaryTruthClass": "simulated_narrative"
     },
     {
       "actionSummary": "沒有下單。他繼續持有 600 股。",
+      "actionSummaryTruthClass": "simulated_narrative",
       "archiveRefs": {
         "memoryRefs": [
           "a0f639e8-2ff4-9d97-3d8b-33345aa31e41"
@@ -2963,6 +3153,7 @@
           "asOf": "2026-04-08T13:30:00+08:00",
           "heldDays": 37,
           "positionArchiveRef": "a243c129-0297-7b54-e16f-256452eab596",
+          "truthClass": "simulated_narrative",
           "unrealizedPnlMinorUnits": -816000,
           "unrealizedPnlPercentFixed2": -1360
         }
@@ -2970,11 +3161,13 @@
       "contemporaneousClaim": {
         "canonicalTextSha256": "2d807e8e1105c7fe4e1160858893e2e859d99bb0581fb2ef991d67c9360666ce",
         "canonicalTextUtf8": "這一段是我自己判斷錯了，不是別人的問題。",
+        "truthClass": "simulated_narrative",
         "utteranceArtifactId": "4431acbb-338d-854d-d14c-699be8e6a31e"
       },
       "currentSelfNarration": {
         "kind": "summary",
-        "summaryText": "暫時不知道"
+        "summaryText": "暫時不知道",
+        "truthClass": "simulated_narrative"
       },
       "entryId": "a021fce1-fede-ecdc-8033-89cdfeef552f",
       "entryVisibility": "PUBLIC",
@@ -3048,7 +3241,9 @@
         "relationshipRefs": []
       },
       "knownAtTheTimeSummary": "他當時確實讀進去的公開資料：2026-04-07 的封存收盤價。",
+      "knownAtTheTimeSummaryTruthClass": "simulated_narrative",
       "missedFactsSummary": "這一天他沒有漏掉任何一則當時已公開的高顯著性資料。",
+      "missedFactsSummaryTruthClass": "simulated_narrative",
       "narrativeSegments": [
         {
           "kind": "narrator",
@@ -3103,12 +3298,15 @@
       ],
       "narrativeState": "composed",
       "openQuestionSummary": "這一次他把虧損算在自己頭上。下一次被問到時呢？",
+      "openQuestionSummaryTruthClass": "simulated_narrative",
       "relationshipConsequence": null,
       "relationshipConsequenceNullReason": "這一天沒有留下關係訊號。",
-      "sceneSummary": "組會上被問到那個部位時，他直接把自己的持股紀錄投到螢幕上才開口。"
+      "sceneSummary": "組會上被問到那個部位時，他直接把自己的持股紀錄投到螢幕上才開口。",
+      "sceneSummaryTruthClass": "simulated_narrative"
     },
     {
       "actionSummary": "沒有下單。他繼續持有 600 股。",
+      "actionSummaryTruthClass": "simulated_narrative",
       "archiveRefs": {
         "memoryRefs": [],
         "paperPositionRefs": [
@@ -3122,13 +3320,15 @@
           "asOf": "2026-04-09T13:30:00+08:00",
           "heldDays": 38,
           "positionArchiveRef": "a243c129-0297-7b54-e16f-256452eab596",
+          "truthClass": "simulated_narrative",
           "unrealizedPnlMinorUnits": -786000,
           "unrealizedPnlPercentFixed2": -1310
         }
       },
       "currentSelfNarration": {
         "kind": "summary",
-        "summaryText": "暫時不知道"
+        "summaryText": "暫時不知道",
+        "truthClass": "simulated_narrative"
       },
       "entryId": "3fe0837a-dc69-32fa-9087-8b96e7104370",
       "entryVisibility": "PUBLIC",
@@ -3173,7 +3373,9 @@
         "relationshipRefs": []
       },
       "knownAtTheTimeSummary": "他當時確實讀進去的公開資料：2026-04-08 的封存收盤價。",
+      "knownAtTheTimeSummaryTruthClass": "simulated_narrative",
       "missedFactsSummary": "這一天他沒有漏掉任何一則當時已公開的高顯著性資料。",
+      "missedFactsSummaryTruthClass": "simulated_narrative",
       "narrativeSegments": [
         {
           "kind": "narrator",
@@ -3206,12 +3408,15 @@
       ],
       "narrativeState": "composed",
       "openQuestionSummary": "剩下的 600 股還在。下一次被問到時，他會怎麼說明它們？",
+      "openQuestionSummaryTruthClass": "simulated_narrative",
       "relationshipConsequence": null,
       "relationshipConsequenceNullReason": "這一天沒有留下關係訊號。",
-      "sceneSummary": "他看到前一個收盤又往下，照著自己記下的檢查時點看了一次報價，沒有動作。"
+      "sceneSummary": "他看到前一個收盤又往下，照著自己記下的檢查時點看了一次報價，沒有動作。",
+      "sceneSummaryTruthClass": "simulated_narrative"
     },
     {
       "actionSummary": "沒有下單。他繼續持有 600 股。",
+      "actionSummaryTruthClass": "simulated_narrative",
       "archiveRefs": {
         "memoryRefs": [],
         "paperPositionRefs": [
@@ -3225,13 +3430,15 @@
           "asOf": "2026-04-10T13:30:00+08:00",
           "heldDays": 39,
           "positionArchiveRef": "a243c129-0297-7b54-e16f-256452eab596",
+          "truthClass": "simulated_narrative",
           "unrealizedPnlMinorUnits": -756000,
           "unrealizedPnlPercentFixed2": -1260
         }
       },
       "currentSelfNarration": {
         "kind": "summary",
-        "summaryText": "暫時不知道"
+        "summaryText": "暫時不知道",
+        "truthClass": "simulated_narrative"
       },
       "entryId": "c5b4c3a1-8974-4aca-35de-d6e87cb9ffae",
       "entryVisibility": "PUBLIC",
@@ -3276,7 +3483,9 @@
         "relationshipRefs": []
       },
       "knownAtTheTimeSummary": "他當時確實讀進去的公開資料：2026-04-09 的封存收盤價。",
+      "knownAtTheTimeSummaryTruthClass": "simulated_narrative",
       "missedFactsSummary": "這一天他沒有漏掉任何一則當時已公開的高顯著性資料。",
+      "missedFactsSummaryTruthClass": "simulated_narrative",
       "narrativeSegments": [
         {
           "kind": "narrator",
@@ -3309,12 +3518,15 @@
       ],
       "narrativeState": "composed",
       "openQuestionSummary": "剩下的 600 股還在。下一次被問到時，他會怎麼說明它們？",
+      "openQuestionSummaryTruthClass": "simulated_narrative",
       "relationshipConsequence": null,
       "relationshipConsequenceNullReason": "這一天沒有留下關係訊號。",
-      "sceneSummary": "他照著自己記下的檢查時點看了一次報價，沒有動作。"
+      "sceneSummary": "他照著自己記下的檢查時點看了一次報價，沒有動作。",
+      "sceneSummaryTruthClass": "simulated_narrative"
     },
     {
       "actionSummary": "沒有下單。他繼續持有 600 股。",
+      "actionSummaryTruthClass": "simulated_narrative",
       "archiveRefs": {
         "memoryRefs": [],
         "paperPositionRefs": [
@@ -3328,13 +3540,15 @@
           "asOf": "2026-04-13T13:30:00+08:00",
           "heldDays": 42,
           "positionArchiveRef": "a243c129-0297-7b54-e16f-256452eab596",
+          "truthClass": "simulated_narrative",
           "unrealizedPnlMinorUnits": -768000,
           "unrealizedPnlPercentFixed2": -1280
         }
       },
       "currentSelfNarration": {
         "kind": "summary",
-        "summaryText": "暫時不知道"
+        "summaryText": "暫時不知道",
+        "truthClass": "simulated_narrative"
       },
       "entryId": "35f6d7a1-5ccc-7667-8cae-64b6303031ec",
       "entryVisibility": "PUBLIC",
@@ -3379,7 +3593,9 @@
         "relationshipRefs": []
       },
       "knownAtTheTimeSummary": "他當時確實讀進去的公開資料：2026-04-10 的封存收盤價。",
+      "knownAtTheTimeSummaryTruthClass": "simulated_narrative",
       "missedFactsSummary": "這一天他沒有漏掉任何一則當時已公開的高顯著性資料。",
+      "missedFactsSummaryTruthClass": "simulated_narrative",
       "narrativeSegments": [
         {
           "kind": "narrator",
@@ -3412,9 +3628,11 @@
       ],
       "narrativeState": "composed",
       "openQuestionSummary": "剩下的 600 股還在。下一次被問到時，他會怎麼說明它們？",
+      "openQuestionSummaryTruthClass": "simulated_narrative",
       "relationshipConsequence": null,
       "relationshipConsequenceNullReason": "這一天沒有留下關係訊號。",
-      "sceneSummary": "他照著自己記下的檢查時點看了一次報價，沒有動作。"
+      "sceneSummary": "他照著自己記下的檢查時點看了一次報價，沒有動作。",
+      "sceneSummaryTruthClass": "simulated_narrative"
     }
   ],
   "heldEntries": [],
