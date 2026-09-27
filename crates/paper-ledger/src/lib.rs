@@ -13,8 +13,35 @@
 //! Pure domain: no transport, no ORM, no generated Protobuf types, and no
 //! binary floating point anywhere (`docs/v5/system-design.md` §3) -- every
 //! money/quantity/price value is `panshi_decision_kernel::Fixed`.
+//!
+//! Ledger-lock coverage (`docs/v5/delivery-plan.md` "帳本鎖"):
+//!
+//! - fills with a buy fee and a sell fee plus sell-side transaction tax,
+//!   each posted as `FeeExpense`／`TaxExpense` inside one balanced batch
+//!   ([`execution`]; rates are integer basis-point fixture parameters);
+//! - trading halts: a halted instrument never fills, never accepts a new
+//!   price, and an order whose lifetime overlaps a halt can only expire; the
+//!   mark keeps the last accepted pre-halt price ([`execution`]);
+//! - corporate actions: cash dividends (optional withholding tax), splits,
+//!   reverse splits, and stock dividends applied lot by lot with exact
+//!   cost-basis conservation and cash in lieu for fractional shares
+//!   ([`corporate_action`]);
+//! - corrections of a wrong dividend or share multiplier as additional
+//!   balanced batches plus a new position event, never an edit of history;
+//! - a deterministic property test (`tests/ledger_conservation.rs`) that
+//!   checks batch balance, non-negative cash and quantity, cost-basis
+//!   conservation across share multipliers, the equity identity, zero fills
+//!   while halted, and at most one fill per order after every step.
+//!
+//! Deliberately not modelled: real tax-law detail (brackets, credits,
+//! supplementary premiums), minimum fees, price-limit bands, partial fills,
+//! rights issues, spin-offs, ex-date／pay-date separation, and rebasing a
+//! pre-action price after a share multiplier (the mark fails closed until
+//! the next accepted price instead).
 
 pub mod account;
+pub mod corporate_action;
+pub mod execution;
 pub mod order;
 pub mod position;
 

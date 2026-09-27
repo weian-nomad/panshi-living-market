@@ -35,7 +35,7 @@ impl From<FixedError> for PaperPositionError {
     }
 }
 
-const MAX_LOTS: usize = 32;
+pub(crate) const MAX_LOTS: usize = 32;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct PaperPosition {
@@ -44,8 +44,8 @@ pub struct PaperPosition {
     pub security_id_hash: [u8; 32],
     pub state: PaperPositionState,
     pub stream_version: u64,
-    lots: [Option<Lot>; MAX_LOTS],
-    lot_count: usize,
+    pub(crate) lots: [Option<Lot>; MAX_LOTS],
+    pub(crate) lot_count: usize,
     pub realized_pnl: Fixed,
     pub unrealized_pnl: Fixed,
 }
@@ -82,6 +82,22 @@ impl PaperPosition {
             .fold(Fixed::ZERO, |total, lot| {
                 total.checked_add(lot.quantity).unwrap_or(total)
             })
+    }
+
+    /// The open lots in FIFO order.
+    pub fn lots(&self) -> impl Iterator<Item = &Lot> {
+        self.lots[..self.lot_count].iter().flatten()
+    }
+
+    /// Total cost basis: the sum of `quantity * cost_basis` over open lots.
+    ///
+    /// # Errors
+    ///
+    /// Fails closed on overflow instead of silently dropping a lot.
+    pub fn total_cost_basis(&self) -> Result<Fixed, FixedError> {
+        self.lots().try_fold(Fixed::ZERO, |total, lot| {
+            total.checked_add(lot.quantity.checked_mul(lot.cost_basis)?)
+        })
     }
 
     /// `PaperPositionAdjustedV1`: adds a new lot (an additional buy fill).
