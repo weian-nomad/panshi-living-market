@@ -211,6 +211,29 @@ enum SurfaceKind {
   SURFACE_KIND_SELF_ACKNOWLEDGED = 3;
 }
 
+// Whom a public statement about a recognized loss holds responsible
+// (docs/v5/character-story-engine.md 歸咎他人 / docs/v5/system-design.md
+// 歸因偏誤). Structured only: the spoken sentence is the separately sealed
+// UtteranceArtifactV1, and this message never carries text.
+enum OutcomeAttributionTargetKind {
+  OUTCOME_ATTRIBUTION_TARGET_KIND_UNSPECIFIED = 0;
+  OUTCOME_ATTRIBUTION_TARGET_KIND_SELF_OWN = 1;
+  OUTCOME_ATTRIBUTION_TARGET_KIND_EXTERNAL_CHARACTER = 2;
+  OUTCOME_ATTRIBUTION_TARGET_KIND_EXTERNAL_SOURCE = 3;
+}
+
+message SpokenOutcomeAttributionV1 {
+  OutcomeAttributionTargetKind target_kind = 1;
+  // Empty for SELF_OWN. For EXTERNAL_CHARACTER a sealed character id or an
+  // acquaintance node id; for EXTERNAL_SOURCE a fact revision id.
+  string target_ref = 2;
+  // The cognitive episode whose committed AutonomousActionIntentCommittedV1
+  // opened the exposure that is now losing. Its perceived_fact_revision_ids
+  // are the refs the target is checked against; nothing is copied here.
+  bytes loss_decision_episode_id = 3;
+  string attribution_policy_revision = 4;
+}
+
 // docs/v5/character-story-engine.md "角色只說一次" -- SemanticSpeechActV1.
 message SemanticSpeechActCommittedV1 {
   bytes semantic_speech_act_id = 1;
@@ -225,6 +248,10 @@ message SemanticSpeechActCommittedV1 {
   int64 world_time_unix_micros = 10;
   bytes source_state_digest = 11;
   string behavior_policy_revision = 12;
+  // Set only on a statement about a recognized loss. Absent (not an empty
+  // message) otherwise, so every speech act sealed before this field existed
+  // keeps byte-identical canonical bytes.
+  SpokenOutcomeAttributionV1 outcome_attribution = 13;
 }
 
 enum GenerationMode {
@@ -285,6 +312,19 @@ message UtteranceArtifactV1 {
   optional bytes retracts_utterance_artifact_id = 34;
 }
 
+// docs/v5/system-design.md §9.3: "角色當時的人生不因後續資料修正被重寫；可以在
+// 稍後收到 CharacterCorrectionLearned". Appended on CharacterLife when a later
+// cognitive episode seals the corrected revision; it references the
+// FactCorrectionObserved by id and the memory formed from learning it, and
+// rewrites nothing earlier.
+message CharacterCorrectionLearnedV1 {
+  bytes character_id = 1;
+  bytes fact_correction_id = 2; // FactCorrectionObservedV1.fact_correction_id
+  bytes cognitive_episode_id = 3; // the later episode whose sealed input carries the corrected revision
+  bytes memory_id = 4;
+  int64 learned_at_unix_micros = 5;
+}
+
 // ---------------------------------------------------------------------------
 // Memory (minimal: episodic memory formation only, needed for the one-
 // character golden episode's "memory update" step; MemoryReframed/Linked/
@@ -317,4 +357,37 @@ message MemoryFormedV1 {
     VISIBILITY_PUBLIC_EDITION = 3;
   }
   Visibility visibility = 10;
+}
+
+// ---------------------------------------------------------------------------
+// Relationship signal (docs/v5/system-design.md §10.2, canonical-owner-map
+// RelationshipSignalObserved on the RelationshipDyad aggregate). Declared in
+// this file until a relationship/v1 package exists. Per
+// docs/v5/character-story-engine.md "原話不可變", it references an already
+// sealed PublicClaimMade and its artifact hash only and never stores a
+// second copy of the text.
+// ---------------------------------------------------------------------------
+
+enum RelationshipSignalKind {
+  RELATIONSHIP_SIGNAL_KIND_UNSPECIFIED = 0;
+  // The subject publicly held the counterpart responsible for a loss.
+  RELATIONSHIP_SIGNAL_KIND_PUBLIC_OUTCOME_ATTRIBUTION = 1;
+}
+
+message RelationshipSignalObservedV1 {
+  bytes relationship_signal_id = 1;
+  bytes relationship_dyad_id = 2;
+  // The character whose sealed public claim is the signal.
+  bytes subject_character_id = 3;
+  // The other side: a sealed character id or an acquaintance node id. An
+  // acquaintance node has no stream of its own and is never written to.
+  string counterpart_ref = 4;
+  RelationshipSignalKind signal_kind = 5;
+  // Stream id of the UtteranceArtifact aggregate whose PublicClaimMade
+  // sealed the claim.
+  bytes public_claim_event_ref = 6;
+  bytes utterance_artifact_id = 7;
+  bytes canonical_text_sha256 = 8;
+  int64 observed_at_unix_micros = 9;
+  string relationship_policy_revision = 10;
 }

@@ -47,6 +47,22 @@ message FactBecameVisibleV1 {
   int64 available_at_unix_micros = 4; // max(world_published_at, platform_received_at)
 }
 
+// docs/v5/system-design.md §6.3: a correction that arrives after a decision
+// input was sealed becomes this later world event on the FactRevisionChain.
+// It never rewrites an earlier event or what a character knew at seal time;
+// it only names which already-sealed cognitive episodes had used the
+// superseded revision. (A correction that arrives before seal instead goes
+// into a new FactManifestAccepted and is not recorded here.)
+message FactCorrectionObservedV1 {
+  bytes fact_correction_id = 1;
+  string original_manifest_id = 2;
+  string original_fact_revision_id = 3;
+  string correction_manifest_id = 4;
+  string corrected_fact_revision_id = 5;
+  int64 observed_at_unix_micros = 6;
+  repeated bytes affected_cognitive_episode_ids = 7;
+}
+
 message CharacterExposureScheduledV1 {
   bytes character_id = 1;
   string fact_revision_id = 2;

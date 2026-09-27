@@ -17,6 +17,7 @@
 //! Traditional-Chinese template text through the repository's `copy-taste`
 //! routing rule before this policy ships user-facing text.
 
+use crate::attribution::AttributionTarget;
 use crate::cognition::ActionKind;
 use crate::utterance::{GenerationMode, SealUtteranceRequest, SealingEventType, SurfaceKind};
 use crate::{Digest, Id};
@@ -76,6 +77,35 @@ pub fn deterministic_speech_act_template(action: ActionKind) -> (&'static str, S
         ),
         ActionKind::PaperSell => (
             "原本的理由已經不成立，先減碼。",
+            SurfaceKind::PublicSpeech,
+        ),
+    }
+}
+
+/// The fixed template for a public statement about a recognized loss, keyed
+/// by the structured target `attribution::attribute_outcome` generated. The
+/// sentence never names anyone: who "旁邊的人" or "那份資料" refers to lives
+/// only in the structured `outcome_attribution` field of the semantic speech
+/// act, so the record -- not the wording -- is what a reader checks.
+///
+/// Engineering placeholder copy, 未經 copy-taste 審稿. It describes an
+/// observable deflection or an observable ownership of a loss; it carries no
+/// personal attack, no ranking, and no buy/sell suggestion.
+#[must_use]
+pub const fn deterministic_attribution_template(
+    target: AttributionTarget,
+) -> (&'static str, SurfaceKind) {
+    match target {
+        AttributionTarget::SelfOwn => (
+            "這一段是我自己判斷錯了，不是別人的問題。",
+            SurfaceKind::PublicSpeech,
+        ),
+        AttributionTarget::ExternalCharacter(_) => (
+            "這一段會虧，是因為那陣子旁邊的人一直在講它。",
+            SurfaceKind::PublicSpeech,
+        ),
+        AttributionTarget::ExternalSource(_) => (
+            "這一段會虧，是因為當時那份資料寫錯了。",
             SurfaceKind::PublicSpeech,
         ),
     }
@@ -142,8 +172,10 @@ pub fn fallback_appraisal_digest(appraisal: &FallbackAppraisal) -> Digest {
 mod tests {
     use super::{
         SealFallbackUtteranceRequest, deterministic_appraisal_fallback,
-        deterministic_speech_act_template, fallback_appraisal_digest, seal_fallback_utterance,
+        deterministic_attribution_template, deterministic_speech_act_template,
+        fallback_appraisal_digest, seal_fallback_utterance,
     };
+    use crate::attribution::AttributionTarget;
     use crate::cognition::ActionKind;
     use crate::utterance::SurfaceKind;
 
@@ -166,6 +198,26 @@ mod tests {
     fn paper_buy_produces_a_public_claim_not_a_self_acknowledgement() {
         let (_, surface) = deterministic_speech_act_template(ActionKind::PaperBuy);
         assert_eq!(surface, SurfaceKind::PublicSpeech);
+    }
+
+    #[test]
+    fn attribution_templates_are_distinct_public_and_name_nobody() {
+        let own = deterministic_attribution_template(AttributionTarget::SelfOwn);
+        let person =
+            deterministic_attribution_template(AttributionTarget::ExternalCharacter("acq-x"));
+        let source = deterministic_attribution_template(AttributionTarget::ExternalSource("fact-x"));
+        assert_ne!(own.0, person.0);
+        assert_ne!(person.0, source.0);
+        for (text, surface) in [own, person, source] {
+            assert_eq!(surface, SurfaceKind::PublicSpeech);
+            assert!(!text.contains("acq-") && !text.contains("fact-"));
+            assert!(!text.contains('「') && !text.contains('」'));
+        }
+        // Same target, same bytes: the template never depends on who it is.
+        assert_eq!(
+            deterministic_attribution_template(AttributionTarget::ExternalCharacter("acq-y")).0,
+            person.0
+        );
     }
 
     #[test]

@@ -6,6 +6,16 @@ set -euo pipefail
 # event payloads in native and WASI builds, and that those bytes match the
 # checked-in golden fixture in fixtures/v5/character-episode-001/.
 #
+# A second leg does the same for the thirty-session one-character slice
+# (`--write-slice-events`): the native and WASI builds each write the whole
+# slice (every `NNN-<EventType>.pb` payload plus its `manifest.json`) into
+# their own temporary directory, the two directories must be identical
+# (`diff -r`), and the native directory must also be identical to the
+# checked-in fixtures/v5/one-character-slice/events/. The WASI guest only
+# sees the one temporary directory it is granted with `--dir`. The slice's
+# PostgreSQL leg is tools/character-episode/tests/postgres_slice_replay.rs
+# (run through tools/run-postgres-integration-tests.sh).
+#
 # This does not by itself prove the PostgreSQL leg of the three-way parity
 # requirement (docs/v5/system-design.md's "native／WASI／PostgreSQL
 # execution produces identical canonical bytes") -- that is proven by
@@ -36,3 +46,12 @@ for fixture_file in fixtures/v5/character-episode-001/*.pb; do
 done
 
 echo "V5 kernel parity passed: native, WASI, and the checked-in golden episode fixture are byte-identical"
+
+mkdir "$temporary/slice-native" "$temporary/slice-wasi"
+target/debug/panshi-character-episode --write-slice-events "$temporary/slice-native"
+wasmtime -C cache=n --dir "$temporary/slice-wasi::/slice" \
+  target/wasm32-wasip1/debug/panshi-character-episode.wasm --write-slice-events /slice
+diff -r "$temporary/slice-native" "$temporary/slice-wasi"
+diff -r "$temporary/slice-native" fixtures/v5/one-character-slice/events
+
+echo "V5 slice parity passed: native, WASI, and the checked-in slice fixture are byte-identical"

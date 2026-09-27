@@ -129,7 +129,7 @@ function assertSchemaValid(instance, node, label) {
 // ---------------------------------------------------------------------------
 // Digest / hash convention — identical to world-fact-manifest/v1 (README.md
 // §Digest convention), except objectHash covers this manifest's own slice of
-// the shared fact-revision bundle rather than the whole file, because the six
+// the shared fact-revision bundle rather than the whole file, because the
 // historical manifests are mirrored side by side in one fixture.
 // ---------------------------------------------------------------------------
 
@@ -313,27 +313,67 @@ for (const [label, raw] of [
   ["synthetic-historical-001.json", manifestsRaw],
   ["synthetic-historical-001-fact-revisions.json", factRevisionsRaw],
 ]) {
-  const floatLiteral = raw.match(/:\s*-?\d+(\.\d+|[eE][+-]?\d+)/);
+  // Anchored to a JSON key's closing quote so a digest string such as
+  // "sha256:193845e4…" is not mistaken for the number 193845e4.
+  const floatLiteral = raw.match(/"\s*:\s*-?\d+(\.\d+|[eE][+-]?\d+)/);
   assert.equal(floatLiteral, null, `${label} contains a floating-point literal: ${floatLiteral?.[0]}`);
 }
 
 // ---------------------------------------------------------------------------
-// The six-session historical timeline this fixture exists to pin
-// (ADR-PRODUCT-005 「可以先做一名角色的完整垂直切片」). Prices are TWD minor
-// units (分) further scaled by 1,000,000, matching public-v2.yaml's
-// sealedPriceMinorUnitsFixed6.
+// The thirty-session historical timeline this fixture exists to pin
+// (ADR-PRODUCT-005 「可以先做一名角色的完整垂直切片」; delivery-plan M2 「30 個交易
+// 日 fixture」). Prices are TWD minor units (分) further scaled by 1,000,000,
+// matching public-v2.yaml's sealedPriceMinorUnitsFixed6.
+//
+// The dates follow a SYNTHETIC calendar (`synthetic-historical-calendar/v2`):
+// consecutive weekdays from 2026-03-02, minus the two declared synthetic
+// market holidays below. It is not, and does not claim to be, a real
+// exchange calendar.
 // ---------------------------------------------------------------------------
 
+const SYNTHETIC_CALENDAR_REVISION = "synthetic-historical-calendar/v2";
+const SYNTHETIC_MARKET_HOLIDAYS = ["2026-04-03", "2026-04-06"];
+
 const expectedSessions = [
-  { manifestId: "wfm_hist_001_s1", marketSessionId: "session-hist-001-s1", marketDateTaipei: "2026-03-02", closeFixed6: 9_600_000_000, finality: "accepted" },
-  { manifestId: "wfm_hist_001_s2", marketSessionId: "session-hist-001-s2", marketDateTaipei: "2026-03-03", closeFixed6: 10_000_000_000, finality: "accepted" },
-  { manifestId: "wfm_hist_001_s3", marketSessionId: "session-hist-001-s3", marketDateTaipei: "2026-03-05", closeFixed6: 9_350_000_000, finality: "accepted" },
-  { manifestId: "wfm_hist_001_s4", marketSessionId: "session-hist-001-s4", marketDateTaipei: "2026-03-10", closeFixed6: 9_160_000_000, finality: "accepted" },
-  { manifestId: "wfm_hist_001_s5", marketSessionId: "session-hist-001-s5", marketDateTaipei: "2026-03-17", closeFixed6: 8_820_000_000, finality: "accepted" },
-  { manifestId: "wfm_hist_001_s6", marketSessionId: "session-hist-001-s6", marketDateTaipei: "2026-03-18", closeFixed6: 8_820_000_000, finality: "pending" },
+  { manifestId: "wfm_hist_001_s01", marketSessionId: "session-hist-001-s01", marketDateTaipei: "2026-03-02", closeFixed6: 9_600_000_000, finality: "accepted" },
+  { manifestId: "wfm_hist_001_s02", marketSessionId: "session-hist-001-s02", marketDateTaipei: "2026-03-03", closeFixed6: 10_000_000_000, finality: "accepted" },
+  { manifestId: "wfm_hist_001_s03", marketSessionId: "session-hist-001-s03", marketDateTaipei: "2026-03-04", closeFixed6: 9_640_000_000, finality: "accepted" },
+  { manifestId: "wfm_hist_001_s04", marketSessionId: "session-hist-001-s04", marketDateTaipei: "2026-03-05", closeFixed6: 9_350_000_000, finality: "accepted" },
+  { manifestId: "wfm_hist_001_s05", marketSessionId: "session-hist-001-s05", marketDateTaipei: "2026-03-06", closeFixed6: 9_410_000_000, finality: "accepted" },
+  { manifestId: "wfm_hist_001_s06", marketSessionId: "session-hist-001-s06", marketDateTaipei: "2026-03-09", closeFixed6: 9_280_000_000, finality: "accepted" },
+  { manifestId: "wfm_hist_001_s07", marketSessionId: "session-hist-001-s07", marketDateTaipei: "2026-03-10", closeFixed6: 9_160_000_000, finality: "accepted" },
+  { manifestId: "wfm_hist_001_s08", marketSessionId: "session-hist-001-s08", marketDateTaipei: "2026-03-11", closeFixed6: 9_090_000_000, finality: "accepted" },
+  { manifestId: "wfm_hist_001_s09", marketSessionId: "session-hist-001-s09", marketDateTaipei: "2026-03-12", closeFixed6: 9_130_000_000, finality: "accepted" },
+  { manifestId: "wfm_hist_001_s10", marketSessionId: "session-hist-001-s10", marketDateTaipei: "2026-03-13", closeFixed6: 9_020_000_000, finality: "accepted" },
+  { manifestId: "wfm_hist_001_s11", marketSessionId: "session-hist-001-s11", marketDateTaipei: "2026-03-16", closeFixed6: 8_940_000_000, finality: "accepted" },
+  { manifestId: "wfm_hist_001_s12", marketSessionId: "session-hist-001-s12", marketDateTaipei: "2026-03-17", closeFixed6: 8_820_000_000, finality: "accepted" },
+  { manifestId: "wfm_hist_001_s13", marketSessionId: "session-hist-001-s13", marketDateTaipei: "2026-03-18", closeFixed6: 8_860_000_000, finality: "accepted" },
+  { manifestId: "wfm_hist_001_s14", marketSessionId: "session-hist-001-s14", marketDateTaipei: "2026-03-19", closeFixed6: 8_910_000_000, finality: "accepted" },
+  { manifestId: "wfm_hist_001_s15", marketSessionId: "session-hist-001-s15", marketDateTaipei: "2026-03-20", closeFixed6: 8_890_000_000, finality: "accepted" },
+  { manifestId: "wfm_hist_001_s16", marketSessionId: "session-hist-001-s16", marketDateTaipei: "2026-03-23", closeFixed6: 8_830_000_000, finality: "accepted" },
+  { manifestId: "wfm_hist_001_s17", marketSessionId: "session-hist-001-s17", marketDateTaipei: "2026-03-24", closeFixed6: 8_760_000_000, finality: "accepted" },
+  { manifestId: "wfm_hist_001_s18", marketSessionId: "session-hist-001-s18", marketDateTaipei: "2026-03-25", closeFixed6: 8_690_000_000, finality: "accepted" },
+  { manifestId: "wfm_hist_001_s19", marketSessionId: "session-hist-001-s19", marketDateTaipei: "2026-03-26", closeFixed6: 8_610_000_000, finality: "accepted" },
+  { manifestId: "wfm_hist_001_s20", marketSessionId: "session-hist-001-s20", marketDateTaipei: "2026-03-27", closeFixed6: 8_570_000_000, finality: "accepted" },
+  { manifestId: "wfm_hist_001_s21", marketSessionId: "session-hist-001-s21", marketDateTaipei: "2026-03-30", closeFixed6: 8_620_000_000, finality: "accepted" },
+  { manifestId: "wfm_hist_001_s22", marketSessionId: "session-hist-001-s22", marketDateTaipei: "2026-03-31", closeFixed6: 8_680_000_000, finality: "accepted" },
+  { manifestId: "wfm_hist_001_s23", marketSessionId: "session-hist-001-s23", marketDateTaipei: "2026-04-01", closeFixed6: 8_710_000_000, finality: "accepted" },
+  { manifestId: "wfm_hist_001_s24", marketSessionId: "session-hist-001-s24", marketDateTaipei: "2026-04-02", closeFixed6: 8_750_000_000, finality: "accepted" },
+  { manifestId: "wfm_hist_001_s25", marketSessionId: "session-hist-001-s25", marketDateTaipei: "2026-04-07", closeFixed6: 8_680_000_000, finality: "accepted" },
+  { manifestId: "wfm_hist_001_s26", marketSessionId: "session-hist-001-s26", marketDateTaipei: "2026-04-08", closeFixed6: 8_640_000_000, finality: "accepted" },
+  { manifestId: "wfm_hist_001_s27", marketSessionId: "session-hist-001-s27", marketDateTaipei: "2026-04-09", closeFixed6: 8_690_000_000, finality: "accepted" },
+  { manifestId: "wfm_hist_001_s28", marketSessionId: "session-hist-001-s28", marketDateTaipei: "2026-04-10", closeFixed6: 8_740_000_000, finality: "accepted" },
+  { manifestId: "wfm_hist_001_s29", marketSessionId: "session-hist-001-s29", marketDateTaipei: "2026-04-13", closeFixed6: 8_720_000_000, finality: "accepted" },
+  { manifestId: "wfm_hist_001_s30", marketSessionId: "session-hist-001-s30", marketDateTaipei: "2026-04-14", closeFixed6: 8_720_000_000, finality: "pending" },
 ];
 
-assert.equal(manifests.length, expectedSessions.length, "expected exactly six historical session manifests");
+assert.equal(manifests.length, expectedSessions.length, "expected exactly thirty historical session manifests");
+assert.equal(
+  expectedSessions.filter((expected) => expected.finality === "pending").length,
+  1,
+  "exactly one session (today) may still be pending",
+);
+assert.equal(expectedSessions.at(-1).finality, "pending", "only the last session may be pending");
 expectedSessions.forEach((expected, i) => {
   const manifest = manifests[i];
   assert.equal(manifest.manifestId, expected.manifestId, `manifest ${i} id drifted`);
@@ -346,6 +386,31 @@ expectedSessions.forEach((expected, i) => {
     );
   }
   const day = expected.marketDateTaipei;
+  assert.equal(
+    manifest.marketCalendarRevision,
+    SYNTHETIC_CALENDAR_REVISION,
+    `${expected.manifestId} must name the synthetic calendar that decided its trading day`,
+  );
+  const weekday = new Date(`${day}T00:00:00Z`).getUTCDay();
+  assert.ok(weekday !== 0 && weekday !== 6, `${expected.manifestId} falls on a weekend (${day})`);
+  assert.ok(
+    !SYNTHETIC_MARKET_HOLIDAYS.includes(day),
+    `${expected.manifestId} falls on a declared synthetic market holiday (${day})`,
+  );
+  if (i > 0) {
+    // Consecutive trading days: every weekday strictly between two adjacent
+    // sessions must be a declared synthetic holiday, so no session is
+    // silently skipped.
+    const cursor = new Date(`${manifests[i - 1].marketDateTaipei}T00:00:00Z`);
+    for (cursor.setUTCDate(cursor.getUTCDate() + 1); cursor.toISOString().slice(0, 10) < day; cursor.setUTCDate(cursor.getUTCDate() + 1)) {
+      const gap = cursor.toISOString().slice(0, 10);
+      const gapWeekday = cursor.getUTCDay();
+      assert.ok(
+        gapWeekday === 0 || gapWeekday === 6 || SYNTHETIC_MARKET_HOLIDAYS.includes(gap),
+        `${gap} is a weekday between ${manifests[i - 1].manifestId} and ${expected.manifestId} but is not a declared synthetic holiday`,
+      );
+    }
+  }
   assert.equal(
     Date.parse(manifest.interactionCutoffAt),
     Date.parse(`${day}T09:00:00+08:00`),
@@ -478,7 +543,7 @@ for (const revision of factRevisions) {
     assert.ok(!interactionSet.has(id), `${id} has rightsScope "outcome" but appears in an interaction allowlist`);
   }
   const owner = manifestById.get(revision.manifestId);
-  assert.ok(owner, `${id} names manifestId ${revision.manifestId}, which is not one of the six manifests`);
+  assert.ok(owner, `${id} names manifestId ${revision.manifestId}, which is not one of the fixture's manifests`);
   assert.ok(
     availableAt(revision) <= Date.parse(owner.evidenceCutoffAt),
     `${id} became available after its own session's evidenceCutoffAt; it belongs to a later session`,
@@ -578,7 +643,7 @@ for (const expected of expectedSessions) {
 // must stay reachable in every session after the one that first published it;
 // if it silently dropped out of an allowlist the bias would look like a random
 // quirk instead of a repeated, checkable miss.
-const counterId = "fact-hist-001-counter-inventory";
+const counterId = "fact-hist-001-s01-counter-inventory";
 const counterOrigin = requireRevision(counterId, "counter-evidence check");
 assert.equal(
   counterOrigin.manifestId,

@@ -5,13 +5,13 @@
     "jurisdiction": "TW",
     "provenanceClass": "synthetic_fixture",
     "truthClass": "fictional_setting",
-    "manifestId": "wfm_hist_001_s1",
-    "manifestHash": "sha256:35143c6212487177bcc30dfac363df7985854af7548eea1218e4ebed0dabba72",
+    "manifestId": "wfm_hist_001_s01",
+    "manifestHash": "sha256:d557a68b64662d3b8fc4c192e9165b7f8d30b4d479bad15d60c12fd53f1936a0",
     "signatureKeyId": "panshi-synthetic-fixture-signing.2026-03",
     "sealedAt": "2026-03-02T15:00:00+08:00",
-    "marketSessionId": "session-hist-001-s1",
+    "marketSessionId": "session-hist-001-s01",
     "marketDateTaipei": "2026-03-02",
-    "marketCalendarRevision": "synthetic-historical-calendar/v1",
+    "marketCalendarRevision": "synthetic-historical-calendar/v2",
     "interactionCutoffAt": "2026-03-02T09:00:00+08:00",
     "evidenceCutoffAt": "2026-03-02T13:30:00+08:00",
     "finalityPolicyRevision": "historical-finality-policy.2026.rev1",
@@ -26,17 +26,17 @@
       "post_close_editorial"
     ],
     "interactionFactRevisionIds": [
-      "fact-hist-001-momentum-s1"
+      "fact-hist-001-s01-momentum"
     ],
-    "interactionFactSetDigest": "sha256:58c621f0f172118b79929bdf2fd33852b5b45252615606b2a0e39d079d57322c",
+    "interactionFactSetDigest": "sha256:01586dd0cb12777e93013798949c67602ce40c9a7f6351a5e7b913bf26dd9d80",
     "outcomeEvidenceRevisionIds": [
-      "fact-hist-001-momentum-s1",
-      "fact-hist-001-counter-inventory",
-      "fact-hist-001-price-s1"
+      "fact-hist-001-s01-counter-inventory",
+      "fact-hist-001-s01-momentum",
+      "fact-hist-001-s01-price"
     ],
-    "outcomeEvidenceSetDigest": "sha256:9baeaf9f230e8488606be97c3bf002236dcc6e8cb762b88cc0c92f1c7847a289",
-    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s1",
-    "objectHash": "sha256:d6739b8bef2e24f4ddfa0b256466600286ebc70fd186794494f4be0945ec3762"
+    "outcomeEvidenceSetDigest": "sha256:be1d6b9601917d240c03a536e3cb26677dc2a6362a4e507ac7adcdc8bab76194",
+    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s01",
+    "objectHash": "sha256:ce64855d53cdfe6006b6061a2dbd4688426602ac8d24fbeeac4a79bd45cd847b"
   },
   {
     "contractVersion": "world-fact-manifest-historical/v1",
@@ -44,13 +44,13 @@
     "jurisdiction": "TW",
     "provenanceClass": "synthetic_fixture",
     "truthClass": "fictional_setting",
-    "manifestId": "wfm_hist_001_s2",
-    "manifestHash": "sha256:8ce7af7a463e83b9557ff47221f2b117986269cfd8cffa3216cdd0373b93e4a5",
+    "manifestId": "wfm_hist_001_s02",
+    "manifestHash": "sha256:193845e4c18d5d052b8386917eeaa6261d47e72752dfacf0b6215ceae9703923",
     "signatureKeyId": "panshi-synthetic-fixture-signing.2026-03",
     "sealedAt": "2026-03-03T15:00:00+08:00",
-    "marketSessionId": "session-hist-001-s2",
+    "marketSessionId": "session-hist-001-s02",
     "marketDateTaipei": "2026-03-03",
-    "marketCalendarRevision": "synthetic-historical-calendar/v1",
+    "marketCalendarRevision": "synthetic-historical-calendar/v2",
     "interactionCutoffAt": "2026-03-03T09:00:00+08:00",
     "evidenceCutoffAt": "2026-03-03T13:30:00+08:00",
     "finalityPolicyRevision": "historical-finality-policy.2026.rev1",
@@ -65,17 +65,17 @@
       "post_close_editorial"
     ],
     "interactionFactRevisionIds": [
-      "fact-hist-001-momentum-s1",
-      "fact-hist-001-counter-inventory",
-      "fact-hist-001-price-s1"
+      "fact-hist-001-s01-counter-inventory",
+      "fact-hist-001-s01-momentum",
+      "fact-hist-001-s01-price"
     ],
-    "interactionFactSetDigest": "sha256:9baeaf9f230e8488606be97c3bf002236dcc6e8cb762b88cc0c92f1c7847a289",
+    "interactionFactSetDigest": "sha256:be1d6b9601917d240c03a536e3cb26677dc2a6362a4e507ac7adcdc8bab76194",
     "outcomeEvidenceRevisionIds": [
-      "fact-hist-001-price-s2"
+      "fact-hist-001-s02-price"
     ],
-    "outcomeEvidenceSetDigest": "sha256:8295822971eac32ce2791f857bed2879f1d189274d369560e8a1de75cb35d9fc",
-    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s2",
-    "objectHash": "sha256:183993d6cbe7b9cfd69a3f56d984c7337809f4962da9a244aa9bf0b6f8a20543"
+    "outcomeEvidenceSetDigest": "sha256:783b469fd21be166f96e3df6ea0b5c657565194b7936588c313f23c8e0cf52ed",
+    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s02",
+    "objectHash": "sha256:46de1d80639854d2385d365c08b4e131be53ea4f41e9d51d3ed6922c427e3398"
   },
   {
     "contractVersion": "world-fact-manifest-historical/v1",
@@ -83,13 +83,52 @@
     "jurisdiction": "TW",
     "provenanceClass": "synthetic_fixture",
     "truthClass": "fictional_setting",
-    "manifestId": "wfm_hist_001_s3",
-    "manifestHash": "sha256:3a75d88fcc5a00e3f40955584888f2d7dc43be0ce86991d3a7518cda7da78f53",
+    "manifestId": "wfm_hist_001_s03",
+    "manifestHash": "sha256:a7f70e3550debfa4be171803c9be1813ae1bc93e8e5329abd330d6d1d6aa2bf9",
+    "signatureKeyId": "panshi-synthetic-fixture-signing.2026-03",
+    "sealedAt": "2026-03-04T15:00:00+08:00",
+    "marketSessionId": "session-hist-001-s03",
+    "marketDateTaipei": "2026-03-04",
+    "marketCalendarRevision": "synthetic-historical-calendar/v2",
+    "interactionCutoffAt": "2026-03-04T09:00:00+08:00",
+    "evidenceCutoffAt": "2026-03-04T13:30:00+08:00",
+    "finalityPolicyRevision": "historical-finality-policy.2026.rev1",
+    "clockAuthorityRevision": "clock-authority.2026.rev1",
+    "rightsManifestId": "rights_synthetic-historical.2026-03",
+    "licenseClass": "synthetic-fixture-no-third-party-licence",
+    "rightsValidFrom": "2026-03-01T00:00:00+08:00",
+    "rightsValidUntil": null,
+    "permittedPurposes": [
+      "character_interaction",
+      "paper_trading_outcome",
+      "post_close_editorial"
+    ],
+    "interactionFactRevisionIds": [
+      "fact-hist-001-s01-counter-inventory",
+      "fact-hist-001-s01-price",
+      "fact-hist-001-s02-price"
+    ],
+    "interactionFactSetDigest": "sha256:5ff91fc7c73552f638d60f63f53f8797f096bf51f53d74eeb6664b8b56fa0ee2",
+    "outcomeEvidenceRevisionIds": [
+      "fact-hist-001-s03-price"
+    ],
+    "outcomeEvidenceSetDigest": "sha256:6165fafe6df310b6ac08462a142fa6cb0baa5245563adad9ab1c7e613fa1dcac",
+    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s03",
+    "objectHash": "sha256:4f0e758d1a2318fa4fbaf20ecda45b91a7689127e7f7bb1af231709a976ac8f1"
+  },
+  {
+    "contractVersion": "world-fact-manifest-historical/v1",
+    "modeDomain": "historical",
+    "jurisdiction": "TW",
+    "provenanceClass": "synthetic_fixture",
+    "truthClass": "fictional_setting",
+    "manifestId": "wfm_hist_001_s04",
+    "manifestHash": "sha256:c18f31d97bc34a0eb01e1e9d96f6f08823711e77f24ef0143a4539242e48bc11",
     "signatureKeyId": "panshi-synthetic-fixture-signing.2026-03",
     "sealedAt": "2026-03-05T15:00:00+08:00",
-    "marketSessionId": "session-hist-001-s3",
+    "marketSessionId": "session-hist-001-s04",
     "marketDateTaipei": "2026-03-05",
-    "marketCalendarRevision": "synthetic-historical-calendar/v1",
+    "marketCalendarRevision": "synthetic-historical-calendar/v2",
     "interactionCutoffAt": "2026-03-05T09:00:00+08:00",
     "evidenceCutoffAt": "2026-03-05T13:30:00+08:00",
     "finalityPolicyRevision": "historical-finality-policy.2026.rev1",
@@ -104,17 +143,17 @@
       "post_close_editorial"
     ],
     "interactionFactRevisionIds": [
-      "fact-hist-001-counter-inventory",
-      "fact-hist-001-price-s1",
-      "fact-hist-001-price-s2"
+      "fact-hist-001-s01-counter-inventory",
+      "fact-hist-001-s02-price",
+      "fact-hist-001-s03-price"
     ],
-    "interactionFactSetDigest": "sha256:932bcf3fe8e84d27d23f389c5b785d00a812e0c9f7b45c62603499a1fcdf9424",
+    "interactionFactSetDigest": "sha256:0015a817e4cb5a958ef4504be637550da2ca8c5651aa83680eda932f8ddf6502",
     "outcomeEvidenceRevisionIds": [
-      "fact-hist-001-price-s3"
+      "fact-hist-001-s04-price"
     ],
-    "outcomeEvidenceSetDigest": "sha256:a3e4b2b3b01b529c5cc19c4f8e359f2c68d41a5cc47397d34e7310877b5906a0",
-    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s3",
-    "objectHash": "sha256:d40522042db72e982b4fb9083179e7540217861b585ddae849015bf98fc0e133"
+    "outcomeEvidenceSetDigest": "sha256:9797deb5cd4a5e5bfbb189ab0bc53f0d2ccea281e009461ddef5dceb20473f34",
+    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s04",
+    "objectHash": "sha256:cc1189f2957a66f6b75d74945b913f07bc012c8c85a2da4e232ed220e52b52f9"
   },
   {
     "contractVersion": "world-fact-manifest-historical/v1",
@@ -122,13 +161,91 @@
     "jurisdiction": "TW",
     "provenanceClass": "synthetic_fixture",
     "truthClass": "fictional_setting",
-    "manifestId": "wfm_hist_001_s4",
-    "manifestHash": "sha256:b13e59d8f136d7f293cb66f5577c62143f07766d1cfa1be432535ce8b034405c",
+    "manifestId": "wfm_hist_001_s05",
+    "manifestHash": "sha256:bc3a3d14ca744907abf52a491fe394a8e5a3dcd4d39193d385b42afbe4ab95bc",
+    "signatureKeyId": "panshi-synthetic-fixture-signing.2026-03",
+    "sealedAt": "2026-03-06T15:00:00+08:00",
+    "marketSessionId": "session-hist-001-s05",
+    "marketDateTaipei": "2026-03-06",
+    "marketCalendarRevision": "synthetic-historical-calendar/v2",
+    "interactionCutoffAt": "2026-03-06T09:00:00+08:00",
+    "evidenceCutoffAt": "2026-03-06T13:30:00+08:00",
+    "finalityPolicyRevision": "historical-finality-policy.2026.rev1",
+    "clockAuthorityRevision": "clock-authority.2026.rev1",
+    "rightsManifestId": "rights_synthetic-historical.2026-03",
+    "licenseClass": "synthetic-fixture-no-third-party-licence",
+    "rightsValidFrom": "2026-03-01T00:00:00+08:00",
+    "rightsValidUntil": null,
+    "permittedPurposes": [
+      "character_interaction",
+      "paper_trading_outcome",
+      "post_close_editorial"
+    ],
+    "interactionFactRevisionIds": [
+      "fact-hist-001-s01-counter-inventory",
+      "fact-hist-001-s03-price",
+      "fact-hist-001-s04-price"
+    ],
+    "interactionFactSetDigest": "sha256:f968bcbc50f01229ca2d9113e670eca2bff86bac983f3a8687258c0fcc7e4ecb",
+    "outcomeEvidenceRevisionIds": [
+      "fact-hist-001-s05-price"
+    ],
+    "outcomeEvidenceSetDigest": "sha256:9e5c77f8178505f4056f432baddac97537ca0250eeb595efde82fe2c3a060adf",
+    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s05",
+    "objectHash": "sha256:44bd3ce1a68be1ef04b867f37e8423a373132b14b662a2efb6a4e02a40ec2b86"
+  },
+  {
+    "contractVersion": "world-fact-manifest-historical/v1",
+    "modeDomain": "historical",
+    "jurisdiction": "TW",
+    "provenanceClass": "synthetic_fixture",
+    "truthClass": "fictional_setting",
+    "manifestId": "wfm_hist_001_s06",
+    "manifestHash": "sha256:7c7b9b3d38f3b3aa21dac0010809898793db92b42db15a9434d3f1bd93135a7f",
+    "signatureKeyId": "panshi-synthetic-fixture-signing.2026-03",
+    "sealedAt": "2026-03-09T15:00:00+08:00",
+    "marketSessionId": "session-hist-001-s06",
+    "marketDateTaipei": "2026-03-09",
+    "marketCalendarRevision": "synthetic-historical-calendar/v2",
+    "interactionCutoffAt": "2026-03-09T09:00:00+08:00",
+    "evidenceCutoffAt": "2026-03-09T13:30:00+08:00",
+    "finalityPolicyRevision": "historical-finality-policy.2026.rev1",
+    "clockAuthorityRevision": "clock-authority.2026.rev1",
+    "rightsManifestId": "rights_synthetic-historical.2026-03",
+    "licenseClass": "synthetic-fixture-no-third-party-licence",
+    "rightsValidFrom": "2026-03-01T00:00:00+08:00",
+    "rightsValidUntil": null,
+    "permittedPurposes": [
+      "character_interaction",
+      "paper_trading_outcome",
+      "post_close_editorial"
+    ],
+    "interactionFactRevisionIds": [
+      "fact-hist-001-s01-counter-inventory",
+      "fact-hist-001-s04-price",
+      "fact-hist-001-s05-price"
+    ],
+    "interactionFactSetDigest": "sha256:118b4e7eeaecfa551163aed9af9d3cd940f9d7d96d75bc1b15496ed4ad522d53",
+    "outcomeEvidenceRevisionIds": [
+      "fact-hist-001-s06-price"
+    ],
+    "outcomeEvidenceSetDigest": "sha256:8494291ace06aef36b5b3ced30f67e87ed2089d10b3efc9a6b10fcc20b539b4c",
+    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s06",
+    "objectHash": "sha256:7c571d8b4965b8d7efddfc455d57bf0668a46e6bbfb223726ef2b9ad9e0863e2"
+  },
+  {
+    "contractVersion": "world-fact-manifest-historical/v1",
+    "modeDomain": "historical",
+    "jurisdiction": "TW",
+    "provenanceClass": "synthetic_fixture",
+    "truthClass": "fictional_setting",
+    "manifestId": "wfm_hist_001_s07",
+    "manifestHash": "sha256:7e516fe71886993bbc160e6995641908b487abfa3fb78f9af99bc1799082f3a8",
     "signatureKeyId": "panshi-synthetic-fixture-signing.2026-03",
     "sealedAt": "2026-03-10T15:00:00+08:00",
-    "marketSessionId": "session-hist-001-s4",
+    "marketSessionId": "session-hist-001-s07",
     "marketDateTaipei": "2026-03-10",
-    "marketCalendarRevision": "synthetic-historical-calendar/v1",
+    "marketCalendarRevision": "synthetic-historical-calendar/v2",
     "interactionCutoffAt": "2026-03-10T09:00:00+08:00",
     "evidenceCutoffAt": "2026-03-10T13:30:00+08:00",
     "finalityPolicyRevision": "historical-finality-policy.2026.rev1",
@@ -143,18 +260,18 @@
       "post_close_editorial"
     ],
     "interactionFactRevisionIds": [
-      "fact-hist-001-counter-inventory",
-      "fact-hist-001-price-s2",
-      "fact-hist-001-price-s3"
+      "fact-hist-001-s01-counter-inventory",
+      "fact-hist-001-s05-price",
+      "fact-hist-001-s06-price"
     ],
-    "interactionFactSetDigest": "sha256:c0d28885a9e980246be82cf3890aa01cf7783e2cc5a1769b8939e4cc5fffae03",
+    "interactionFactSetDigest": "sha256:3d24a7ce3d8922a045e2af57b9b15229765f05206f97613c4d45765348cafba8",
     "outcomeEvidenceRevisionIds": [
-      "fact-hist-001-correction-s4",
-      "fact-hist-001-price-s4"
+      "fact-hist-001-s07-correction",
+      "fact-hist-001-s07-price"
     ],
-    "outcomeEvidenceSetDigest": "sha256:2d578c0eacfe42d64fafd178b4a5eefaa69334d2c4e82003482d570391fd12a2",
-    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s4",
-    "objectHash": "sha256:bc9ea9a0732e408a9a5258af6d0c99fe365592e82f21657e7fcfa46bee1e3404"
+    "outcomeEvidenceSetDigest": "sha256:17bd3f879656231fefb15cbbf299f6649207a58a48cd55f26e418dbdd8f61eb4",
+    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s07",
+    "objectHash": "sha256:ecd5ace9c119e6ef9e7efe2194af4526beb43518ae828388ee47fbe047109a39"
   },
   {
     "contractVersion": "world-fact-manifest-historical/v1",
@@ -162,13 +279,173 @@
     "jurisdiction": "TW",
     "provenanceClass": "synthetic_fixture",
     "truthClass": "fictional_setting",
-    "manifestId": "wfm_hist_001_s5",
-    "manifestHash": "sha256:0213274df5a653aefe4a93fa1df9bb81d61bd5085cc0357f152f276f6dcbc803",
+    "manifestId": "wfm_hist_001_s08",
+    "manifestHash": "sha256:3313f876d840abf25ef888a22ab7d1a8e70ba200af9f55553fc78659d4e3c6a6",
+    "signatureKeyId": "panshi-synthetic-fixture-signing.2026-03",
+    "sealedAt": "2026-03-11T15:00:00+08:00",
+    "marketSessionId": "session-hist-001-s08",
+    "marketDateTaipei": "2026-03-11",
+    "marketCalendarRevision": "synthetic-historical-calendar/v2",
+    "interactionCutoffAt": "2026-03-11T09:00:00+08:00",
+    "evidenceCutoffAt": "2026-03-11T13:30:00+08:00",
+    "finalityPolicyRevision": "historical-finality-policy.2026.rev1",
+    "clockAuthorityRevision": "clock-authority.2026.rev1",
+    "rightsManifestId": "rights_synthetic-historical.2026-03",
+    "licenseClass": "synthetic-fixture-no-third-party-licence",
+    "rightsValidFrom": "2026-03-01T00:00:00+08:00",
+    "rightsValidUntil": null,
+    "permittedPurposes": [
+      "character_interaction",
+      "paper_trading_outcome",
+      "post_close_editorial"
+    ],
+    "interactionFactRevisionIds": [
+      "fact-hist-001-s01-counter-inventory",
+      "fact-hist-001-s06-price",
+      "fact-hist-001-s07-correction",
+      "fact-hist-001-s07-price"
+    ],
+    "interactionFactSetDigest": "sha256:8715bf3f70a583526cd23f622d34d2b27952785d1b304a28700659f92f4a9066",
+    "outcomeEvidenceRevisionIds": [
+      "fact-hist-001-s08-price"
+    ],
+    "outcomeEvidenceSetDigest": "sha256:bb59054d24928c6ed0c40dc2c06abbb21ef47c93422215fb51473c6993a9eeaf",
+    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s08",
+    "objectHash": "sha256:220c18775bb4c4e2b3fa0a68b2fb44c38467ed10ff23d04dfffc8891d3a5d893"
+  },
+  {
+    "contractVersion": "world-fact-manifest-historical/v1",
+    "modeDomain": "historical",
+    "jurisdiction": "TW",
+    "provenanceClass": "synthetic_fixture",
+    "truthClass": "fictional_setting",
+    "manifestId": "wfm_hist_001_s09",
+    "manifestHash": "sha256:9fbb061facd6226be7175092a84f2d0364ed046ceb146a6e8cba51a8fda6df05",
+    "signatureKeyId": "panshi-synthetic-fixture-signing.2026-03",
+    "sealedAt": "2026-03-12T15:00:00+08:00",
+    "marketSessionId": "session-hist-001-s09",
+    "marketDateTaipei": "2026-03-12",
+    "marketCalendarRevision": "synthetic-historical-calendar/v2",
+    "interactionCutoffAt": "2026-03-12T09:00:00+08:00",
+    "evidenceCutoffAt": "2026-03-12T13:30:00+08:00",
+    "finalityPolicyRevision": "historical-finality-policy.2026.rev1",
+    "clockAuthorityRevision": "clock-authority.2026.rev1",
+    "rightsManifestId": "rights_synthetic-historical.2026-03",
+    "licenseClass": "synthetic-fixture-no-third-party-licence",
+    "rightsValidFrom": "2026-03-01T00:00:00+08:00",
+    "rightsValidUntil": null,
+    "permittedPurposes": [
+      "character_interaction",
+      "paper_trading_outcome",
+      "post_close_editorial"
+    ],
+    "interactionFactRevisionIds": [
+      "fact-hist-001-s01-counter-inventory",
+      "fact-hist-001-s07-correction",
+      "fact-hist-001-s07-price",
+      "fact-hist-001-s08-price"
+    ],
+    "interactionFactSetDigest": "sha256:f06c0489fff61693bbf76580378730ae48811b7b1089b974e070de6cc2522bfe",
+    "outcomeEvidenceRevisionIds": [
+      "fact-hist-001-s09-price"
+    ],
+    "outcomeEvidenceSetDigest": "sha256:e4a67e1a2a687a997cccffe7d5e08ad85ee11be1a085412b0bcd22b03a1e7806",
+    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s09",
+    "objectHash": "sha256:cd44a14593db4fe4bcefc81d931633985bbcd8ef14811caf7315c09209915b42"
+  },
+  {
+    "contractVersion": "world-fact-manifest-historical/v1",
+    "modeDomain": "historical",
+    "jurisdiction": "TW",
+    "provenanceClass": "synthetic_fixture",
+    "truthClass": "fictional_setting",
+    "manifestId": "wfm_hist_001_s10",
+    "manifestHash": "sha256:e15df39dbe507b96ee66698f84d82a8c2e54a3901d65598e7f140569f600b84a",
+    "signatureKeyId": "panshi-synthetic-fixture-signing.2026-03",
+    "sealedAt": "2026-03-13T15:00:00+08:00",
+    "marketSessionId": "session-hist-001-s10",
+    "marketDateTaipei": "2026-03-13",
+    "marketCalendarRevision": "synthetic-historical-calendar/v2",
+    "interactionCutoffAt": "2026-03-13T09:00:00+08:00",
+    "evidenceCutoffAt": "2026-03-13T13:30:00+08:00",
+    "finalityPolicyRevision": "historical-finality-policy.2026.rev1",
+    "clockAuthorityRevision": "clock-authority.2026.rev1",
+    "rightsManifestId": "rights_synthetic-historical.2026-03",
+    "licenseClass": "synthetic-fixture-no-third-party-licence",
+    "rightsValidFrom": "2026-03-01T00:00:00+08:00",
+    "rightsValidUntil": null,
+    "permittedPurposes": [
+      "character_interaction",
+      "paper_trading_outcome",
+      "post_close_editorial"
+    ],
+    "interactionFactRevisionIds": [
+      "fact-hist-001-s01-counter-inventory",
+      "fact-hist-001-s07-correction",
+      "fact-hist-001-s08-price",
+      "fact-hist-001-s09-price"
+    ],
+    "interactionFactSetDigest": "sha256:43e03c6e67bf838301fe446b86cbfa98c3afbb980ad6d9a1c04a91257e91e38a",
+    "outcomeEvidenceRevisionIds": [
+      "fact-hist-001-s10-price"
+    ],
+    "outcomeEvidenceSetDigest": "sha256:aa2a715212b4a80d0843dfcf323ba064d99963aae6182f7be80e1970ea130c26",
+    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s10",
+    "objectHash": "sha256:168605ecf0a8fed7acd92a8054a4028bf834ed7c50f0f27a31d508bc7ed9587d"
+  },
+  {
+    "contractVersion": "world-fact-manifest-historical/v1",
+    "modeDomain": "historical",
+    "jurisdiction": "TW",
+    "provenanceClass": "synthetic_fixture",
+    "truthClass": "fictional_setting",
+    "manifestId": "wfm_hist_001_s11",
+    "manifestHash": "sha256:7b6e3a3e68e4fd2a8c6973cd23223d62f5718613a0b36feca9c72f8056fd8cc4",
+    "signatureKeyId": "panshi-synthetic-fixture-signing.2026-03",
+    "sealedAt": "2026-03-16T15:00:00+08:00",
+    "marketSessionId": "session-hist-001-s11",
+    "marketDateTaipei": "2026-03-16",
+    "marketCalendarRevision": "synthetic-historical-calendar/v2",
+    "interactionCutoffAt": "2026-03-16T09:00:00+08:00",
+    "evidenceCutoffAt": "2026-03-16T13:30:00+08:00",
+    "finalityPolicyRevision": "historical-finality-policy.2026.rev1",
+    "clockAuthorityRevision": "clock-authority.2026.rev1",
+    "rightsManifestId": "rights_synthetic-historical.2026-03",
+    "licenseClass": "synthetic-fixture-no-third-party-licence",
+    "rightsValidFrom": "2026-03-01T00:00:00+08:00",
+    "rightsValidUntil": null,
+    "permittedPurposes": [
+      "character_interaction",
+      "paper_trading_outcome",
+      "post_close_editorial"
+    ],
+    "interactionFactRevisionIds": [
+      "fact-hist-001-s01-counter-inventory",
+      "fact-hist-001-s07-correction",
+      "fact-hist-001-s09-price",
+      "fact-hist-001-s10-price"
+    ],
+    "interactionFactSetDigest": "sha256:e885e2103263984b4438ce86b7f5bc8032866bbe9f3b653ba45c16ee72aac717",
+    "outcomeEvidenceRevisionIds": [
+      "fact-hist-001-s11-price"
+    ],
+    "outcomeEvidenceSetDigest": "sha256:f21aba0a5f68b8cee4427534cb05aa6351f0eee1d75dc07ed96f8b4fffd92fe6",
+    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s11",
+    "objectHash": "sha256:c444b95d6c57c96585b0844cee802479391294fb67cc7c2e2e5facb16c3b5513"
+  },
+  {
+    "contractVersion": "world-fact-manifest-historical/v1",
+    "modeDomain": "historical",
+    "jurisdiction": "TW",
+    "provenanceClass": "synthetic_fixture",
+    "truthClass": "fictional_setting",
+    "manifestId": "wfm_hist_001_s12",
+    "manifestHash": "sha256:a68ec706e9a9cd246a2314986159d949dd6693316b6c5b81ba40467e028d08e7",
     "signatureKeyId": "panshi-synthetic-fixture-signing.2026-03",
     "sealedAt": "2026-03-17T15:00:00+08:00",
-    "marketSessionId": "session-hist-001-s5",
+    "marketSessionId": "session-hist-001-s12",
     "marketDateTaipei": "2026-03-17",
-    "marketCalendarRevision": "synthetic-historical-calendar/v1",
+    "marketCalendarRevision": "synthetic-historical-calendar/v2",
     "interactionCutoffAt": "2026-03-17T09:00:00+08:00",
     "evidenceCutoffAt": "2026-03-17T13:30:00+08:00",
     "finalityPolicyRevision": "historical-finality-policy.2026.rev1",
@@ -183,18 +460,18 @@
       "post_close_editorial"
     ],
     "interactionFactRevisionIds": [
-      "fact-hist-001-correction-s4",
-      "fact-hist-001-counter-inventory",
-      "fact-hist-001-price-s3",
-      "fact-hist-001-price-s4"
+      "fact-hist-001-s01-counter-inventory",
+      "fact-hist-001-s07-correction",
+      "fact-hist-001-s10-price",
+      "fact-hist-001-s11-price"
     ],
-    "interactionFactSetDigest": "sha256:a57473e7cf5672d12022b97ad46cdfb58fcc6336627c49e068b9b4c2c2393aa7",
+    "interactionFactSetDigest": "sha256:25f77fdea79a81512a1056180773a6d066c9b389890a3d62f79cb49bc4238040",
     "outcomeEvidenceRevisionIds": [
-      "fact-hist-001-price-s5"
+      "fact-hist-001-s12-price"
     ],
-    "outcomeEvidenceSetDigest": "sha256:1c735e62ce5e1767570ece17954014fc5894407809b54fe1727d3dd94ebc8342",
-    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s5",
-    "objectHash": "sha256:258040d177cef0234b2be05b75e3cc5c5e8b4aa59c4dcab7d7e1bfda0ab0fb8a"
+    "outcomeEvidenceSetDigest": "sha256:ee4d04c25fb0c2d4e38a991cb75689e857ed8f9d806e3a5c54fccfbc3b9d3900",
+    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s12",
+    "objectHash": "sha256:fdca3483a7a412966bedf2c1ad068b2fbac47e1cbf9dad1cbf77b5dc3f663035"
   },
   {
     "contractVersion": "world-fact-manifest-historical/v1",
@@ -202,15 +479,695 @@
     "jurisdiction": "TW",
     "provenanceClass": "synthetic_fixture",
     "truthClass": "fictional_setting",
-    "manifestId": "wfm_hist_001_s6",
-    "manifestHash": "sha256:07ec8b90e65be2d16eda60d4ca377955035c2d313f5e938a5b5b7d20a0b71aa5",
+    "manifestId": "wfm_hist_001_s13",
+    "manifestHash": "sha256:fd0c27249b8336b09a0679d49cac6f1091be40dd7ec86a2f71c7573d139c16c0",
     "signatureKeyId": "panshi-synthetic-fixture-signing.2026-03",
-    "sealedAt": "2026-03-18T08:55:00+08:00",
-    "marketSessionId": "session-hist-001-s6",
+    "sealedAt": "2026-03-18T15:00:00+08:00",
+    "marketSessionId": "session-hist-001-s13",
     "marketDateTaipei": "2026-03-18",
-    "marketCalendarRevision": "synthetic-historical-calendar/v1",
+    "marketCalendarRevision": "synthetic-historical-calendar/v2",
     "interactionCutoffAt": "2026-03-18T09:00:00+08:00",
     "evidenceCutoffAt": "2026-03-18T13:30:00+08:00",
+    "finalityPolicyRevision": "historical-finality-policy.2026.rev1",
+    "clockAuthorityRevision": "clock-authority.2026.rev1",
+    "rightsManifestId": "rights_synthetic-historical.2026-03",
+    "licenseClass": "synthetic-fixture-no-third-party-licence",
+    "rightsValidFrom": "2026-03-01T00:00:00+08:00",
+    "rightsValidUntil": null,
+    "permittedPurposes": [
+      "character_interaction",
+      "paper_trading_outcome",
+      "post_close_editorial"
+    ],
+    "interactionFactRevisionIds": [
+      "fact-hist-001-s01-counter-inventory",
+      "fact-hist-001-s07-correction",
+      "fact-hist-001-s11-price",
+      "fact-hist-001-s12-price"
+    ],
+    "interactionFactSetDigest": "sha256:f2e5ae74e226aa56d97d39a5f4107cbedb9c81befedabdd97033af7dd6cc6d9b",
+    "outcomeEvidenceRevisionIds": [
+      "fact-hist-001-s13-price"
+    ],
+    "outcomeEvidenceSetDigest": "sha256:7a5d475e2dc5064e49e9dc02117192628406f292710a9c8daae1308dd317e611",
+    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s13",
+    "objectHash": "sha256:1926d27a05c061b2c309aac878f218537d2e5bccdde7f63e99621446b44868ab"
+  },
+  {
+    "contractVersion": "world-fact-manifest-historical/v1",
+    "modeDomain": "historical",
+    "jurisdiction": "TW",
+    "provenanceClass": "synthetic_fixture",
+    "truthClass": "fictional_setting",
+    "manifestId": "wfm_hist_001_s14",
+    "manifestHash": "sha256:a0d2b8bd941663cc941a4f5f8a74008ad9b3a008f6b8e86eeae15d11118a5628",
+    "signatureKeyId": "panshi-synthetic-fixture-signing.2026-03",
+    "sealedAt": "2026-03-19T15:00:00+08:00",
+    "marketSessionId": "session-hist-001-s14",
+    "marketDateTaipei": "2026-03-19",
+    "marketCalendarRevision": "synthetic-historical-calendar/v2",
+    "interactionCutoffAt": "2026-03-19T09:00:00+08:00",
+    "evidenceCutoffAt": "2026-03-19T13:30:00+08:00",
+    "finalityPolicyRevision": "historical-finality-policy.2026.rev1",
+    "clockAuthorityRevision": "clock-authority.2026.rev1",
+    "rightsManifestId": "rights_synthetic-historical.2026-03",
+    "licenseClass": "synthetic-fixture-no-third-party-licence",
+    "rightsValidFrom": "2026-03-01T00:00:00+08:00",
+    "rightsValidUntil": null,
+    "permittedPurposes": [
+      "character_interaction",
+      "paper_trading_outcome",
+      "post_close_editorial"
+    ],
+    "interactionFactRevisionIds": [
+      "fact-hist-001-s01-counter-inventory",
+      "fact-hist-001-s07-correction",
+      "fact-hist-001-s12-price",
+      "fact-hist-001-s13-price"
+    ],
+    "interactionFactSetDigest": "sha256:d2317da8247ecfe48224d94918741b80c5b5c2443ade1310f65055112f5964f1",
+    "outcomeEvidenceRevisionIds": [
+      "fact-hist-001-s14-price"
+    ],
+    "outcomeEvidenceSetDigest": "sha256:ff52bb856c9d969327acb45befbc64e9dd91851995b1ba3f8c20376be0d3cf64",
+    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s14",
+    "objectHash": "sha256:14e650b35a2e23b67b3047455587118a5d8c00db690756760383c97cb2699c4b"
+  },
+  {
+    "contractVersion": "world-fact-manifest-historical/v1",
+    "modeDomain": "historical",
+    "jurisdiction": "TW",
+    "provenanceClass": "synthetic_fixture",
+    "truthClass": "fictional_setting",
+    "manifestId": "wfm_hist_001_s15",
+    "manifestHash": "sha256:dd5439d6961dea0865d0a0cb517e663cac6febebc8bab4447df2207c15d7927c",
+    "signatureKeyId": "panshi-synthetic-fixture-signing.2026-03",
+    "sealedAt": "2026-03-20T15:00:00+08:00",
+    "marketSessionId": "session-hist-001-s15",
+    "marketDateTaipei": "2026-03-20",
+    "marketCalendarRevision": "synthetic-historical-calendar/v2",
+    "interactionCutoffAt": "2026-03-20T09:00:00+08:00",
+    "evidenceCutoffAt": "2026-03-20T13:30:00+08:00",
+    "finalityPolicyRevision": "historical-finality-policy.2026.rev1",
+    "clockAuthorityRevision": "clock-authority.2026.rev1",
+    "rightsManifestId": "rights_synthetic-historical.2026-03",
+    "licenseClass": "synthetic-fixture-no-third-party-licence",
+    "rightsValidFrom": "2026-03-01T00:00:00+08:00",
+    "rightsValidUntil": null,
+    "permittedPurposes": [
+      "character_interaction",
+      "paper_trading_outcome",
+      "post_close_editorial"
+    ],
+    "interactionFactRevisionIds": [
+      "fact-hist-001-s01-counter-inventory",
+      "fact-hist-001-s07-correction",
+      "fact-hist-001-s13-price",
+      "fact-hist-001-s14-price"
+    ],
+    "interactionFactSetDigest": "sha256:9f17aef33dc5af8761f788e40aedadf2039f30f84a75f50ecaa76b2c698b8273",
+    "outcomeEvidenceRevisionIds": [
+      "fact-hist-001-s15-price"
+    ],
+    "outcomeEvidenceSetDigest": "sha256:eb8f694ca96470f2c975be3640006485a029ececbf3dd5116401d9176010490a",
+    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s15",
+    "objectHash": "sha256:0c6b9f8d9aabfd0eafab573c867f63e1a914c485ca09a702274d2c13512a951e"
+  },
+  {
+    "contractVersion": "world-fact-manifest-historical/v1",
+    "modeDomain": "historical",
+    "jurisdiction": "TW",
+    "provenanceClass": "synthetic_fixture",
+    "truthClass": "fictional_setting",
+    "manifestId": "wfm_hist_001_s16",
+    "manifestHash": "sha256:99d4e679553464e393396654c12759e6ae799fc635bb521d7e241849c8a21e0b",
+    "signatureKeyId": "panshi-synthetic-fixture-signing.2026-03",
+    "sealedAt": "2026-03-23T15:00:00+08:00",
+    "marketSessionId": "session-hist-001-s16",
+    "marketDateTaipei": "2026-03-23",
+    "marketCalendarRevision": "synthetic-historical-calendar/v2",
+    "interactionCutoffAt": "2026-03-23T09:00:00+08:00",
+    "evidenceCutoffAt": "2026-03-23T13:30:00+08:00",
+    "finalityPolicyRevision": "historical-finality-policy.2026.rev1",
+    "clockAuthorityRevision": "clock-authority.2026.rev1",
+    "rightsManifestId": "rights_synthetic-historical.2026-03",
+    "licenseClass": "synthetic-fixture-no-third-party-licence",
+    "rightsValidFrom": "2026-03-01T00:00:00+08:00",
+    "rightsValidUntil": null,
+    "permittedPurposes": [
+      "character_interaction",
+      "paper_trading_outcome",
+      "post_close_editorial"
+    ],
+    "interactionFactRevisionIds": [
+      "fact-hist-001-s01-counter-inventory",
+      "fact-hist-001-s07-correction",
+      "fact-hist-001-s14-price",
+      "fact-hist-001-s15-price"
+    ],
+    "interactionFactSetDigest": "sha256:0dbd0f562252daac0694da293501faf1b9f49a415dc70224a5023a836f51e05b",
+    "outcomeEvidenceRevisionIds": [
+      "fact-hist-001-s16-price"
+    ],
+    "outcomeEvidenceSetDigest": "sha256:789b8eb27c96f4e138f003cd49e418831ff4deaa115b0f35ad03f8342e25284b",
+    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s16",
+    "objectHash": "sha256:769e2257039a6cdf465629d5574ad2ea5b7d6134c680c1af2c7347013120fd6f"
+  },
+  {
+    "contractVersion": "world-fact-manifest-historical/v1",
+    "modeDomain": "historical",
+    "jurisdiction": "TW",
+    "provenanceClass": "synthetic_fixture",
+    "truthClass": "fictional_setting",
+    "manifestId": "wfm_hist_001_s17",
+    "manifestHash": "sha256:f5e39bfd8890846921383ae817003c75d9e35c9da7ec153a134fd767957f2dd4",
+    "signatureKeyId": "panshi-synthetic-fixture-signing.2026-03",
+    "sealedAt": "2026-03-24T15:00:00+08:00",
+    "marketSessionId": "session-hist-001-s17",
+    "marketDateTaipei": "2026-03-24",
+    "marketCalendarRevision": "synthetic-historical-calendar/v2",
+    "interactionCutoffAt": "2026-03-24T09:00:00+08:00",
+    "evidenceCutoffAt": "2026-03-24T13:30:00+08:00",
+    "finalityPolicyRevision": "historical-finality-policy.2026.rev1",
+    "clockAuthorityRevision": "clock-authority.2026.rev1",
+    "rightsManifestId": "rights_synthetic-historical.2026-03",
+    "licenseClass": "synthetic-fixture-no-third-party-licence",
+    "rightsValidFrom": "2026-03-01T00:00:00+08:00",
+    "rightsValidUntil": null,
+    "permittedPurposes": [
+      "character_interaction",
+      "paper_trading_outcome",
+      "post_close_editorial"
+    ],
+    "interactionFactRevisionIds": [
+      "fact-hist-001-s01-counter-inventory",
+      "fact-hist-001-s07-correction",
+      "fact-hist-001-s15-price",
+      "fact-hist-001-s16-price"
+    ],
+    "interactionFactSetDigest": "sha256:e492d9175ba1e2d378a6d647ecccaf8234b52ba5fae8fea456315db369ffcb2a",
+    "outcomeEvidenceRevisionIds": [
+      "fact-hist-001-s17-price"
+    ],
+    "outcomeEvidenceSetDigest": "sha256:6116c00e5acb7667870ddb577721059358f40ece2aee6f75bf5ad112ee49e8c7",
+    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s17",
+    "objectHash": "sha256:b1898dd4d12aa2d1320a0bebac6c331684093a6ac40fed2ce888f18953528a70"
+  },
+  {
+    "contractVersion": "world-fact-manifest-historical/v1",
+    "modeDomain": "historical",
+    "jurisdiction": "TW",
+    "provenanceClass": "synthetic_fixture",
+    "truthClass": "fictional_setting",
+    "manifestId": "wfm_hist_001_s18",
+    "manifestHash": "sha256:131e9541808c8bf0fd5aa310cdce8a1a24581340256891032a320a04f0acf7bc",
+    "signatureKeyId": "panshi-synthetic-fixture-signing.2026-03",
+    "sealedAt": "2026-03-25T15:00:00+08:00",
+    "marketSessionId": "session-hist-001-s18",
+    "marketDateTaipei": "2026-03-25",
+    "marketCalendarRevision": "synthetic-historical-calendar/v2",
+    "interactionCutoffAt": "2026-03-25T09:00:00+08:00",
+    "evidenceCutoffAt": "2026-03-25T13:30:00+08:00",
+    "finalityPolicyRevision": "historical-finality-policy.2026.rev1",
+    "clockAuthorityRevision": "clock-authority.2026.rev1",
+    "rightsManifestId": "rights_synthetic-historical.2026-03",
+    "licenseClass": "synthetic-fixture-no-third-party-licence",
+    "rightsValidFrom": "2026-03-01T00:00:00+08:00",
+    "rightsValidUntil": null,
+    "permittedPurposes": [
+      "character_interaction",
+      "paper_trading_outcome",
+      "post_close_editorial"
+    ],
+    "interactionFactRevisionIds": [
+      "fact-hist-001-s01-counter-inventory",
+      "fact-hist-001-s07-correction",
+      "fact-hist-001-s16-price",
+      "fact-hist-001-s17-price"
+    ],
+    "interactionFactSetDigest": "sha256:3947433d7523eec733ed5144e917f8c89b16b1f15c14a2d2353cf3e42b42fada",
+    "outcomeEvidenceRevisionIds": [
+      "fact-hist-001-s18-price"
+    ],
+    "outcomeEvidenceSetDigest": "sha256:65a892e30cc06b3301c8698bb41d1e41d5624198a2b408d4fa9d8b70070bb549",
+    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s18",
+    "objectHash": "sha256:297274ee84c36af704cf5a434339c0905143f0235dfc2a0fca2f19b88416341c"
+  },
+  {
+    "contractVersion": "world-fact-manifest-historical/v1",
+    "modeDomain": "historical",
+    "jurisdiction": "TW",
+    "provenanceClass": "synthetic_fixture",
+    "truthClass": "fictional_setting",
+    "manifestId": "wfm_hist_001_s19",
+    "manifestHash": "sha256:5561aa6c2117e732d08b1add5723536d3ce4459cf3e96b6ba739f89993582701",
+    "signatureKeyId": "panshi-synthetic-fixture-signing.2026-03",
+    "sealedAt": "2026-03-26T15:00:00+08:00",
+    "marketSessionId": "session-hist-001-s19",
+    "marketDateTaipei": "2026-03-26",
+    "marketCalendarRevision": "synthetic-historical-calendar/v2",
+    "interactionCutoffAt": "2026-03-26T09:00:00+08:00",
+    "evidenceCutoffAt": "2026-03-26T13:30:00+08:00",
+    "finalityPolicyRevision": "historical-finality-policy.2026.rev1",
+    "clockAuthorityRevision": "clock-authority.2026.rev1",
+    "rightsManifestId": "rights_synthetic-historical.2026-03",
+    "licenseClass": "synthetic-fixture-no-third-party-licence",
+    "rightsValidFrom": "2026-03-01T00:00:00+08:00",
+    "rightsValidUntil": null,
+    "permittedPurposes": [
+      "character_interaction",
+      "paper_trading_outcome",
+      "post_close_editorial"
+    ],
+    "interactionFactRevisionIds": [
+      "fact-hist-001-s01-counter-inventory",
+      "fact-hist-001-s07-correction",
+      "fact-hist-001-s17-price",
+      "fact-hist-001-s18-price"
+    ],
+    "interactionFactSetDigest": "sha256:4e83c568d93ac7224536b654b0a1219c43e24d9452fc8713799b2ab7fa519214",
+    "outcomeEvidenceRevisionIds": [
+      "fact-hist-001-s19-price"
+    ],
+    "outcomeEvidenceSetDigest": "sha256:2b5385df584ebb52bf9e0b98e823f98cdd97e1643a5bc6fd7465a302d88bac40",
+    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s19",
+    "objectHash": "sha256:8b4d160622087bf2202b2bfb5a0069acc322a65df88dd108366954d20c03ab2b"
+  },
+  {
+    "contractVersion": "world-fact-manifest-historical/v1",
+    "modeDomain": "historical",
+    "jurisdiction": "TW",
+    "provenanceClass": "synthetic_fixture",
+    "truthClass": "fictional_setting",
+    "manifestId": "wfm_hist_001_s20",
+    "manifestHash": "sha256:83477b2e68ee0a198d7ef331913a5e89a92ed1dad8d7f516e5339c814270b392",
+    "signatureKeyId": "panshi-synthetic-fixture-signing.2026-03",
+    "sealedAt": "2026-03-27T15:00:00+08:00",
+    "marketSessionId": "session-hist-001-s20",
+    "marketDateTaipei": "2026-03-27",
+    "marketCalendarRevision": "synthetic-historical-calendar/v2",
+    "interactionCutoffAt": "2026-03-27T09:00:00+08:00",
+    "evidenceCutoffAt": "2026-03-27T13:30:00+08:00",
+    "finalityPolicyRevision": "historical-finality-policy.2026.rev1",
+    "clockAuthorityRevision": "clock-authority.2026.rev1",
+    "rightsManifestId": "rights_synthetic-historical.2026-03",
+    "licenseClass": "synthetic-fixture-no-third-party-licence",
+    "rightsValidFrom": "2026-03-01T00:00:00+08:00",
+    "rightsValidUntil": null,
+    "permittedPurposes": [
+      "character_interaction",
+      "paper_trading_outcome",
+      "post_close_editorial"
+    ],
+    "interactionFactRevisionIds": [
+      "fact-hist-001-s01-counter-inventory",
+      "fact-hist-001-s07-correction",
+      "fact-hist-001-s18-price",
+      "fact-hist-001-s19-price"
+    ],
+    "interactionFactSetDigest": "sha256:13a76706b437a415a316cebfec400979415e455ac31c2c92250f4cfa289d0bcc",
+    "outcomeEvidenceRevisionIds": [
+      "fact-hist-001-s20-price"
+    ],
+    "outcomeEvidenceSetDigest": "sha256:83698b4ba4481048f02a322639085d9e1a39e73e33f8dd8f0dc9aa13afefcc79",
+    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s20",
+    "objectHash": "sha256:ce9744fd796e24dd2c6a67e46719ab7cda004dd203be9edbed17761bae7c64d1"
+  },
+  {
+    "contractVersion": "world-fact-manifest-historical/v1",
+    "modeDomain": "historical",
+    "jurisdiction": "TW",
+    "provenanceClass": "synthetic_fixture",
+    "truthClass": "fictional_setting",
+    "manifestId": "wfm_hist_001_s21",
+    "manifestHash": "sha256:9f94089101a92910a6069e37b7cd5d856e957764671d303fa22a573bc5c0e122",
+    "signatureKeyId": "panshi-synthetic-fixture-signing.2026-03",
+    "sealedAt": "2026-03-30T15:00:00+08:00",
+    "marketSessionId": "session-hist-001-s21",
+    "marketDateTaipei": "2026-03-30",
+    "marketCalendarRevision": "synthetic-historical-calendar/v2",
+    "interactionCutoffAt": "2026-03-30T09:00:00+08:00",
+    "evidenceCutoffAt": "2026-03-30T13:30:00+08:00",
+    "finalityPolicyRevision": "historical-finality-policy.2026.rev1",
+    "clockAuthorityRevision": "clock-authority.2026.rev1",
+    "rightsManifestId": "rights_synthetic-historical.2026-03",
+    "licenseClass": "synthetic-fixture-no-third-party-licence",
+    "rightsValidFrom": "2026-03-01T00:00:00+08:00",
+    "rightsValidUntil": null,
+    "permittedPurposes": [
+      "character_interaction",
+      "paper_trading_outcome",
+      "post_close_editorial"
+    ],
+    "interactionFactRevisionIds": [
+      "fact-hist-001-s01-counter-inventory",
+      "fact-hist-001-s07-correction",
+      "fact-hist-001-s19-price",
+      "fact-hist-001-s20-price"
+    ],
+    "interactionFactSetDigest": "sha256:ce618a5d5601693136e8fd2941eb70d0b4dadbdf18742fcc8237bece7ca38b3a",
+    "outcomeEvidenceRevisionIds": [
+      "fact-hist-001-s21-price"
+    ],
+    "outcomeEvidenceSetDigest": "sha256:ead6e266793b5abef0191dc803ad135a89bea105152835eeaa72e78d524230dd",
+    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s21",
+    "objectHash": "sha256:758c135779168c1b43e015ffa45cbd1a28e50af785cf1e0eb8ef10fe1da98063"
+  },
+  {
+    "contractVersion": "world-fact-manifest-historical/v1",
+    "modeDomain": "historical",
+    "jurisdiction": "TW",
+    "provenanceClass": "synthetic_fixture",
+    "truthClass": "fictional_setting",
+    "manifestId": "wfm_hist_001_s22",
+    "manifestHash": "sha256:912591763cb09445d3a4efc4a4487662e2c6b5587084e2da7954b6a8ef79861d",
+    "signatureKeyId": "panshi-synthetic-fixture-signing.2026-03",
+    "sealedAt": "2026-03-31T15:00:00+08:00",
+    "marketSessionId": "session-hist-001-s22",
+    "marketDateTaipei": "2026-03-31",
+    "marketCalendarRevision": "synthetic-historical-calendar/v2",
+    "interactionCutoffAt": "2026-03-31T09:00:00+08:00",
+    "evidenceCutoffAt": "2026-03-31T13:30:00+08:00",
+    "finalityPolicyRevision": "historical-finality-policy.2026.rev1",
+    "clockAuthorityRevision": "clock-authority.2026.rev1",
+    "rightsManifestId": "rights_synthetic-historical.2026-03",
+    "licenseClass": "synthetic-fixture-no-third-party-licence",
+    "rightsValidFrom": "2026-03-01T00:00:00+08:00",
+    "rightsValidUntil": null,
+    "permittedPurposes": [
+      "character_interaction",
+      "paper_trading_outcome",
+      "post_close_editorial"
+    ],
+    "interactionFactRevisionIds": [
+      "fact-hist-001-s01-counter-inventory",
+      "fact-hist-001-s07-correction",
+      "fact-hist-001-s20-price",
+      "fact-hist-001-s21-price"
+    ],
+    "interactionFactSetDigest": "sha256:3a115159c800dc38f315edbb9e662218cbb29832ea3e4821fc9c249a32d321d6",
+    "outcomeEvidenceRevisionIds": [
+      "fact-hist-001-s22-price"
+    ],
+    "outcomeEvidenceSetDigest": "sha256:b0ab7ee6296fcf2da79dfcff5bb268154d27bb285c7bb4adcab8ce522d0c4cfd",
+    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s22",
+    "objectHash": "sha256:877302221a744f33591f1fffe2bf2ea95c42bdbd631f10272e7388dcabeb0e1e"
+  },
+  {
+    "contractVersion": "world-fact-manifest-historical/v1",
+    "modeDomain": "historical",
+    "jurisdiction": "TW",
+    "provenanceClass": "synthetic_fixture",
+    "truthClass": "fictional_setting",
+    "manifestId": "wfm_hist_001_s23",
+    "manifestHash": "sha256:01966479072590eb304171aa91710ab2e9dc2cefcbe17ca912fa7d881ef3590e",
+    "signatureKeyId": "panshi-synthetic-fixture-signing.2026-03",
+    "sealedAt": "2026-04-01T15:00:00+08:00",
+    "marketSessionId": "session-hist-001-s23",
+    "marketDateTaipei": "2026-04-01",
+    "marketCalendarRevision": "synthetic-historical-calendar/v2",
+    "interactionCutoffAt": "2026-04-01T09:00:00+08:00",
+    "evidenceCutoffAt": "2026-04-01T13:30:00+08:00",
+    "finalityPolicyRevision": "historical-finality-policy.2026.rev1",
+    "clockAuthorityRevision": "clock-authority.2026.rev1",
+    "rightsManifestId": "rights_synthetic-historical.2026-03",
+    "licenseClass": "synthetic-fixture-no-third-party-licence",
+    "rightsValidFrom": "2026-03-01T00:00:00+08:00",
+    "rightsValidUntil": null,
+    "permittedPurposes": [
+      "character_interaction",
+      "paper_trading_outcome",
+      "post_close_editorial"
+    ],
+    "interactionFactRevisionIds": [
+      "fact-hist-001-s01-counter-inventory",
+      "fact-hist-001-s07-correction",
+      "fact-hist-001-s21-price",
+      "fact-hist-001-s22-price"
+    ],
+    "interactionFactSetDigest": "sha256:24147dd800a3c89171b44789e6e30a97d6185e2fb1dbdc6d5286befb29b2314f",
+    "outcomeEvidenceRevisionIds": [
+      "fact-hist-001-s23-price"
+    ],
+    "outcomeEvidenceSetDigest": "sha256:66be6ed917be632ed5a75f822ae0643dd1dc6eb2d0dbb8cf30d4400f552b6ff8",
+    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s23",
+    "objectHash": "sha256:e75409f87fca67daaace0df723445a63f603826cd4665601cdc00bbfde431bd9"
+  },
+  {
+    "contractVersion": "world-fact-manifest-historical/v1",
+    "modeDomain": "historical",
+    "jurisdiction": "TW",
+    "provenanceClass": "synthetic_fixture",
+    "truthClass": "fictional_setting",
+    "manifestId": "wfm_hist_001_s24",
+    "manifestHash": "sha256:722f80df7798d0f832e756f18ec5f3378135121896200223e6acea803c6d0e87",
+    "signatureKeyId": "panshi-synthetic-fixture-signing.2026-03",
+    "sealedAt": "2026-04-02T15:00:00+08:00",
+    "marketSessionId": "session-hist-001-s24",
+    "marketDateTaipei": "2026-04-02",
+    "marketCalendarRevision": "synthetic-historical-calendar/v2",
+    "interactionCutoffAt": "2026-04-02T09:00:00+08:00",
+    "evidenceCutoffAt": "2026-04-02T13:30:00+08:00",
+    "finalityPolicyRevision": "historical-finality-policy.2026.rev1",
+    "clockAuthorityRevision": "clock-authority.2026.rev1",
+    "rightsManifestId": "rights_synthetic-historical.2026-03",
+    "licenseClass": "synthetic-fixture-no-third-party-licence",
+    "rightsValidFrom": "2026-03-01T00:00:00+08:00",
+    "rightsValidUntil": null,
+    "permittedPurposes": [
+      "character_interaction",
+      "paper_trading_outcome",
+      "post_close_editorial"
+    ],
+    "interactionFactRevisionIds": [
+      "fact-hist-001-s01-counter-inventory",
+      "fact-hist-001-s07-correction",
+      "fact-hist-001-s22-price",
+      "fact-hist-001-s23-price"
+    ],
+    "interactionFactSetDigest": "sha256:4cf2e29eab7708033969573408f4645de037d61d07621954e42efbf25093e228",
+    "outcomeEvidenceRevisionIds": [
+      "fact-hist-001-s24-price"
+    ],
+    "outcomeEvidenceSetDigest": "sha256:09457b1470fa8de9872aba6cc9ffdcb9cee943040f725770e4e25eaff05b26e5",
+    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s24",
+    "objectHash": "sha256:173b3611f71c77a3a4968655aa2ca180f6c4f2d5d7914d6099b38c6109cde828"
+  },
+  {
+    "contractVersion": "world-fact-manifest-historical/v1",
+    "modeDomain": "historical",
+    "jurisdiction": "TW",
+    "provenanceClass": "synthetic_fixture",
+    "truthClass": "fictional_setting",
+    "manifestId": "wfm_hist_001_s25",
+    "manifestHash": "sha256:c0747cf8b1a584044529fb75db9d898eb4707eab09f7d4458c2d10cb9b5d1116",
+    "signatureKeyId": "panshi-synthetic-fixture-signing.2026-03",
+    "sealedAt": "2026-04-07T15:00:00+08:00",
+    "marketSessionId": "session-hist-001-s25",
+    "marketDateTaipei": "2026-04-07",
+    "marketCalendarRevision": "synthetic-historical-calendar/v2",
+    "interactionCutoffAt": "2026-04-07T09:00:00+08:00",
+    "evidenceCutoffAt": "2026-04-07T13:30:00+08:00",
+    "finalityPolicyRevision": "historical-finality-policy.2026.rev1",
+    "clockAuthorityRevision": "clock-authority.2026.rev1",
+    "rightsManifestId": "rights_synthetic-historical.2026-03",
+    "licenseClass": "synthetic-fixture-no-third-party-licence",
+    "rightsValidFrom": "2026-03-01T00:00:00+08:00",
+    "rightsValidUntil": null,
+    "permittedPurposes": [
+      "character_interaction",
+      "paper_trading_outcome",
+      "post_close_editorial"
+    ],
+    "interactionFactRevisionIds": [
+      "fact-hist-001-s01-counter-inventory",
+      "fact-hist-001-s07-correction",
+      "fact-hist-001-s23-price",
+      "fact-hist-001-s24-price"
+    ],
+    "interactionFactSetDigest": "sha256:055b9f3fc268f1e914fffd4364530a09b39637f3c6cb5798ce69259fcde5713f",
+    "outcomeEvidenceRevisionIds": [
+      "fact-hist-001-s25-price"
+    ],
+    "outcomeEvidenceSetDigest": "sha256:f1c05dda1858f49ef79562c60bb2f7f18df10853993342055fd144ad7815c98e",
+    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s25",
+    "objectHash": "sha256:b9a570917768249cdf4b4102c7a5d8207c3bdfc61ceca7c05363833072e2bae0"
+  },
+  {
+    "contractVersion": "world-fact-manifest-historical/v1",
+    "modeDomain": "historical",
+    "jurisdiction": "TW",
+    "provenanceClass": "synthetic_fixture",
+    "truthClass": "fictional_setting",
+    "manifestId": "wfm_hist_001_s26",
+    "manifestHash": "sha256:bf795be4f3120fb90bf72eda5e1e8f210ad5f2ea7914a10ea17ce7e256913246",
+    "signatureKeyId": "panshi-synthetic-fixture-signing.2026-03",
+    "sealedAt": "2026-04-08T15:00:00+08:00",
+    "marketSessionId": "session-hist-001-s26",
+    "marketDateTaipei": "2026-04-08",
+    "marketCalendarRevision": "synthetic-historical-calendar/v2",
+    "interactionCutoffAt": "2026-04-08T09:00:00+08:00",
+    "evidenceCutoffAt": "2026-04-08T13:30:00+08:00",
+    "finalityPolicyRevision": "historical-finality-policy.2026.rev1",
+    "clockAuthorityRevision": "clock-authority.2026.rev1",
+    "rightsManifestId": "rights_synthetic-historical.2026-03",
+    "licenseClass": "synthetic-fixture-no-third-party-licence",
+    "rightsValidFrom": "2026-03-01T00:00:00+08:00",
+    "rightsValidUntil": null,
+    "permittedPurposes": [
+      "character_interaction",
+      "paper_trading_outcome",
+      "post_close_editorial"
+    ],
+    "interactionFactRevisionIds": [
+      "fact-hist-001-s01-counter-inventory",
+      "fact-hist-001-s07-correction",
+      "fact-hist-001-s24-price",
+      "fact-hist-001-s25-price"
+    ],
+    "interactionFactSetDigest": "sha256:404e70bf3b0bc4a65dd66053a926dd39ad08a6cf37857f53bf16fb465f469074",
+    "outcomeEvidenceRevisionIds": [
+      "fact-hist-001-s26-price"
+    ],
+    "outcomeEvidenceSetDigest": "sha256:922741726f23b39761338da5721dbfa9fd7bc8a251293a592cb83fdc692a0f33",
+    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s26",
+    "objectHash": "sha256:b5db39671b4828ac14d823edc7402941a6fbee0629b708de5e5c64dd79930514"
+  },
+  {
+    "contractVersion": "world-fact-manifest-historical/v1",
+    "modeDomain": "historical",
+    "jurisdiction": "TW",
+    "provenanceClass": "synthetic_fixture",
+    "truthClass": "fictional_setting",
+    "manifestId": "wfm_hist_001_s27",
+    "manifestHash": "sha256:721a7f9690f7cd4186355db40146c47fc714f068096c8978ee4a3c41ab03f32a",
+    "signatureKeyId": "panshi-synthetic-fixture-signing.2026-03",
+    "sealedAt": "2026-04-09T15:00:00+08:00",
+    "marketSessionId": "session-hist-001-s27",
+    "marketDateTaipei": "2026-04-09",
+    "marketCalendarRevision": "synthetic-historical-calendar/v2",
+    "interactionCutoffAt": "2026-04-09T09:00:00+08:00",
+    "evidenceCutoffAt": "2026-04-09T13:30:00+08:00",
+    "finalityPolicyRevision": "historical-finality-policy.2026.rev1",
+    "clockAuthorityRevision": "clock-authority.2026.rev1",
+    "rightsManifestId": "rights_synthetic-historical.2026-03",
+    "licenseClass": "synthetic-fixture-no-third-party-licence",
+    "rightsValidFrom": "2026-03-01T00:00:00+08:00",
+    "rightsValidUntil": null,
+    "permittedPurposes": [
+      "character_interaction",
+      "paper_trading_outcome",
+      "post_close_editorial"
+    ],
+    "interactionFactRevisionIds": [
+      "fact-hist-001-s01-counter-inventory",
+      "fact-hist-001-s07-correction",
+      "fact-hist-001-s25-price",
+      "fact-hist-001-s26-price"
+    ],
+    "interactionFactSetDigest": "sha256:a70506ef8c6ce23256ef27fb5847433495d376a02bc546734dfe5933b1bc05a5",
+    "outcomeEvidenceRevisionIds": [
+      "fact-hist-001-s27-price"
+    ],
+    "outcomeEvidenceSetDigest": "sha256:45b316188228d17c4b0e451afad4b45f7614b53198613d1aa9f31dc0db4bc546",
+    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s27",
+    "objectHash": "sha256:fd04fcb139b9e65279f655c48191b7956c2fabcb85700acd3b740de321a2d3c2"
+  },
+  {
+    "contractVersion": "world-fact-manifest-historical/v1",
+    "modeDomain": "historical",
+    "jurisdiction": "TW",
+    "provenanceClass": "synthetic_fixture",
+    "truthClass": "fictional_setting",
+    "manifestId": "wfm_hist_001_s28",
+    "manifestHash": "sha256:c7305756b1d8b13dabfefcc2faaa35ea5675c558925e90c91441f8322fb5b422",
+    "signatureKeyId": "panshi-synthetic-fixture-signing.2026-03",
+    "sealedAt": "2026-04-10T15:00:00+08:00",
+    "marketSessionId": "session-hist-001-s28",
+    "marketDateTaipei": "2026-04-10",
+    "marketCalendarRevision": "synthetic-historical-calendar/v2",
+    "interactionCutoffAt": "2026-04-10T09:00:00+08:00",
+    "evidenceCutoffAt": "2026-04-10T13:30:00+08:00",
+    "finalityPolicyRevision": "historical-finality-policy.2026.rev1",
+    "clockAuthorityRevision": "clock-authority.2026.rev1",
+    "rightsManifestId": "rights_synthetic-historical.2026-03",
+    "licenseClass": "synthetic-fixture-no-third-party-licence",
+    "rightsValidFrom": "2026-03-01T00:00:00+08:00",
+    "rightsValidUntil": null,
+    "permittedPurposes": [
+      "character_interaction",
+      "paper_trading_outcome",
+      "post_close_editorial"
+    ],
+    "interactionFactRevisionIds": [
+      "fact-hist-001-s01-counter-inventory",
+      "fact-hist-001-s07-correction",
+      "fact-hist-001-s26-price",
+      "fact-hist-001-s27-price"
+    ],
+    "interactionFactSetDigest": "sha256:37adc77c147669a2482d67a457adc3effcad7f7114ba6f0a29922285cfbe4edf",
+    "outcomeEvidenceRevisionIds": [
+      "fact-hist-001-s28-price"
+    ],
+    "outcomeEvidenceSetDigest": "sha256:191e79b2d0ef72af2ca6bc83b5665c12da9d630b30d9df4b95f159690dc56505",
+    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s28",
+    "objectHash": "sha256:d4aa08f57e468937bc48201ab490b5e75e16d62f49a1e2d1ce86e0fc111be69b"
+  },
+  {
+    "contractVersion": "world-fact-manifest-historical/v1",
+    "modeDomain": "historical",
+    "jurisdiction": "TW",
+    "provenanceClass": "synthetic_fixture",
+    "truthClass": "fictional_setting",
+    "manifestId": "wfm_hist_001_s29",
+    "manifestHash": "sha256:c18790acc91724a77dfc028c03af1ffee0693afa6dc77ffd0864bb1e4ba8a24e",
+    "signatureKeyId": "panshi-synthetic-fixture-signing.2026-03",
+    "sealedAt": "2026-04-13T15:00:00+08:00",
+    "marketSessionId": "session-hist-001-s29",
+    "marketDateTaipei": "2026-04-13",
+    "marketCalendarRevision": "synthetic-historical-calendar/v2",
+    "interactionCutoffAt": "2026-04-13T09:00:00+08:00",
+    "evidenceCutoffAt": "2026-04-13T13:30:00+08:00",
+    "finalityPolicyRevision": "historical-finality-policy.2026.rev1",
+    "clockAuthorityRevision": "clock-authority.2026.rev1",
+    "rightsManifestId": "rights_synthetic-historical.2026-03",
+    "licenseClass": "synthetic-fixture-no-third-party-licence",
+    "rightsValidFrom": "2026-03-01T00:00:00+08:00",
+    "rightsValidUntil": null,
+    "permittedPurposes": [
+      "character_interaction",
+      "paper_trading_outcome",
+      "post_close_editorial"
+    ],
+    "interactionFactRevisionIds": [
+      "fact-hist-001-s01-counter-inventory",
+      "fact-hist-001-s07-correction",
+      "fact-hist-001-s27-price",
+      "fact-hist-001-s28-price"
+    ],
+    "interactionFactSetDigest": "sha256:eace719418a29a1f669185c7a70e16980ed9a429bf9f5e7ec28a818fa9503c4c",
+    "outcomeEvidenceRevisionIds": [
+      "fact-hist-001-s29-price"
+    ],
+    "outcomeEvidenceSetDigest": "sha256:a9e5dba0540ad75fdd0887499b3a6fd0ef04062806d6d05a70cdc945ace334e3",
+    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s29",
+    "objectHash": "sha256:cecc7979fde89180539ad14d4bb9c5864d0d51ed53ac082401c3f644fc5ee1fe"
+  },
+  {
+    "contractVersion": "world-fact-manifest-historical/v1",
+    "modeDomain": "historical",
+    "jurisdiction": "TW",
+    "provenanceClass": "synthetic_fixture",
+    "truthClass": "fictional_setting",
+    "manifestId": "wfm_hist_001_s30",
+    "manifestHash": "sha256:36ac40cc12e835aa87e1c8701d51b0ac64378dfb2bce2dd4d6ba51284d05e1b8",
+    "signatureKeyId": "panshi-synthetic-fixture-signing.2026-03",
+    "sealedAt": "2026-04-14T08:55:00+08:00",
+    "marketSessionId": "session-hist-001-s30",
+    "marketDateTaipei": "2026-04-14",
+    "marketCalendarRevision": "synthetic-historical-calendar/v2",
+    "interactionCutoffAt": "2026-04-14T09:00:00+08:00",
+    "evidenceCutoffAt": "2026-04-14T13:30:00+08:00",
     "finalityPolicyRevision": "historical-finality-policy.2026.rev1",
     "clockAuthorityRevision": "clock-authority.2026.rev1",
     "rightsManifestId": "rights_synthetic-historical.2026-03",
@@ -221,15 +1178,15 @@
       "character_interaction"
     ],
     "interactionFactRevisionIds": [
-      "fact-hist-001-correction-s4",
-      "fact-hist-001-counter-inventory",
-      "fact-hist-001-price-s5",
-      "fact-hist-001-price-s6"
+      "fact-hist-001-s01-counter-inventory",
+      "fact-hist-001-s07-correction",
+      "fact-hist-001-s29-price",
+      "fact-hist-001-s30-price"
     ],
-    "interactionFactSetDigest": "sha256:8d50af7d6be140a641a2dab0ec14e8381d8e31d5867a5b4c09aa4cf57b71a1d7",
+    "interactionFactSetDigest": "sha256:d8aa2d97fc326882818bf201df13d6166f388cce03d6687076ab6f752f3513bd",
     "outcomeEvidenceRevisionIds": [],
     "outcomeEvidenceSetDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s6",
-    "objectHash": "sha256:5d718ae451ad6d6c3f8e736dd790cd2ed02aa07a0bb6347148520bad12080349"
+    "objectUri": "panshi-fixture:contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001-fact-revisions.json#wfm_hist_001_s30",
+    "objectHash": "sha256:a1a9164c39dc8ff4fcc7945efc9075c84fa87fa3c7ca5f162e3635222d26e1c4"
   }
 ]

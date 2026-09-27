@@ -36,7 +36,7 @@ fn main() {
         return;
     }
 
-    // The one-character vertical slice (six sessions) writes to its own
+    // The one-character vertical slice (thirty sessions) writes to its own
     // directory and never touches the frozen golden fixture above.
     if args.get(1).map(String::as_str) == Some("--write-slice-events") {
         let slice = one_character_slice();
@@ -45,7 +45,10 @@ fn main() {
             .map_or_else(|| PathBuf::from("fixtures/v5/one-character-slice/events"), PathBuf::from);
         fs::create_dir_all(&directory).expect("create slice fixture directory");
         for (index, event) in slice.events.iter().enumerate() {
-            let file_name = format!("{index:02}-{}.pb", event.event_type);
+            // Three digits: thirty sessions emit several hundred events, and
+            // the file names must still sort lexicographically in emission
+            // order.
+            let file_name = format!("{index:03}-{}.pb", event.event_type);
             fs::write(directory.join(file_name), &event.payload_bytes)
                 .expect("write slice event payload");
         }
@@ -110,7 +113,7 @@ fn build_slice_manifest_json(slice: &panshi_character_episode::slice::CharacterS
     for (index, event) in slice.events.iter().enumerate() {
         let _ = writeln!(
             out,
-            "    {{ \"index\": {index}, \"eventType\": \"{}\", \"streamType\": \"{}\", \"streamIdHex\": \"{}\", \"payloadSha256\": \"{}\", \"file\": \"{:02}-{}.pb\" }}{}",
+            "    {{ \"index\": {index}, \"eventType\": \"{}\", \"streamType\": \"{}\", \"streamIdHex\": \"{}\", \"payloadSha256\": \"{}\", \"file\": \"{:03}-{}.pb\" }}{}",
             event.event_type,
             event.stream_type,
             hex(&event.stream_id),

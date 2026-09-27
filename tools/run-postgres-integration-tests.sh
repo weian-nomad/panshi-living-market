@@ -29,6 +29,22 @@ set -euo pipefail
 # CREATE/DROP DATABASE, given via PANSHI_TEST_PG_SUPERUSER_URL (e.g.
 # postgres://postgres@127.0.0.1:5544/postgres). Individual test databases
 # are derived from that URL by substituting the database name.
+#
+# The same superuser connection is what
+# `tools/character-episode/tests/postgres_model_worker_permissions.rs` needs
+# to CREATE ROLE / SET ROLE / DROP ROLE its throwaway
+# `panshi_test_model_worker_*` role (roles are cluster-wide, so that test
+# drops its role itself; dropping the database does not).
+#
+# Local run against a Homebrew PostgreSQL on this machine, whose default
+# superuser is the local account name (never hard-code it here):
+#
+#   pg_isready
+#   PANSHI_TEST_PG_SUPERUSER_URL="postgres://$(whoami)@127.0.0.1:5432/postgres" \
+#     bash tools/run-postgres-integration-tests.sh
+#
+# Every target runs against its own `panshi_v5_test_<target>` database,
+# which is dropped again afterwards whether the target passed or failed.
 
 if [ -z "${PANSHI_TEST_PG_SUPERUSER_URL:-}" ]; then
   echo "PANSHI_TEST_PG_SUPERUSER_URL is required (a postgres superuser connection able to CREATE/DROP DATABASE)" >&2
@@ -45,6 +61,8 @@ targets=(
   "panshi-event-store:postgres_v5_multi_stream"
   "panshi-character-episode:postgres_replay"
   "panshi-character-episode:postgres_golden_failure_set"
+  "panshi-character-episode:postgres_slice_replay"
+  "panshi-character-episode:postgres_model_worker_permissions"
 )
 
 base_url="${PANSHI_TEST_PG_SUPERUSER_URL%/*}"

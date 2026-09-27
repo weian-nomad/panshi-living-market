@@ -23,10 +23,13 @@
 pub mod character;
 pub mod cognition;
 pub mod fallback;
+pub mod gateway;
 pub mod memory;
 pub mod story;
 pub mod utterance;
 
+pub mod assembly;
+pub mod attribution;
 pub mod bias;
 pub mod thesis;
 

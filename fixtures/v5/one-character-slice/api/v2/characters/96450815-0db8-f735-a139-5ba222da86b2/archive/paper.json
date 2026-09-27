@@ -1,6 +1,6 @@
 {
   "account": {
-    "asOf": "2026-03-17T13:30:00+08:00",
+    "asOf": "2026-04-13T13:30:00+08:00",
     "cashMinorUnits": 93524000,
     "correctionRefs": [],
     "currency": "TWD",
@@ -8,7 +8,7 @@
     "reservedCashMinorUnits": 0
   },
   "appliedAudienceScope": "subscriber_archive",
-  "asOf": "2026-03-17T13:30:00+08:00",
+  "asOf": "2026-04-13T13:30:00+08:00",
   "characterId": "96450815-0db8-f735-a139-5ba222da86b2",
   "dataRevisions": [
     {
@@ -17,7 +17,7 @@
       ],
       "appliedAt": "2026-03-10T11:25:00+08:00",
       "kind": "fact_correction",
-      "revisionId": "fact-hist-001-correction-s4",
+      "revisionId": "fact-hist-001-s07-correction",
       "summary": "2026-03-10 盤中發布的發行人更正公告。它在該時段的互動截止之後才出現，所以只是該時段的結果證據，下一個交易時段才進入他讀得到的範圍。"
     }
   ],
@@ -31,7 +31,7 @@
         "fill": null,
         "instrumentLabel": "PSZS-DEMO",
         "quantityFixed6": 0,
-        "rationaleSummary": "沒有部位，也沒有下單意圖；他把注意力放在前一天的公告附註上。"
+        "rationaleSummary": "沒有部位，也沒有下單意圖。"
       },
       "marketSessionFinalityState": "accepted",
       "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
@@ -52,7 +52,7 @@
         "fill": {
           "filledAt": "2026-03-03T13:30:00+08:00",
           "sealedPriceMinorUnitsFixed6": 10000000000,
-          "sealedPriceRevisionRef": "8ce7af7a463e83b9557ff47221f2b117986269cfd8cffa3216cdd0373b93e4a5"
+          "sealedPriceRevisionRef": "193845e4c18d5d052b8386917eeaa6261d47e72752dfacf0b6215ceae9703923"
         },
         "instrumentLabel": "PSZS-DEMO",
         "quantityFixed6": 1000000000,
@@ -63,6 +63,22 @@
       "recordDataState": "READY",
       "recordId": "c812e64b-d963-619c-bd66-3219888257bb",
       "tradingDate": "2026-03-03"
+    },
+    {
+      "dailyActionDisclosure": {
+        "action": "HOLD",
+        "confidencePercentFixed2": 4400,
+        "direction": "no_action",
+        "fill": null,
+        "instrumentLabel": "PSZS-DEMO",
+        "quantityFixed6": 0,
+        "rationaleSummary": "理由未變，仍然是兩個交易日內動能延續；他沒有補上新的支持資料。"
+      },
+      "marketSessionFinalityState": "accepted",
+      "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
+      "recordDataState": "READY",
+      "recordId": "d1d3ee45-7b16-6438-2f9a-4d22186fa1dc",
+      "tradingDate": "2026-03-04"
     },
     {
       "dailyActionDisclosure": {
@@ -83,6 +99,38 @@
     {
       "dailyActionDisclosure": {
         "action": "HOLD",
+        "confidencePercentFixed2": 4200,
+        "direction": "no_action",
+        "fill": null,
+        "instrumentLabel": "PSZS-DEMO",
+        "quantityFixed6": 0,
+        "rationaleSummary": "理由未變，仍然是兩個交易日內動能延續；他沒有補上新的支持資料。"
+      },
+      "marketSessionFinalityState": "accepted",
+      "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
+      "recordDataState": "READY",
+      "recordId": "e877f067-f47f-7806-7e00-590856d2474b",
+      "tradingDate": "2026-03-06"
+    },
+    {
+      "dailyActionDisclosure": {
+        "action": "HOLD",
+        "confidencePercentFixed2": 4400,
+        "direction": "no_action",
+        "fill": null,
+        "instrumentLabel": "PSZS-DEMO",
+        "quantityFixed6": 0,
+        "rationaleSummary": "理由未變，仍然是兩個交易日內動能延續；他沒有補上新的支持資料。"
+      },
+      "marketSessionFinalityState": "accepted",
+      "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
+      "recordDataState": "READY",
+      "recordId": "abdfd94e-d9ba-b8ef-d01d-cfcf21e175b7",
+      "tradingDate": "2026-03-09"
+    },
+    {
+      "dailyActionDisclosure": {
+        "action": "HOLD",
         "concurrentClaim": {
           "canonicalTextSha256": "97d3e7281cce7aae83e0397c20ceac0f3ee61c84cacc4fb24295d508d6349976",
           "canonicalTextUtf8": "目前沒有新的公開資訊，先維持原本的觀察。",
@@ -93,13 +141,77 @@
         "fill": null,
         "instrumentLabel": "PSZS-DEMO",
         "quantityFixed6": 0,
-        "rationaleSummary": "引用的理由改成長期治理價值；支持事實與建倉當時完全相同，新增 0 筆。"
+        "rationaleSummary": "引用的理由改成長期治理價值；支持事實與建倉當時相比新增 0 筆。"
       },
       "marketSessionFinalityState": "accepted",
       "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
       "recordDataState": "READY",
       "recordId": "def3e862-64f7-02f6-7086-40ae0bbe0312",
       "tradingDate": "2026-03-10"
+    },
+    {
+      "dailyActionDisclosure": {
+        "action": "HOLD",
+        "confidencePercentFixed2": 4200,
+        "direction": "no_action",
+        "fill": null,
+        "instrumentLabel": "PSZS-DEMO",
+        "quantityFixed6": 0,
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+      },
+      "marketSessionFinalityState": "accepted",
+      "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
+      "recordDataState": "READY",
+      "recordId": "0080a783-e376-9d09-5c15-cb817bdd5510",
+      "tradingDate": "2026-03-11"
+    },
+    {
+      "dailyActionDisclosure": {
+        "action": "HOLD",
+        "confidencePercentFixed2": 4200,
+        "direction": "no_action",
+        "fill": null,
+        "instrumentLabel": "PSZS-DEMO",
+        "quantityFixed6": 0,
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+      },
+      "marketSessionFinalityState": "accepted",
+      "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
+      "recordDataState": "READY",
+      "recordId": "655478e9-1e79-5929-2779-ecf8693dd732",
+      "tradingDate": "2026-03-12"
+    },
+    {
+      "dailyActionDisclosure": {
+        "action": "HOLD",
+        "confidencePercentFixed2": 4400,
+        "direction": "no_action",
+        "fill": null,
+        "instrumentLabel": "PSZS-DEMO",
+        "quantityFixed6": 0,
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+      },
+      "marketSessionFinalityState": "accepted",
+      "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
+      "recordDataState": "READY",
+      "recordId": "89875a3e-94e2-9efa-4fc7-2eca1f6f8547",
+      "tradingDate": "2026-03-13"
+    },
+    {
+      "dailyActionDisclosure": {
+        "action": "HOLD",
+        "confidencePercentFixed2": 4200,
+        "direction": "no_action",
+        "fill": null,
+        "instrumentLabel": "PSZS-DEMO",
+        "quantityFixed6": 0,
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+      },
+      "marketSessionFinalityState": "accepted",
+      "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
+      "recordDataState": "READY",
+      "recordId": "9823e29b-e142-3432-f24f-8a55df42120f",
+      "tradingDate": "2026-03-16"
     },
     {
       "dailyActionDisclosure": {
@@ -114,7 +226,7 @@
         "fill": {
           "filledAt": "2026-03-17T13:30:00+08:00",
           "sealedPriceMinorUnitsFixed6": 8820000000,
-          "sealedPriceRevisionRef": "0213274df5a653aefe4a93fa1df9bb81d61bd5085cc0357f152f276f6dcbc803"
+          "sealedPriceRevisionRef": "a68ec706e9a9cd246a2314986159d949dd6693316b6c5b81ba40467e028d08e7"
         },
         "instrumentLabel": "PSZS-DEMO",
         "quantityFixed6": 400000000,
@@ -127,11 +239,293 @@
       "tradingDate": "2026-03-17"
     },
     {
+      "dailyActionDisclosure": {
+        "action": "NO_ACTION",
+        "confidencePercentFixed2": 3200,
+        "direction": "no_action",
+        "fill": null,
+        "instrumentLabel": "PSZS-DEMO",
+        "quantityFixed6": 0,
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他重看了已公開的資料，沒有新增支持資料。"
+      },
+      "marketSessionFinalityState": "accepted",
+      "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
+      "recordDataState": "READY",
+      "recordId": "9baac0fa-47b0-ad6b-e459-89a74993114a",
+      "tradingDate": "2026-03-18"
+    },
+    {
+      "dailyActionDisclosure": {
+        "action": "HOLD",
+        "confidencePercentFixed2": 3400,
+        "direction": "no_action",
+        "fill": null,
+        "instrumentLabel": "PSZS-DEMO",
+        "quantityFixed6": 0,
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+      },
+      "marketSessionFinalityState": "accepted",
+      "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
+      "recordDataState": "READY",
+      "recordId": "f2c7c836-0061-d637-5348-d83bce9e97c8",
+      "tradingDate": "2026-03-19"
+    },
+    {
+      "dailyActionDisclosure": {
+        "action": "HOLD",
+        "confidencePercentFixed2": 3400,
+        "direction": "no_action",
+        "fill": null,
+        "instrumentLabel": "PSZS-DEMO",
+        "quantityFixed6": 0,
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+      },
+      "marketSessionFinalityState": "accepted",
+      "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
+      "recordDataState": "READY",
+      "recordId": "ddf20375-fb9d-0cc3-386e-c056c81ea31c",
+      "tradingDate": "2026-03-20"
+    },
+    {
+      "dailyActionDisclosure": {
+        "action": "HOLD",
+        "confidencePercentFixed2": 3400,
+        "direction": "no_action",
+        "fill": null,
+        "instrumentLabel": "PSZS-DEMO",
+        "quantityFixed6": 0,
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+      },
+      "marketSessionFinalityState": "accepted",
+      "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
+      "recordDataState": "READY",
+      "recordId": "bd5136b1-da27-e560-f180-02bc84f0bb41",
+      "tradingDate": "2026-03-23"
+    },
+    {
+      "dailyActionDisclosure": {
+        "action": "HOLD",
+        "confidencePercentFixed2": 3400,
+        "direction": "no_action",
+        "fill": null,
+        "instrumentLabel": "PSZS-DEMO",
+        "quantityFixed6": 0,
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+      },
+      "marketSessionFinalityState": "accepted",
+      "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
+      "recordDataState": "READY",
+      "recordId": "6010c54a-35ea-46a9-b7e8-cdf6f31eb0b3",
+      "tradingDate": "2026-03-24"
+    },
+    {
+      "dailyActionDisclosure": {
+        "action": "HOLD",
+        "confidencePercentFixed2": 3400,
+        "direction": "no_action",
+        "fill": null,
+        "instrumentLabel": "PSZS-DEMO",
+        "quantityFixed6": 0,
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+      },
+      "marketSessionFinalityState": "accepted",
+      "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
+      "recordDataState": "READY",
+      "recordId": "a0029641-18fd-f1ca-af4d-f9fa6d8d8f88",
+      "tradingDate": "2026-03-25"
+    },
+    {
+      "dailyActionDisclosure": {
+        "action": "HOLD",
+        "confidencePercentFixed2": 3400,
+        "direction": "no_action",
+        "fill": null,
+        "instrumentLabel": "PSZS-DEMO",
+        "quantityFixed6": 0,
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+      },
+      "marketSessionFinalityState": "accepted",
+      "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
+      "recordDataState": "READY",
+      "recordId": "3e73cd7e-8baf-eee2-e089-1cb2e422780f",
+      "tradingDate": "2026-03-26"
+    },
+    {
+      "dailyActionDisclosure": {
+        "action": "HOLD",
+        "concurrentClaim": {
+          "canonicalTextSha256": "b97ec2c36a068a52bcf5bd12773e2589301f8ff9e8660b4e859d490165754143",
+          "canonicalTextUtf8": "這一段會虧，是因為那陣子旁邊的人一直在講它。",
+          "utteranceArtifactId": "74d3bb5e-beb0-031f-9dc7-769d9399e776"
+        },
+        "confidencePercentFixed2": 3400,
+        "direction": "no_action",
+        "fill": null,
+        "instrumentLabel": "PSZS-DEMO",
+        "quantityFixed6": 0,
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+      },
+      "marketSessionFinalityState": "accepted",
+      "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
+      "recordDataState": "READY",
+      "recordId": "db30fa6e-00e4-5aca-8091-0d37cad18d02",
+      "tradingDate": "2026-03-27"
+    },
+    {
+      "dailyActionDisclosure": {
+        "action": "HOLD",
+        "confidencePercentFixed2": 3400,
+        "direction": "no_action",
+        "fill": null,
+        "instrumentLabel": "PSZS-DEMO",
+        "quantityFixed6": 0,
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+      },
+      "marketSessionFinalityState": "accepted",
+      "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
+      "recordDataState": "READY",
+      "recordId": "08d59661-5f48-5d64-366a-284730c184f4",
+      "tradingDate": "2026-03-30"
+    },
+    {
+      "dailyActionDisclosure": {
+        "action": "HOLD",
+        "confidencePercentFixed2": 3400,
+        "direction": "no_action",
+        "fill": null,
+        "instrumentLabel": "PSZS-DEMO",
+        "quantityFixed6": 0,
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+      },
+      "marketSessionFinalityState": "accepted",
+      "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
+      "recordDataState": "READY",
+      "recordId": "26c647e1-c4a7-2ba2-c751-aef0bd3dfacf",
+      "tradingDate": "2026-03-31"
+    },
+    {
+      "dailyActionDisclosure": {
+        "action": "HOLD",
+        "confidencePercentFixed2": 3400,
+        "direction": "no_action",
+        "fill": null,
+        "instrumentLabel": "PSZS-DEMO",
+        "quantityFixed6": 0,
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+      },
+      "marketSessionFinalityState": "accepted",
+      "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
+      "recordDataState": "READY",
+      "recordId": "8101479c-d6f3-232c-b3f5-d2cb194db5fd",
+      "tradingDate": "2026-04-01"
+    },
+    {
+      "dailyActionDisclosure": {
+        "action": "HOLD",
+        "confidencePercentFixed2": 3400,
+        "direction": "no_action",
+        "fill": null,
+        "instrumentLabel": "PSZS-DEMO",
+        "quantityFixed6": 0,
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+      },
+      "marketSessionFinalityState": "accepted",
+      "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
+      "recordDataState": "READY",
+      "recordId": "2a17dfdf-af52-9730-17df-dc0c47d5a7ce",
+      "tradingDate": "2026-04-02"
+    },
+    {
+      "dailyActionDisclosure": {
+        "action": "HOLD",
+        "confidencePercentFixed2": 3400,
+        "direction": "no_action",
+        "fill": null,
+        "instrumentLabel": "PSZS-DEMO",
+        "quantityFixed6": 0,
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+      },
+      "marketSessionFinalityState": "accepted",
+      "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
+      "recordDataState": "READY",
+      "recordId": "bde132df-52de-3f85-e600-45aab168bad9",
+      "tradingDate": "2026-04-07"
+    },
+    {
+      "dailyActionDisclosure": {
+        "action": "HOLD",
+        "concurrentClaim": {
+          "canonicalTextSha256": "2d807e8e1105c7fe4e1160858893e2e859d99bb0581fb2ef991d67c9360666ce",
+          "canonicalTextUtf8": "這一段是我自己判斷錯了，不是別人的問題。",
+          "utteranceArtifactId": "4431acbb-338d-854d-d14c-699be8e6a31e"
+        },
+        "confidencePercentFixed2": 3400,
+        "direction": "no_action",
+        "fill": null,
+        "instrumentLabel": "PSZS-DEMO",
+        "quantityFixed6": 0,
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+      },
+      "marketSessionFinalityState": "accepted",
+      "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
+      "recordDataState": "READY",
+      "recordId": "f2ba39b0-2bb9-1415-6350-38372b13c08d",
+      "tradingDate": "2026-04-08"
+    },
+    {
+      "dailyActionDisclosure": {
+        "action": "HOLD",
+        "confidencePercentFixed2": 3400,
+        "direction": "no_action",
+        "fill": null,
+        "instrumentLabel": "PSZS-DEMO",
+        "quantityFixed6": 0,
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+      },
+      "marketSessionFinalityState": "accepted",
+      "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
+      "recordDataState": "READY",
+      "recordId": "74f9a213-efc5-9280-58b3-ecef817a835a",
+      "tradingDate": "2026-04-09"
+    },
+    {
+      "dailyActionDisclosure": {
+        "action": "HOLD",
+        "confidencePercentFixed2": 3400,
+        "direction": "no_action",
+        "fill": null,
+        "instrumentLabel": "PSZS-DEMO",
+        "quantityFixed6": 0,
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+      },
+      "marketSessionFinalityState": "accepted",
+      "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
+      "recordDataState": "READY",
+      "recordId": "fadc8df2-eddb-5e6a-4d2a-d194ea747fa9",
+      "tradingDate": "2026-04-10"
+    },
+    {
+      "dailyActionDisclosure": {
+        "action": "HOLD",
+        "confidencePercentFixed2": 3400,
+        "direction": "no_action",
+        "fill": null,
+        "instrumentLabel": "PSZS-DEMO",
+        "quantityFixed6": 0,
+        "rationaleSummary": "理由未變，仍然是長期治理價值；他沒有補上新的支持資料。"
+      },
+      "marketSessionFinalityState": "accepted",
+      "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
+      "recordDataState": "READY",
+      "recordId": "ca9c3840-d7de-42fb-98ab-4601da917fc3",
+      "tradingDate": "2026-04-13"
+    },
+    {
       "marketSessionFinalityState": "pending",
       "positionRef": "a243c129-0297-7b54-e16f-256452eab596",
       "recordDataState": "HELD",
-      "recordId": "9baac0fa-47b0-ad6b-e459-89a74993114a",
-      "tradingDate": "2026-03-18"
+      "recordId": "a6b1295e-0746-0262-1698-c3364d28db0b",
+      "tradingDate": "2026-04-14"
     }
   ],
   "paperVersionSet": {
@@ -139,7 +533,7 @@
     "paperAccountVersion": 3,
     "paperOrderRefs": [
       "27e66ae4-9a13-dc6d-a5a5-fa47daa05576",
-      "f32be3f0-26fd-f587-c90b-473b8c44e900"
+      "ae44ddc9-4521-8cf8-3416-cd28205edb42"
     ],
     "paperOrderVersions": [
       1,
@@ -149,9 +543,9 @@
       "a243c129-0297-7b54-e16f-256452eab596"
     ],
     "paperPositionVersions": [
-      6
+      30
     ],
-    "paperVersionSetDigest": "8921a848344d4cb9947209f8157ccd013dc7cd1eded7173e67a7908c32de5551"
+    "paperVersionSetDigest": "e0b1cc31d9f509659854a9719db14d2ad4c1c167d47fd6af8430283c116c8ab7"
   },
   "positions": [
     {
@@ -161,14 +555,16 @@
         "canonicalTextUtf8": "看到新的公開資訊，先小部位觀察。",
         "utteranceArtifactId": "412501f5-f4fc-36fd-a17b-eefa9b711baa"
       },
-      "consequenceSummary": "持有 15 天後減碼 400 股，實現虧損 4,720 元；剩下 600 股仍在，未實現虧損 7,080 元。引用的理由換過一次，新增支持事實 0 筆。",
+      "consequenceSummary": "持有 15 天後減碼 400 股，實現虧損 4,720 元；剩下 600 股仍在，未實現虧損 7,680 元。引用的理由換過一次，新增支持事實 0 筆。",
       "currentNarration": {
         "canonicalTextSha256": "97d3e7281cce7aae83e0397c20ceac0f3ee61c84cacc4fb24295d508d6349976",
         "canonicalTextUtf8": "目前沒有新的公開資訊，先維持原本的觀察。",
         "kind": "utterance",
         "utteranceArtifactId": "6e647275-9839-89f0-457d-2942728c9ac2"
       },
+      "influencedBy": [],
       "influencedByCharacterRefs": [],
+      "influencedByEmptyReason": "沒有任何封存事件記錄別人影響過這個部位的決定；他在組會上的歸因是他自己的說法，記在關係頁。",
       "instrumentLabel": "PSZS-DEMO",
       "invalidationCondition": "occurred",
       "lastChangedAt": "2026-03-17T13:30:00+08:00",
@@ -178,52 +574,172 @@
           "lotId": "2c0f86ae-898a-be81-12f7-d5c706175959",
           "quantityFixed6": 600000000,
           "sealedPriceMinorUnitsFixed6": 10000000000,
-          "sealedPriceRevisionRef": "8ce7af7a463e83b9557ff47221f2b117986269cfd8cffa3216cdd0373b93e4a5"
+          "sealedPriceRevisionRef": "193845e4c18d5d052b8386917eeaa6261d47e72752dfacf0b6215ceae9703923"
         }
       ],
-      "markAsOf": "2026-03-17T13:30:00+08:00",
+      "markAsOf": "2026-04-13T13:30:00+08:00",
       "openedAt": "2026-03-03T13:30:00+08:00",
       "positionId": "a243c129-0297-7b54-e16f-256452eab596",
       "rationaleSummary": "建倉時封存的理由（thesis-hist-001）：預期兩個交易日內動能延續。失效條件是兩個交易日內沒有新證據，預定期限到 2026-03-05 收盤，當時信心 50%。",
       "realizedPnlMinorUnits": -472000,
       "status": "open",
-      "unrealizedPnlMinorUnits": -708000,
-      "unrealizedPnlPercentFixed2": -1180
+      "unrealizedPnlMinorUnits": -768000,
+      "unrealizedPnlPercentFixed2": -1280
     }
   ],
-  "projectionVersion": 97,
-  "serverNow": "2026-03-18T10:30:00+08:00",
-  "sourceGlobalPosition": 97,
+  "projectionVersion": 393,
+  "serverNow": "2026-04-14T10:30:00+08:00",
+  "sourceGlobalPosition": 393,
   "sourceRevisionSet": [
     {
-      "refId": "wfm_hist_001_s1",
+      "refId": "wfm_hist_001_s01",
       "refKind": "world_fact_manifest",
       "revision": 1
     },
     {
-      "refId": "wfm_hist_001_s2",
+      "refId": "wfm_hist_001_s02",
       "refKind": "world_fact_manifest",
       "revision": 2
     },
     {
-      "refId": "wfm_hist_001_s3",
+      "refId": "wfm_hist_001_s03",
       "refKind": "world_fact_manifest",
       "revision": 3
     },
     {
-      "refId": "wfm_hist_001_s4",
+      "refId": "wfm_hist_001_s04",
       "refKind": "world_fact_manifest",
       "revision": 4
     },
     {
-      "refId": "wfm_hist_001_s5",
+      "refId": "wfm_hist_001_s05",
       "refKind": "world_fact_manifest",
       "revision": 5
     },
     {
-      "refId": "wfm_hist_001_s6",
+      "refId": "wfm_hist_001_s06",
       "refKind": "world_fact_manifest",
       "revision": 6
+    },
+    {
+      "refId": "wfm_hist_001_s07",
+      "refKind": "world_fact_manifest",
+      "revision": 7
+    },
+    {
+      "refId": "wfm_hist_001_s08",
+      "refKind": "world_fact_manifest",
+      "revision": 8
+    },
+    {
+      "refId": "wfm_hist_001_s09",
+      "refKind": "world_fact_manifest",
+      "revision": 9
+    },
+    {
+      "refId": "wfm_hist_001_s10",
+      "refKind": "world_fact_manifest",
+      "revision": 10
+    },
+    {
+      "refId": "wfm_hist_001_s11",
+      "refKind": "world_fact_manifest",
+      "revision": 11
+    },
+    {
+      "refId": "wfm_hist_001_s12",
+      "refKind": "world_fact_manifest",
+      "revision": 12
+    },
+    {
+      "refId": "wfm_hist_001_s13",
+      "refKind": "world_fact_manifest",
+      "revision": 13
+    },
+    {
+      "refId": "wfm_hist_001_s14",
+      "refKind": "world_fact_manifest",
+      "revision": 14
+    },
+    {
+      "refId": "wfm_hist_001_s15",
+      "refKind": "world_fact_manifest",
+      "revision": 15
+    },
+    {
+      "refId": "wfm_hist_001_s16",
+      "refKind": "world_fact_manifest",
+      "revision": 16
+    },
+    {
+      "refId": "wfm_hist_001_s17",
+      "refKind": "world_fact_manifest",
+      "revision": 17
+    },
+    {
+      "refId": "wfm_hist_001_s18",
+      "refKind": "world_fact_manifest",
+      "revision": 18
+    },
+    {
+      "refId": "wfm_hist_001_s19",
+      "refKind": "world_fact_manifest",
+      "revision": 19
+    },
+    {
+      "refId": "wfm_hist_001_s20",
+      "refKind": "world_fact_manifest",
+      "revision": 20
+    },
+    {
+      "refId": "wfm_hist_001_s21",
+      "refKind": "world_fact_manifest",
+      "revision": 21
+    },
+    {
+      "refId": "wfm_hist_001_s22",
+      "refKind": "world_fact_manifest",
+      "revision": 22
+    },
+    {
+      "refId": "wfm_hist_001_s23",
+      "refKind": "world_fact_manifest",
+      "revision": 23
+    },
+    {
+      "refId": "wfm_hist_001_s24",
+      "refKind": "world_fact_manifest",
+      "revision": 24
+    },
+    {
+      "refId": "wfm_hist_001_s25",
+      "refKind": "world_fact_manifest",
+      "revision": 25
+    },
+    {
+      "refId": "wfm_hist_001_s26",
+      "refKind": "world_fact_manifest",
+      "revision": 26
+    },
+    {
+      "refId": "wfm_hist_001_s27",
+      "refKind": "world_fact_manifest",
+      "revision": 27
+    },
+    {
+      "refId": "wfm_hist_001_s28",
+      "refKind": "world_fact_manifest",
+      "revision": 28
+    },
+    {
+      "refId": "wfm_hist_001_s29",
+      "refKind": "world_fact_manifest",
+      "revision": 29
+    },
+    {
+      "refId": "wfm_hist_001_s30",
+      "refKind": "world_fact_manifest",
+      "revision": 30
     },
     {
       "refId": "345fea46-1f2a-8bcd-c98c-29d944fec75a",
@@ -233,7 +749,7 @@
     {
       "refId": "a243c129-0297-7b54-e16f-256452eab596",
       "refKind": "paper_position",
-      "revision": 6
+      "revision": 30
     }
   ],
   "truthClasses": [

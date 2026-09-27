@@ -2,25 +2,25 @@
   "ageYears": 28,
   "characterId": "96450815-0db8-f735-a139-5ba222da86b2",
   "currentAttention": {
-    "label": "同業存貨天數上升的那份資料",
+    "label": "兩次組會那兩天的持股紀錄",
     "targetKind": "object"
   },
-  "currentVerbPhrase": "正在重看他昨天終於減碼的那批資料",
+  "currentVerbPhrase": "正在對照兩次組會那兩天自己留下的紀錄",
   "dataState": "READY",
   "displayName": "陸硯之",
   "occupationLabel": "企業研究助理",
   "poseState": "examining",
-  "projectionVersion": 97,
+  "projectionVersion": 393,
   "publicClaim": {
-    "canonicalTextSha256": "97d3e7281cce7aae83e0397c20ceac0f3ee61c84cacc4fb24295d508d6349976",
-    "canonicalTextUtf8": "目前沒有新的公開資訊，先維持原本的觀察。",
-    "utteranceArtifactId": "6e647275-9839-89f0-457d-2942728c9ac2"
+    "canonicalTextSha256": "2d807e8e1105c7fe4e1160858893e2e859d99bb0581fb2ef991d67c9360666ce",
+    "canonicalTextUtf8": "這一段是我自己判斷錯了，不是別人的問題。",
+    "utteranceArtifactId": "4431acbb-338d-854d-d14c-699be8e6a31e"
   },
   "recentConsequenceHighlight": {
-    "asOf": "2026-03-17T13:30:00+08:00",
+    "asOf": "2026-04-13T13:30:00+08:00",
     "kind": "paper_position",
     "positionArchiveRef": "a243c129-0297-7b54-e16f-256452eab596",
-    "unrealizedPnlPercentFixed2": -1180
+    "unrealizedPnlPercentFixed2": -1280
   },
   "sceneRef": "e9ce0d21-2f4d-07cd-af52-ecdfd02ca0cb",
   "selfAcknowledgement": {
@@ -28,38 +28,158 @@
     "canonicalTextUtf8": "原本的理由已經不成立，先減碼。",
     "utteranceArtifactId": "4a8aea98-d9f3-d681-2c39-65b9c519d304"
   },
-  "serverNow": "2026-03-18T10:30:00+08:00",
-  "sourceGlobalPosition": 97,
+  "serverNow": "2026-04-14T10:30:00+08:00",
+  "sourceGlobalPosition": 393,
   "sourceRevisionSet": [
     {
-      "refId": "wfm_hist_001_s1",
+      "refId": "wfm_hist_001_s01",
       "refKind": "world_fact_manifest",
       "revision": 1
     },
     {
-      "refId": "wfm_hist_001_s2",
+      "refId": "wfm_hist_001_s02",
       "refKind": "world_fact_manifest",
       "revision": 2
     },
     {
-      "refId": "wfm_hist_001_s3",
+      "refId": "wfm_hist_001_s03",
       "refKind": "world_fact_manifest",
       "revision": 3
     },
     {
-      "refId": "wfm_hist_001_s4",
+      "refId": "wfm_hist_001_s04",
       "refKind": "world_fact_manifest",
       "revision": 4
     },
     {
-      "refId": "wfm_hist_001_s5",
+      "refId": "wfm_hist_001_s05",
       "refKind": "world_fact_manifest",
       "revision": 5
     },
     {
-      "refId": "wfm_hist_001_s6",
+      "refId": "wfm_hist_001_s06",
       "refKind": "world_fact_manifest",
       "revision": 6
+    },
+    {
+      "refId": "wfm_hist_001_s07",
+      "refKind": "world_fact_manifest",
+      "revision": 7
+    },
+    {
+      "refId": "wfm_hist_001_s08",
+      "refKind": "world_fact_manifest",
+      "revision": 8
+    },
+    {
+      "refId": "wfm_hist_001_s09",
+      "refKind": "world_fact_manifest",
+      "revision": 9
+    },
+    {
+      "refId": "wfm_hist_001_s10",
+      "refKind": "world_fact_manifest",
+      "revision": 10
+    },
+    {
+      "refId": "wfm_hist_001_s11",
+      "refKind": "world_fact_manifest",
+      "revision": 11
+    },
+    {
+      "refId": "wfm_hist_001_s12",
+      "refKind": "world_fact_manifest",
+      "revision": 12
+    },
+    {
+      "refId": "wfm_hist_001_s13",
+      "refKind": "world_fact_manifest",
+      "revision": 13
+    },
+    {
+      "refId": "wfm_hist_001_s14",
+      "refKind": "world_fact_manifest",
+      "revision": 14
+    },
+    {
+      "refId": "wfm_hist_001_s15",
+      "refKind": "world_fact_manifest",
+      "revision": 15
+    },
+    {
+      "refId": "wfm_hist_001_s16",
+      "refKind": "world_fact_manifest",
+      "revision": 16
+    },
+    {
+      "refId": "wfm_hist_001_s17",
+      "refKind": "world_fact_manifest",
+      "revision": 17
+    },
+    {
+      "refId": "wfm_hist_001_s18",
+      "refKind": "world_fact_manifest",
+      "revision": 18
+    },
+    {
+      "refId": "wfm_hist_001_s19",
+      "refKind": "world_fact_manifest",
+      "revision": 19
+    },
+    {
+      "refId": "wfm_hist_001_s20",
+      "refKind": "world_fact_manifest",
+      "revision": 20
+    },
+    {
+      "refId": "wfm_hist_001_s21",
+      "refKind": "world_fact_manifest",
+      "revision": 21
+    },
+    {
+      "refId": "wfm_hist_001_s22",
+      "refKind": "world_fact_manifest",
+      "revision": 22
+    },
+    {
+      "refId": "wfm_hist_001_s23",
+      "refKind": "world_fact_manifest",
+      "revision": 23
+    },
+    {
+      "refId": "wfm_hist_001_s24",
+      "refKind": "world_fact_manifest",
+      "revision": 24
+    },
+    {
+      "refId": "wfm_hist_001_s25",
+      "refKind": "world_fact_manifest",
+      "revision": 25
+    },
+    {
+      "refId": "wfm_hist_001_s26",
+      "refKind": "world_fact_manifest",
+      "revision": 26
+    },
+    {
+      "refId": "wfm_hist_001_s27",
+      "refKind": "world_fact_manifest",
+      "revision": 27
+    },
+    {
+      "refId": "wfm_hist_001_s28",
+      "refKind": "world_fact_manifest",
+      "revision": 28
+    },
+    {
+      "refId": "wfm_hist_001_s29",
+      "refKind": "world_fact_manifest",
+      "revision": 29
+    },
+    {
+      "refId": "wfm_hist_001_s30",
+      "refKind": "world_fact_manifest",
+      "revision": 30
     },
     {
       "refId": "345fea46-1f2a-8bcd-c98c-29d944fec75a",
@@ -69,7 +189,7 @@
     {
       "refId": "a243c129-0297-7b54-e16f-256452eab596",
       "refKind": "paper_position",
-      "revision": 6
+      "revision": 30
     }
   ],
   "truthClasses": [
@@ -85,6 +205,6 @@
       "stillOpen": true
     }
   ],
-  "unresolvedTensionSummary": "他昨天終於減碼，但還沒說為什麼撐了十五天。",
+  "unresolvedTensionSummary": "他在 2026-03-27 的組會上把虧損說成別人的關係，2026-04-08 又在組會上說是自己判斷錯了；第一次那句話，他還沒有收回。",
   "visibilityEpoch": 1
 }

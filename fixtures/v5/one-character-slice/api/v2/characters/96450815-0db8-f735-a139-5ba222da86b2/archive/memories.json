@@ -1,0 +1,500 @@
+{
+  "appliedAudienceScope": "subscriber_archive",
+  "asOf": "2026-04-13T13:30:00+08:00",
+  "characterId": "96450815-0db8-f735-a139-5ba222da86b2",
+  "dataState": "READY",
+  "memories": [
+    {
+      "confidenceBp": 8800,
+      "emotionalValence": "negative",
+      "formedAt": "2026-03-02T08:59:59+08:00",
+      "formedBeforeFirstSession": true,
+      "involvedPeople": [],
+      "journalEntryRef": null,
+      "kindLabel": "經歷",
+      "memoryKind": "episodic",
+      "memoryRef": "d5da2f15-3069-85de-261a-aa736cfa40d0",
+      "note": "十四歲那年，父親的印刷廠在一週內關掉。",
+      "reinterpretations": [],
+      "reinterpretationsEmptyReason": "沒有封存任何重新解讀；這則記憶還是形成時的版本。",
+      "sessionDate": null,
+      "sourceRefs": [
+        {
+          "eventType": "MemoryFormed",
+          "globalPosition": 4,
+          "kind": "canonical_event",
+          "refId": "96450815-0db8-f735-a139-5ba222da86b2"
+        },
+        {
+          "eventType": "CharacterOriginSealed",
+          "globalPosition": 3,
+          "kind": "canonical_event",
+          "refId": "96450815-0db8-f735-a139-5ba222da86b2"
+        }
+      ],
+      "truthClass": "fictional_setting",
+      "visibility": "subscriber_archive"
+    },
+    {
+      "confidenceBp": 7600,
+      "emotionalValence": "negative",
+      "formedAt": "2026-03-02T08:59:59+08:00",
+      "formedBeforeFirstSession": true,
+      "involvedPeople": [],
+      "journalEntryRef": null,
+      "kindLabel": "經歷",
+      "memoryKind": "episodic",
+      "memoryRef": "3841f528-1922-2510-1618-a4239fd03b49",
+      "note": "兩年前他等資料等到錯過，被同事當著整組的面提起。",
+      "reinterpretations": [],
+      "reinterpretationsEmptyReason": "沒有封存任何重新解讀；這則記憶還是形成時的版本。",
+      "sessionDate": null,
+      "sourceRefs": [
+        {
+          "eventType": "MemoryFormed",
+          "globalPosition": 5,
+          "kind": "canonical_event",
+          "refId": "96450815-0db8-f735-a139-5ba222da86b2"
+        },
+        {
+          "eventType": "CharacterOriginSealed",
+          "globalPosition": 3,
+          "kind": "canonical_event",
+          "refId": "96450815-0db8-f735-a139-5ba222da86b2"
+        }
+      ],
+      "truthClass": "fictional_setting",
+      "visibility": "subscriber_archive"
+    },
+    {
+      "confidenceBp": 8000,
+      "emotionalValence": "positive",
+      "formedAt": "2026-03-02T08:59:59+08:00",
+      "formedBeforeFirstSession": true,
+      "involvedPeople": [],
+      "journalEntryRef": null,
+      "kindLabel": "自我說法",
+      "memoryKind": "self_narrative",
+      "memoryRef": "b320384c-fc1b-a8c0-1458-e27e62085f83",
+      "note": "他對自己的說法是：靠證據做事的人。",
+      "reinterpretations": [],
+      "reinterpretationsEmptyReason": "沒有封存任何重新解讀；這則記憶還是形成時的版本。",
+      "sessionDate": null,
+      "sourceRefs": [
+        {
+          "eventType": "MemoryFormed",
+          "globalPosition": 6,
+          "kind": "canonical_event",
+          "refId": "96450815-0db8-f735-a139-5ba222da86b2"
+        },
+        {
+          "eventType": "CharacterOriginSealed",
+          "globalPosition": 3,
+          "kind": "canonical_event",
+          "refId": "96450815-0db8-f735-a139-5ba222da86b2"
+        }
+      ],
+      "truthClass": "fictional_setting",
+      "visibility": "subscriber_archive"
+    },
+    {
+      "confidenceBp": 7000,
+      "emotionalValence": "negative",
+      "formedAt": "2026-03-02T13:40:00+08:00",
+      "formedBeforeFirstSession": false,
+      "involvedPeople": [],
+      "journalEntryRef": "25bc76d5-0b74-aad4-a091-c41c67b93237",
+      "kindLabel": "經歷",
+      "memoryKind": "episodic",
+      "memoryRef": "302b6ffc-eddb-12a5-f8e5-2e35a30289d1",
+      "note": "他在補昨天的公告附註時，錯過了早盤那一段。",
+      "reinterpretations": [],
+      "reinterpretationsEmptyReason": "沒有封存任何重新解讀；這則記憶還是形成時的版本。",
+      "sessionDate": "2026-03-02",
+      "sourceRefs": [
+        {
+          "eventType": "MemoryFormed",
+          "globalPosition": 16,
+          "kind": "canonical_event",
+          "refId": "96450815-0db8-f735-a139-5ba222da86b2"
+        },
+        {
+          "eventType": "ObservedClueRegistered",
+          "globalPosition": 11,
+          "kind": "canonical_event",
+          "refId": "a391f4ce-df53-7093-f7f3-75c6ad155483"
+        }
+      ],
+      "truthClass": "simulated_narrative",
+      "visibility": "subscriber_archive"
+    },
+    {
+      "confidenceBp": 8200,
+      "emotionalValence": "positive",
+      "formedAt": "2026-03-03T13:40:00+08:00",
+      "formedBeforeFirstSession": false,
+      "involvedPeople": [],
+      "journalEntryRef": "0cc0a7c7-0c49-028a-8218-50ba629437e4",
+      "kindLabel": "經歷",
+      "memoryKind": "episodic",
+      "memoryRef": "a0508ad7-060b-cae1-789e-e1a8f5714735",
+      "note": "十點四十二分，他建立了紙上部位，然後才回頭補看昨天的材料。",
+      "reinterpretations": [],
+      "reinterpretationsEmptyReason": "沒有封存任何重新解讀；這則記憶還是形成時的版本。",
+      "sessionDate": "2026-03-03",
+      "sourceRefs": [
+        {
+          "eventType": "MemoryFormed",
+          "globalPosition": 36,
+          "kind": "canonical_event",
+          "refId": "96450815-0db8-f735-a139-5ba222da86b2"
+        },
+        {
+          "eventType": "ObservedClueRegistered",
+          "globalPosition": 23,
+          "kind": "canonical_event",
+          "refId": "773aaaa9-6d65-3000-e5ca-b038c330afc3"
+        }
+      ],
+      "truthClass": "simulated_narrative",
+      "visibility": "subscriber_archive"
+    },
+    {
+      "confidenceBp": 7400,
+      "emotionalValence": "negative",
+      "formedAt": "2026-03-10T13:40:00+08:00",
+      "formedBeforeFirstSession": false,
+      "involvedPeople": [],
+      "journalEntryRef": "54608a5e-3a1c-6e2f-0365-3fba97e670fb",
+      "kindLabel": "經歷",
+      "memoryKind": "episodic",
+      "memoryRef": "ac49f05c-d392-e237-17e1-15bb4ef30195",
+      "note": "筆記標題從動能觀察改成長期治理價值，支持資料沒有增加。",
+      "reinterpretations": [],
+      "reinterpretationsEmptyReason": "沒有封存任何重新解讀；這則記憶還是形成時的版本。",
+      "sessionDate": "2026-03-10",
+      "sourceRefs": [
+        {
+          "eventType": "MemoryFormed",
+          "globalPosition": 100,
+          "kind": "canonical_event",
+          "refId": "96450815-0db8-f735-a139-5ba222da86b2"
+        },
+        {
+          "eventType": "ObservedClueRegistered",
+          "globalPosition": 92,
+          "kind": "canonical_event",
+          "refId": "bc74184c-d9ca-e48d-81b5-41cc0da2b173"
+        }
+      ],
+      "truthClass": "simulated_narrative",
+      "visibility": "subscriber_archive"
+    },
+    {
+      "confidenceBp": 8000,
+      "emotionalValence": "negative",
+      "formedAt": "2026-03-17T13:40:00+08:00",
+      "formedBeforeFirstSession": false,
+      "involvedPeople": [],
+      "journalEntryRef": "8836dbab-cca9-a653-9e18-96a51cafdf1a",
+      "kindLabel": "自我說法",
+      "memoryKind": "self_narrative",
+      "memoryRef": "1bbeb6ac-86fd-27eb-6f88-168e8e4de0bc",
+      "note": "他第一次把「理由已經不成立」寫下來，然後才動手減碼。",
+      "reinterpretations": [],
+      "reinterpretationsEmptyReason": "沒有封存任何重新解讀；這則記憶還是形成時的版本。",
+      "sessionDate": "2026-03-17",
+      "sourceRefs": [
+        {
+          "eventType": "MemoryFormed",
+          "globalPosition": 168,
+          "kind": "canonical_event",
+          "refId": "96450815-0db8-f735-a139-5ba222da86b2"
+        },
+        {
+          "eventType": "ObservedClueRegistered",
+          "globalPosition": 155,
+          "kind": "canonical_event",
+          "refId": "73d910ef-ba8b-f304-a822-22f850aa72cb"
+        }
+      ],
+      "truthClass": "simulated_narrative",
+      "visibility": "subscriber_archive"
+    },
+    {
+      "confidenceBp": 7200,
+      "emotionalValence": "positive",
+      "formedAt": "2026-03-24T13:40:00+08:00",
+      "formedBeforeFirstSession": false,
+      "involvedPeople": [
+        {
+          "displayName": "陳小雨",
+          "relationLabel": "同組同事"
+        }
+      ],
+      "journalEntryRef": "d5b6a025-8874-4db8-e04b-73e771df8ffd",
+      "kindLabel": "關係",
+      "memoryKind": "relationship",
+      "memoryRef": "5ca9884b-04f1-90ba-5a3d-1404817f2d27",
+      "note": "他在茶水間遇到同組同事，先開口提起那個部位還在看。",
+      "reinterpretations": [],
+      "reinterpretationsEmptyReason": "沒有封存任何重新解讀；這則記憶還是形成時的版本。",
+      "sessionDate": "2026-03-24",
+      "sourceRefs": [
+        {
+          "eventType": "MemoryFormed",
+          "globalPosition": 229,
+          "kind": "canonical_event",
+          "refId": "96450815-0db8-f735-a139-5ba222da86b2"
+        },
+        {
+          "eventType": "ObservedClueRegistered",
+          "globalPosition": 223,
+          "kind": "canonical_event",
+          "refId": "384fc8fb-a09b-b587-0a80-137bb6cb7335"
+        }
+      ],
+      "truthClass": "simulated_narrative",
+      "visibility": "subscriber_archive"
+    },
+    {
+      "confidenceBp": 8400,
+      "emotionalValence": "negative",
+      "formedAt": "2026-03-27T13:40:00+08:00",
+      "formedBeforeFirstSession": false,
+      "involvedPeople": [
+        {
+          "displayName": "陳小雨",
+          "relationLabel": "同組同事"
+        }
+      ],
+      "journalEntryRef": "c66659ee-1557-8675-fe86-9cb3123facea",
+      "kindLabel": "關係",
+      "memoryKind": "relationship",
+      "memoryRef": "6dfd7ac4-24a2-2b0b-14c4-4fb81d84b465",
+      "note": "組會上被問到那個部位時，他把虧損說成是同組同事那陣子一直在講它。",
+      "reinterpretations": [],
+      "reinterpretationsEmptyReason": "沒有封存任何重新解讀；這則記憶還是形成時的版本。",
+      "sessionDate": "2026-03-27",
+      "sourceRefs": [
+        {
+          "eventType": "MemoryFormed",
+          "globalPosition": 269,
+          "kind": "canonical_event",
+          "refId": "96450815-0db8-f735-a139-5ba222da86b2"
+        },
+        {
+          "eventType": "RelationshipSignalObserved",
+          "globalPosition": 267,
+          "kind": "canonical_event",
+          "refId": "63bbcc07-6fce-2ffe-a787-a22f85916546"
+        }
+      ],
+      "truthClass": "simulated_narrative",
+      "visibility": "subscriber_archive"
+    },
+    {
+      "confidenceBp": 8000,
+      "emotionalValence": "negative",
+      "formedAt": "2026-04-08T13:40:00+08:00",
+      "formedBeforeFirstSession": false,
+      "involvedPeople": [],
+      "journalEntryRef": "a021fce1-fede-ecdc-8033-89cdfeef552f",
+      "kindLabel": "自我說法",
+      "memoryKind": "self_narrative",
+      "memoryRef": "a0f639e8-2ff4-9d97-3d8b-33345aa31e41",
+      "note": "又一次在組會上被問到虧損，這次他說是自己判斷錯了。",
+      "reinterpretations": [],
+      "reinterpretationsEmptyReason": "沒有封存任何重新解讀；這則記憶還是形成時的版本。",
+      "sessionDate": "2026-04-08",
+      "sourceRefs": [
+        {
+          "eventType": "MemoryFormed",
+          "globalPosition": 344,
+          "kind": "canonical_event",
+          "refId": "96450815-0db8-f735-a139-5ba222da86b2"
+        },
+        {
+          "eventType": "ObservedClueRegistered",
+          "globalPosition": 336,
+          "kind": "canonical_event",
+          "refId": "bb5d85c5-3e4b-f68c-09f4-d71f450a5f34"
+        }
+      ],
+      "truthClass": "simulated_narrative",
+      "visibility": "subscriber_archive"
+    }
+  ],
+  "memoriesEmptyReason": null,
+  "projectionVersion": 393,
+  "sectionKey": "memories",
+  "serverNow": "2026-04-14T10:30:00+08:00",
+  "sourceGlobalPosition": 393,
+  "sourceRevisionSet": [
+    {
+      "refId": "wfm_hist_001_s01",
+      "refKind": "world_fact_manifest",
+      "revision": 1
+    },
+    {
+      "refId": "wfm_hist_001_s02",
+      "refKind": "world_fact_manifest",
+      "revision": 2
+    },
+    {
+      "refId": "wfm_hist_001_s03",
+      "refKind": "world_fact_manifest",
+      "revision": 3
+    },
+    {
+      "refId": "wfm_hist_001_s04",
+      "refKind": "world_fact_manifest",
+      "revision": 4
+    },
+    {
+      "refId": "wfm_hist_001_s05",
+      "refKind": "world_fact_manifest",
+      "revision": 5
+    },
+    {
+      "refId": "wfm_hist_001_s06",
+      "refKind": "world_fact_manifest",
+      "revision": 6
+    },
+    {
+      "refId": "wfm_hist_001_s07",
+      "refKind": "world_fact_manifest",
+      "revision": 7
+    },
+    {
+      "refId": "wfm_hist_001_s08",
+      "refKind": "world_fact_manifest",
+      "revision": 8
+    },
+    {
+      "refId": "wfm_hist_001_s09",
+      "refKind": "world_fact_manifest",
+      "revision": 9
+    },
+    {
+      "refId": "wfm_hist_001_s10",
+      "refKind": "world_fact_manifest",
+      "revision": 10
+    },
+    {
+      "refId": "wfm_hist_001_s11",
+      "refKind": "world_fact_manifest",
+      "revision": 11
+    },
+    {
+      "refId": "wfm_hist_001_s12",
+      "refKind": "world_fact_manifest",
+      "revision": 12
+    },
+    {
+      "refId": "wfm_hist_001_s13",
+      "refKind": "world_fact_manifest",
+      "revision": 13
+    },
+    {
+      "refId": "wfm_hist_001_s14",
+      "refKind": "world_fact_manifest",
+      "revision": 14
+    },
+    {
+      "refId": "wfm_hist_001_s15",
+      "refKind": "world_fact_manifest",
+      "revision": 15
+    },
+    {
+      "refId": "wfm_hist_001_s16",
+      "refKind": "world_fact_manifest",
+      "revision": 16
+    },
+    {
+      "refId": "wfm_hist_001_s17",
+      "refKind": "world_fact_manifest",
+      "revision": 17
+    },
+    {
+      "refId": "wfm_hist_001_s18",
+      "refKind": "world_fact_manifest",
+      "revision": 18
+    },
+    {
+      "refId": "wfm_hist_001_s19",
+      "refKind": "world_fact_manifest",
+      "revision": 19
+    },
+    {
+      "refId": "wfm_hist_001_s20",
+      "refKind": "world_fact_manifest",
+      "revision": 20
+    },
+    {
+      "refId": "wfm_hist_001_s21",
+      "refKind": "world_fact_manifest",
+      "revision": 21
+    },
+    {
+      "refId": "wfm_hist_001_s22",
+      "refKind": "world_fact_manifest",
+      "revision": 22
+    },
+    {
+      "refId": "wfm_hist_001_s23",
+      "refKind": "world_fact_manifest",
+      "revision": 23
+    },
+    {
+      "refId": "wfm_hist_001_s24",
+      "refKind": "world_fact_manifest",
+      "revision": 24
+    },
+    {
+      "refId": "wfm_hist_001_s25",
+      "refKind": "world_fact_manifest",
+      "revision": 25
+    },
+    {
+      "refId": "wfm_hist_001_s26",
+      "refKind": "world_fact_manifest",
+      "revision": 26
+    },
+    {
+      "refId": "wfm_hist_001_s27",
+      "refKind": "world_fact_manifest",
+      "revision": 27
+    },
+    {
+      "refId": "wfm_hist_001_s28",
+      "refKind": "world_fact_manifest",
+      "revision": 28
+    },
+    {
+      "refId": "wfm_hist_001_s29",
+      "refKind": "world_fact_manifest",
+      "revision": 29
+    },
+    {
+      "refId": "wfm_hist_001_s30",
+      "refKind": "world_fact_manifest",
+      "revision": 30
+    },
+    {
+      "refId": "345fea46-1f2a-8bcd-c98c-29d944fec75a",
+      "refKind": "paper_account",
+      "revision": 3
+    },
+    {
+      "refId": "a243c129-0297-7b54-e16f-256452eab596",
+      "refKind": "paper_position",
+      "revision": 30
+    }
+  ],
+  "truthClasses": [
+    "fictional_setting",
+    "simulated_narrative"
+  ],
+  "visibilityEpoch": 1
+}

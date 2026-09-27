@@ -13,11 +13,47 @@ import { readFile } from "node:fs/promises";
 // surface a browser actually sees: that every documented route has a file,
 // that each file carries the required fields its `public-v2.yaml` schema
 // declares, that the slice's fixed cardinalities hold, that the same-day
-// disclosure key is structurally absent while finality is pending, and that
-// no banned string ever reaches a viewer.
+// disclosure key is structurally absent while finality is pending, that every
+// deep-archive section item carries a truth class and a source, that every
+// journal chapter carries its typed evidence card, and that no banned string
+// or ranking-shaped field ever reaches a viewer.
 // ---------------------------------------------------------------------------
 
 const apiRoot = new URL("../fixtures/v5/one-character-slice/api/", import.meta.url);
+
+// The slice's market calendar is the repo-owned synthetic historical fixture.
+// The expected chapter dates, today's date and the previous close are read
+// from it rather than restated here, so the two cannot drift apart.
+const historicalManifests = JSON.parse(
+  await readFile(
+    new URL(
+      "../contracts/world-fact-manifest/historical-v1/fixtures/synthetic-historical-001.json",
+      import.meta.url,
+    ),
+    "utf8",
+  ),
+);
+const SESSION_COUNT = historicalManifests.length;
+const SETTLED_DATES = historicalManifests
+  .filter((manifest) => manifest.outcomeEvidenceRevisionIds.length > 0)
+  .map((manifest) => manifest.marketDateTaipei);
+const TODAY = historicalManifests[SESSION_COUNT - 1].marketDateTaipei;
+const PREVIOUS_CLOSE_DATE = SETTLED_DATES[SETTLED_DATES.length - 1];
+
+// 老毛病又回來了: the counter-evidence stays unread from 2026-03-03 through
+// 2026-03-16, so the pattern may be called recurring on the sessions where it
+// was observed again after two earlier occurrences -- 2026-03-05 through
+// 2026-03-16 -- and on no other chapter (not on the day he finally read it).
+const RECURRING_PATTERN_DATES = [
+  "2026-03-05",
+  "2026-03-06",
+  "2026-03-09",
+  "2026-03-10",
+  "2026-03-11",
+  "2026-03-12",
+  "2026-03-13",
+  "2026-03-16",
+];
 
 const errors = [];
 
@@ -47,6 +83,17 @@ function requireFields(label, object, required) {
     );
   }
 }
+
+// The envelope every projection response in public-v2.yaml requires.
+const ENVELOPE_REQUIRED = [
+  "projectionVersion",
+  "sourceGlobalPosition",
+  "serverNow",
+  "dataState",
+  "visibilityEpoch",
+  "truthClasses",
+  "sourceRevisionSet",
+];
 
 // Required-field lists, copied from contracts/openapi/public-v2.yaml.
 // The schema each list belongs to is named above it.
@@ -124,19 +171,72 @@ const REQUIRED = {
     "characterId",
     "appliedAudienceScope",
     "entries",
+    "heldEntries",
     "nextCursor",
   ],
   // components.schemas.LifeJournalEntry.required
   LifeJournalEntry: [
     "entryId",
     "chapterDate",
+    "entryVisibility",
+    "narrativeState",
+    "narrativeSegments",
     "sceneSummary",
     "knownAtTheTimeSummary",
     "actionSummary",
     "consequence",
+    "evidenceCard",
+    "relationshipConsequence",
+    "relationshipConsequenceNullReason",
     "openQuestionSummary",
     "archiveRefs",
   ],
+  // components.schemas.HeldLifeJournalEntry.required (also its only keys)
+  HeldLifeJournalEntry: ["entryId", "chapterDate", "entryVisibility", "heldReasonLabel"],
+  // components.schemas.EvidenceCard.required
+  EvidenceCard: [
+    "action",
+    "paperOutcome",
+    "paperOutcomeNullReason",
+    "quotedUtterances",
+    "memoryRefs",
+    "relationshipRefs",
+  ],
+  // components.schemas.EvidencePaperOutcome.required
+  EvidencePaperOutcome: [
+    "positionRef",
+    "filledQuantityFixed6",
+    "sealedPriceMinorUnitsFixed6",
+    "fillPriceSourceRef",
+    "markPriceSourceRef",
+    "realizedPnlMinorUnits",
+    "unrealizedPnlMinorUnits",
+    "feeMinorUnits",
+    "taxMinorUnits",
+    "asOf",
+    "truthClass",
+    "sourceRefs",
+  ],
+  // components.schemas.RelationshipSignalView.required
+  RelationshipSignalView: [
+    "dyadRef",
+    "relationshipSignalRef",
+    "displayName",
+    "relationLabel",
+    "signalKind",
+    "summary",
+    "utterance",
+    "consequenceMemoryRefs",
+    "observedAt",
+    "sessionDate",
+    "journalEntryRef",
+    "truthClass",
+    "sourceRefs",
+  ],
+  // components.schemas.InfluenceRef.required
+  InfluenceRef: ["displayName", "relationLabel", "influenceSummary", "truthClass", "sourceRefs"],
+  // components.schemas.ArchiveSourceRef.required
+  ArchiveSourceRef: ["kind", "eventType", "globalPosition", "refId"],
   // components.schemas.LifeJournalArchiveRefs.required
   LifeJournalArchiveRefs: ["paperPositionRefs", "relationshipDyadRefs", "memoryRefs"],
   // components.schemas.PaperConsequenceFragment.required
@@ -226,6 +326,8 @@ const REQUIRED = {
     "invalidationCondition",
     "rationaleSummary",
     "influencedByCharacterRefs",
+    "influencedBy",
+    "influencedByEmptyReason",
     "consequenceSummary",
   ],
   // components.schemas.PaperLotPublic.required
@@ -258,7 +360,168 @@ const REQUIRED = {
   DataRevisionNote: ["revisionId", "appliedAt", "kind", "affectedRefs", "summary"],
   // components.schemas.SourceRevisionRef.required
   SourceRevisionRef: ["refId", "refKind", "revision"],
+  // components.schemas.RelationsArchiveProjection.required
+  RelationsArchiveProjection: [
+    ...ENVELOPE_REQUIRED,
+    "characterId",
+    "appliedAudienceScope",
+    "sectionKey",
+    "asOf",
+    "acquaintances",
+    "acquaintancesEmptyReason",
+  ],
+  // components.schemas.ChartArchiveProjection.required
+  ChartArchiveProjection: [
+    ...ENVELOPE_REQUIRED,
+    "characterId",
+    "appliedAudienceScope",
+    "sectionKey",
+    "asOf",
+    "birthIdentity",
+    "placements",
+    "placementsEmptyReason",
+    "motifs",
+  ],
+  // components.schemas.TraitsArchiveProjection.required
+  TraitsArchiveProjection: [
+    ...ENVELOPE_REQUIRED,
+    "characterId",
+    "appliedAudienceScope",
+    "sectionKey",
+    "asOf",
+    "fourAxis",
+    "coreNeed",
+    "coreFear",
+    "bloodType",
+    "selfDescription",
+    "habits",
+    "biasOccurrences",
+    "biasOccurrencesEmptyReason",
+    "counterExamples",
+    "counterExamplesEmptyReason",
+  ],
+  // components.schemas.MemoriesArchiveProjection.required
+  MemoriesArchiveProjection: [
+    ...ENVELOPE_REQUIRED,
+    "characterId",
+    "appliedAudienceScope",
+    "sectionKey",
+    "asOf",
+    "memories",
+    "memoriesEmptyReason",
+  ],
+  // components.schemas.LifeArchiveProjection.required
+  LifeArchiveProjection: [
+    ...ENVELOPE_REQUIRED,
+    "characterId",
+    "appliedAudienceScope",
+    "sectionKey",
+    "asOf",
+    "identity",
+    "milestones",
+    "originMemories",
+    "unrecordedFacets",
+    "joinedWorldOn",
+    "chapterTimeline",
+  ],
 };
+
+// The five section pages beside archive/paper, with the schema each one's
+// required list comes from.
+const ARCHIVE_DETAIL_SECTIONS = {
+  relations: "RelationsArchiveProjection",
+  chart: "ChartArchiveProjection",
+  traits: "TraitsArchiveProjection",
+  memories: "MemoriesArchiveProjection",
+  life: "LifeArchiveProjection",
+};
+
+// Helper lists inside archive items that are not items themselves: session
+// pointers, people labels and bare id lists. Everything else that is an
+// array element object, or a top-level content object, is an item and must
+// carry `truthClass` and non-empty `sourceRefs`.
+const NON_ITEM_KEYS = new Set([
+  "sourceRevisionSet",
+  "truthClasses",
+  "sourceRefs",
+  "evidenceSessions",
+  "activeSessions",
+  "involvedPeople",
+  "consequenceMemoryRefs",
+]);
+
+function archiveItems(value, topLevel, items) {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return;
+  for (const [key, child] of Object.entries(value)) {
+    if (NON_ITEM_KEYS.has(key)) continue;
+    if (Array.isArray(child)) {
+      for (const element of child) {
+        if (element !== null && typeof element === "object" && !Array.isArray(element)) {
+          items.push({ key, item: element });
+          archiveItems(element, false, items);
+        }
+      }
+    } else if (child !== null && typeof child === "object") {
+      if (topLevel) items.push({ key, item: child });
+      archiveItems(child, false, items);
+    }
+  }
+}
+
+// Field names that would make a page look like a ranking or a scoreboard.
+// Checked case-insensitively as substrings of every key in every document.
+const BANNED_KEY_FRAGMENTS = ["ticker", "rank", "score", "winrate", "leaderboard", "total", "菜度", "勝率"];
+
+function allKeys(value, keys) {
+  if (Array.isArray(value)) {
+    for (const item of value) allKeys(item, keys);
+  } else if (value !== null && typeof value === "object") {
+    for (const [key, child] of Object.entries(value)) {
+      keys.push(key);
+      allKeys(child, keys);
+    }
+  }
+}
+
+function checkSourceRefs(label, refs) {
+  check(Array.isArray(refs) && refs.length > 0, `${label}: sourceRefs must be a non-empty array`);
+  for (const ref of Array.isArray(refs) ? refs : []) {
+    requireFields(`${label} sourceRefs[]`, ref, REQUIRED.ArchiveSourceRef);
+    if (ref?.kind === "canonical_event") {
+      check(
+        typeof ref.eventType === "string" &&
+          Number.isInteger(ref.globalPosition) &&
+          ref.globalPosition >= 1 &&
+          UUID_PATTERN.test(ref.refId ?? ""),
+        `${label}: a canonical_event source needs an event type, a global position and a stream id`,
+      );
+    } else if (ref?.kind === "character_seed") {
+      check(
+        ref.eventType === null &&
+          ref.globalPosition === null &&
+          typeof ref.refId === "string" &&
+          ref.refId.startsWith("character-seed/v1#"),
+        `${label}: a character_seed source is a named chassis anchor with no event coordinates`,
+      );
+    } else {
+      check(false, `${label}: unknown source kind ${JSON.stringify(ref?.kind)}`);
+    }
+  }
+}
+
+function checkTruthClassed(label, item, declared) {
+  check(
+    ALLOWED_TRUTH_CLASSES.includes(item?.truthClass),
+    `${label}: item truthClass ${JSON.stringify(item?.truthClass)} is missing or not allowed`,
+  );
+  if (declared) {
+    check(
+      declared.includes(item?.truthClass),
+      `${label}: item truthClass ${JSON.stringify(item?.truthClass)} is not declared in truthClasses`,
+    );
+  }
+  checkSourceRefs(label, item?.sourceRefs);
+}
 
 // components.schemas.ArchiveSectionKey.enum, in contract order.
 const ARCHIVE_SECTION_KEYS = ["paper", "relations", "chart", "traits", "memories", "life"];
@@ -298,6 +561,9 @@ const expectedRoutes = [
   `/api/v2/characters/${characterId}/life-journal`,
   `/api/v2/characters/${characterId}/archive`,
   `/api/v2/characters/${characterId}/archive/paper`,
+  ...Object.keys(ARCHIVE_DETAIL_SECTIONS).map(
+    (key) => `/api/v2/characters/${characterId}/archive/${key}`,
+  ),
 ];
 const routes = index.value.routes ?? {};
 check(
@@ -343,10 +609,10 @@ if (errors.length === 0) {
     }
   }
   check(
-    world.marketClock?.marketDate === "2026-03-18" &&
+    world.marketClock?.marketDate === TODAY &&
       world.marketClock?.sessionPhase === "in_session" &&
-      world.marketClock?.asOfTradingDate === "2026-03-17",
-    "world.json: marketClock must show today in session with paper figures as of the previous close",
+      world.marketClock?.asOfTradingDate === PREVIOUS_CLOSE_DATE,
+    `world.json: marketClock must show ${TODAY} in session with paper figures as of ${PREVIOUS_CLOSE_DATE}`,
   );
   check(world.dataState === "READY", "world.json: dataState must be READY");
 
@@ -376,14 +642,69 @@ if (errors.length === 0) {
   const journal = loaded[`/api/v2/characters/${characterId}/life-journal`].value;
   requireFields("life-journal.json", journal, REQUIRED.LifeJournalPage);
   check(
-    Array.isArray(journal.entries) && journal.entries.length === 5,
-    `life-journal.json: expected 5 entries, found ${journal.entries?.length}`,
+    SETTLED_DATES.length === 29 && SESSION_COUNT === 30,
+    `historical fixture: expected 30 sessions with 29 settled, found ${SESSION_COUNT}/${SETTLED_DATES.length}`,
+  );
+  check(
+    Array.isArray(journal.entries) && journal.entries.length === SETTLED_DATES.length,
+    `life-journal.json: expected ${SETTLED_DATES.length} entries, found ${journal.entries?.length}`,
   );
   check(journal.nextCursor === null, "life-journal.json: nextCursor must be null");
-  const expectedChapterDates = ["2026-03-02", "2026-03-03", "2026-03-05", "2026-03-10", "2026-03-17"];
+  const expectedChapterDates = SETTLED_DATES;
+  let chaptersWithDyad = 0;
   (journal.entries ?? []).forEach((entry, position) => {
     const label = `life-journal.json entries[${position}]`;
     requireFields(label, entry, REQUIRED.LifeJournalEntry);
+    check(entry.entryVisibility === "PUBLIC", `${label}: an entry is always PUBLIC`);
+    check(
+      entry.narrativeState === "composed" || entry.narrativeState === "evidence_card_only",
+      `${label}: narrativeState must be composed or evidence_card_only`,
+    );
+    check(
+      Array.isArray(entry.narrativeSegments) &&
+        (entry.narrativeState === "composed") === entry.narrativeSegments.length > 0,
+      `${label}: a composed chapter has segments and an evidence-card-only chapter has none`,
+    );
+    for (const segment of entry.narrativeSegments ?? []) {
+      checkTruthClassed(`${label}.narrativeSegments[]`, segment, null);
+    }
+    // The typed evidence card, every part of which carries a truth class.
+    const card = entry.evidenceCard;
+    requireFields(`${label}.evidenceCard`, card, REQUIRED.EvidenceCard);
+    checkTruthClassed(`${label}.evidenceCard.action`, card?.action, null);
+    check(
+      (card?.paperOutcome === null) === (typeof card?.paperOutcomeNullReason === "string"),
+      `${label}.evidenceCard: paperOutcomeNullReason must be set exactly when paperOutcome is null`,
+    );
+    if (card?.paperOutcome) {
+      requireFields(`${label}.evidenceCard.paperOutcome`, card.paperOutcome, REQUIRED.EvidencePaperOutcome);
+      checkTruthClassed(`${label}.evidenceCard.paperOutcome`, card.paperOutcome, null);
+      for (const field of ["realizedPnlMinorUnits", "feeMinorUnits", "taxMinorUnits"]) {
+        check(Number.isInteger(card.paperOutcome[field]), `${label}.evidenceCard: ${field} must be an integer`);
+      }
+    }
+    for (const listKey of ["quotedUtterances", "memoryRefs", "relationshipRefs"]) {
+      check(Array.isArray(card?.[listKey]), `${label}.evidenceCard: ${listKey} must be an array`);
+      for (const item of card?.[listKey] ?? []) {
+        checkTruthClassed(`${label}.evidenceCard.${listKey}[]`, item, null);
+      }
+    }
+    for (const quote of card?.quotedUtterances ?? []) {
+      requireFields(`${label}.evidenceCard.quotedUtterances[]`, quote, REQUIRED.CharacterUtterance);
+    }
+    check(
+      (entry.relationshipConsequence === null) ===
+        (typeof entry.relationshipConsequenceNullReason === "string"),
+      `${label}: relationshipConsequenceNullReason must be set exactly when relationshipConsequence is null`,
+    );
+    if (entry.relationshipConsequence) {
+      requireFields(
+        `${label}.relationshipConsequence`,
+        entry.relationshipConsequence,
+        REQUIRED.RelationshipSignalView,
+      );
+      checkTruthClassed(`${label}.relationshipConsequence`, entry.relationshipConsequence, null);
+    }
     check(
       entry.chapterDate === expectedChapterDates[position],
       `${label}: expected chapterDate ${expectedChapterDates[position]}, found ${entry.chapterDate}`,
@@ -421,13 +742,40 @@ if (errors.length === 0) {
         "canonicalTextUtf8",
       ]);
     }
-    // 老毛病又回來了 only appears once the pattern already recurred twice,
-    // which in this slice is the fourth and fifth chapters.
+    // 老毛病又回來了 only appears where the pattern came back after two
+    // earlier occurrences.
     check(
-      Object.hasOwn(entry, "recurringPatternRef") === position >= 3,
+      Object.hasOwn(entry, "recurringPatternRef") ===
+        RECURRING_PATTERN_DATES.includes(entry.chapterDate),
       `${label}: recurringPatternRef presence does not match the recurrence threshold`,
     );
+    if (position > 0) {
+      check(
+        journal.entries[position - 1].chapterDate < entry.chapterDate,
+        `${label}: chapterDate must strictly increase`,
+      );
+    }
+    if ((entry.archiveRefs?.relationshipDyadRefs ?? []).length > 0) chaptersWithDyad += 1;
   });
+  // One public statement put a loss on the colleague, and only that chapter
+  // points at the relationship stream it left behind.
+  check(
+    chaptersWithDyad === 1,
+    `life-journal.json: expected exactly one chapter with a relationship dyad ref, found ${chaptersWithDyad}`,
+  );
+  check(
+    (journal.entries ?? []).filter((entry) => entry.relationshipConsequence).length === 1,
+    "life-journal.json: exactly one chapter carries a readable relationship consequence",
+  );
+  // A held chapter is an id, a date and a label; the checked-in fixture holds none.
+  check(Array.isArray(journal.heldEntries), "life-journal.json: heldEntries must be an array");
+  for (const held of journal.heldEntries ?? []) {
+    check(
+      JSON.stringify(Object.keys(held).sort()) ===
+        JSON.stringify([...REQUIRED.HeldLifeJournalEntry].sort()) && held.entryVisibility === "HELD",
+      "life-journal.json: a held entry may carry only entryId, chapterDate, entryVisibility and heldReasonLabel",
+    );
+  }
 
   // -- archive index -------------------------------------------------------
   const archive = loaded[`/api/v2/characters/${characterId}/archive`].value;
@@ -447,17 +795,11 @@ if (errors.length === 0) {
       section.sectionKey === ARCHIVE_SECTION_KEYS[position],
       `${label}: expected sectionKey ${ARCHIVE_SECTION_KEYS[position]}, found ${section.sectionKey}`,
     );
-    if (section.sectionKey === "paper") {
-      check(
-        section.sectionPath === `/api/v2/characters/${characterId}/archive/paper`,
-        `${label}: 模擬紀錄 must link to its own endpoint`,
-      );
-    } else {
-      check(
-        section.sectionPath === null,
-        `${label}: ${section.sectionKey} has no endpoint in this phase and must be null`,
-      );
-    }
+    // Every section has its own page, so no entrance is a dead end.
+    check(
+      section.sectionPath === `/api/v2/characters/${characterId}/archive/${section.sectionKey}`,
+      `${label}: ${section.sectionKey} must link to its own endpoint (sectionPath must not be null)`,
+    );
   });
 
   // -- paper archive -------------------------------------------------------
@@ -509,6 +851,21 @@ if (errors.length === 0) {
         REQUIRED.CharacterUtterance,
       );
     }
+    // Influence is shown by name and relationship label, never as a bare id,
+    // and an empty list says why it is empty.
+    check(Array.isArray(position.influencedBy), "archive/paper.json: influencedBy must be an array");
+    for (const influence of position.influencedBy ?? []) {
+      requireFields("archive/paper.json positions[].influencedBy[]", influence, REQUIRED.InfluenceRef);
+      check(
+        typeof influence.displayName === "string" && influence.displayName.length > 0,
+        "archive/paper.json: influencedBy[] must carry a displayName",
+      );
+      checkTruthClassed("archive/paper.json positions[].influencedBy[]", influence, null);
+    }
+    check(
+      ((position.influencedBy ?? []).length === 0) === (typeof position.influencedByEmptyReason === "string"),
+      "archive/paper.json: influencedByEmptyReason must be set exactly when influencedBy is empty",
+    );
     // The complete loss stays visible.
     check(
       Number.isInteger(position.realizedPnlMinorUnits) &&
@@ -519,8 +876,12 @@ if (errors.length === 0) {
   }
 
   check(
-    Array.isArray(paper.historicalActionFills) && paper.historicalActionFills.length === 6,
-    `archive/paper.json: expected 6 daily records, found ${paper.historicalActionFills?.length}`,
+    Array.isArray(paper.historicalActionFills) && paper.historicalActionFills.length === SESSION_COUNT,
+    `archive/paper.json: expected ${SESSION_COUNT} daily records, found ${paper.historicalActionFills?.length}`,
+  );
+  check(
+    paper.historicalActionFills?.at(-1)?.tradingDate === TODAY,
+    `archive/paper.json: the last daily record must be today (${TODAY})`,
   );
   let pendingRecords = 0;
   for (const record of paper.historicalActionFills ?? []) {
@@ -553,6 +914,59 @@ if (errors.length === 0) {
     requireFields("archive/paper.json dataRevisions[]", revision, REQUIRED.DataRevisionNote);
   }
 
+  // -- the five detail sections -------------------------------------------
+  for (const [key, schema] of Object.entries(ARCHIVE_DETAIL_SECTIONS)) {
+    const route = `/api/v2/characters/${characterId}/archive/${key}`;
+    const label = `archive/${key}.json`;
+    const section = loaded[route]?.value;
+    requireFields(label, section, REQUIRED[schema]);
+    if (!section) continue;
+    check(section.sectionKey === key, `${label}: sectionKey must be ${key}`);
+    check(
+      section.appliedAudienceScope === "subscriber_archive",
+      `${label}: a deep-archive section resolves at subscriber_archive`,
+    );
+    const items = [];
+    archiveItems(section, true, items);
+    check(items.length > 0, `${label}: a section page must carry items`);
+    for (const { key: itemKey, item } of items) {
+      checkTruthClassed(`${label} ${itemKey}`, item, section.truthClasses ?? []);
+    }
+    for (const field of Object.keys(section)) {
+      if (field.endsWith("EmptyReason")) {
+        const listKey = field.slice(0, -"EmptyReason".length);
+        check(
+          (Array.isArray(section[listKey]) && section[listKey].length === 0) ===
+            (typeof section[field] === "string"),
+          `${label}: ${field} must be set exactly when ${listKey} is empty`,
+        );
+      }
+    }
+    // A raw acquaintance key is canonical plumbing, never viewer copy.
+    check(!/"acq-[^"]*"/.test(loaded[route].raw), `${label}: exposes a raw acquaintance key`);
+  }
+  const chart = loaded[`/api/v2/characters/${characterId}/archive/chart`]?.value;
+  for (const motif of chart?.motifs ?? []) {
+    check(
+      motif.truthClass === "symbolic_interpretation" &&
+        typeof motif.effectScopeLabel === "string" &&
+        motif.effectScopeLabel.includes("不影響價格或績效"),
+      "archive/chart.json: a motif is symbolic_interpretation and says it does not affect price or performance",
+    );
+  }
+  const memories = loaded[`/api/v2/characters/${characterId}/archive/memories`]?.value;
+  for (const memory of memories?.memories ?? []) {
+    check(
+      memory.visibility === "subscriber_archive" || memory.visibility === "public_edition",
+      "archive/memories.json: a canonical_restricted memory may never be listed",
+    );
+  }
+  const traits = loaded[`/api/v2/characters/${characterId}/archive/traits`]?.value;
+  check(
+    Array.isArray(traits?.biasOccurrences) && traits.biasOccurrences.length > 0,
+    "archive/traits.json: the slice's detected patterns must be listed per occurrence",
+  );
+
   // -- cross-cutting -------------------------------------------------------
   for (const [route, document] of Object.entries(loaded)) {
     const label = routes[route];
@@ -570,6 +984,14 @@ if (errors.length === 0) {
         !document.raw.includes(banned),
         `${label}: contains the banned string ${JSON.stringify(banned)}`,
       );
+    }
+    const keys = [];
+    allKeys(document.value, keys);
+    for (const key of keys) {
+      const lower = key.toLowerCase();
+      for (const fragment of BANNED_KEY_FRAGMENTS) {
+        check(!lower.includes(fragment), `${label}: ranking-shaped field ${JSON.stringify(key)}`);
+      }
     }
   }
   for (const banned of BANNED_SUBSTRINGS) {

@@ -15,12 +15,21 @@
 //! or a 「菜度」 rating, only per-occurrence observations with the exact
 //! sessions that evidence them.
 //!
+//! `BlameShift` follows the same discipline. Whom he names is generated
+//! upstream from state and history (`attribution::attribute_outcome`); this
+//! module only checks the named party against the canonical record of the
+//! losing decision. Naming a source he actually relied on, and which the
+//! fixture itself later corrected as wrong, is a legitimate complaint and is
+//! never observed as blame (`docs/v5/character-story-engine.md`: "對方確實提供
+//! 錯誤資訊時，追究責任不能被標成甩鍋").
+//!
 //! What this module is NOT: a judgement of whether the character was right.
 //! `SunkCostEscalation` fires on the character's own expired condition plus
 //! a widening loss, never on "the price went the other way"; a character who
 //! holds through a drawdown with his stated condition intact produces no
 //! observation at all.
 
+use crate::attribution::AttributionTarget;
 use crate::cognition::ActionKind;
 use crate::thesis::InvalidationState;
 
@@ -30,13 +39,22 @@ pub enum BiasKind {
     ConfirmationBias,
     SunkCostEscalation,
     RationalizationSwitch,
+    /// A recognized loss publicly pinned on someone or something that did not
+    /// shape the losing decision, or that shaped it without ever being shown
+    /// to be wrong.
+    BlameShift,
 }
 
 /// Everything one market session contributes to bias detection, already
 /// derived from canonical events (`AttentionCommittedV1`,
 /// `CharacterStateAdvancedV1`, `AutonomousActionIntentCommittedV1`,
-/// `PaperMarkAppliedV1`, and the thesis chain). Nothing here is a free
-/// judgement: each field maps to a sealed payload field.
+/// `PaperMarkAppliedV1`, `PaperPositionAdjustedV1`,
+/// `SemanticSpeechActCommittedV1.outcome_attribution`, the sealed fact
+/// fixture's supersession links, and the thesis chain). Nothing here is a
+/// free judgement: each field maps to a sealed payload field.
+// Each flag mirrors one independent sealed payload fact; folding them into a
+// state machine would invent an ordering the record does not have.
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SessionSignals {
     pub session_index: usize,
@@ -52,6 +70,24 @@ pub struct SessionSignals {
     pub action: ActionKind,
     pub thesis_changed: bool,
     pub newly_supported_fact_count: usize,
+    /// A loss became known to him in this session: a realized loss
+    /// (`PaperPositionAdjustedV1.realized_pnl_delta_fixed < 0`), or an
+    /// unrealized loss that widened on the latest sealed mark he could see
+    /// when he decided (`PaperMarkAppliedV1`).
+    pub loss_recognized: bool,
+    /// Whom his public statement in this session named
+    /// (`SemanticSpeechActCommittedV1.outcome_attribution`); `None` when he
+    /// made no such statement.
+    pub public_attribution: Option<AttributionTarget>,
+    /// Whether the named party appears in the refs of the committed intent
+    /// that opened the losing exposure
+    /// (`outcome_attribution.loss_decision_episode_id` ->
+    /// `AutonomousActionIntentCommittedV1.perceived_fact_revision_ids`).
+    pub attribution_target_in_decision_refs: bool,
+    /// Whether the sealed fact fixture published a correction superseding
+    /// the named party (`supersedesFactRevisionId`) by the time he spoke. A
+    /// person who never supplied a sealed fact can never satisfy this.
+    pub attribution_target_was_corrected: bool,
 }
 
 /// One occurrence of one pattern. `evidence_session_indices` always lists
@@ -84,7 +120,7 @@ const CONFIRMATION_BIAS_MIN_RUN: usize = 2;
 ///
 /// Output order is deterministic: sessions in order, and within one session
 /// the fixed order `FomoChase`, `ConfirmationBias`, `SunkCostEscalation`,
-/// `RationalizationSwitch`.
+/// `RationalizationSwitch`, `BlameShift`.
 #[must_use]
 pub fn observe(signals: &[SessionSignals]) -> Vec<BiasObservation> {
     let confirmation_runs = confirmation_bias_runs(signals);
@@ -125,6 +161,14 @@ pub fn observe(signals: &[SessionSignals]) -> Vec<BiasObservation> {
         if session.thesis_changed && session.newly_supported_fact_count == 0 {
             observations.push(BiasObservation {
                 kind: BiasKind::RationalizationSwitch,
+                session_index: session.session_index,
+                evidence_session_indices: vec![session.session_index],
+            });
+        }
+
+        if is_blame_shift(session) {
+            observations.push(BiasObservation {
+                kind: BiasKind::BlameShift,
                 session_index: session.session_index,
                 evidence_session_indices: vec![session.session_index],
             });
@@ -179,6 +223,20 @@ pub fn is_recurring_at(
     session_index: usize,
 ) -> bool {
     recurrence_count_before(observations, kind, session_index) >= RECURRENCE_THRESHOLD
+}
+
+/// Loss, plus an external target, plus a target that either played no part
+/// in the losing decision or played a part without ever being shown to be
+/// wrong. The one exempt case is the honest complaint: the named source is
+/// in his own decision refs AND the fixture later corrected it.
+fn is_blame_shift(session: &SessionSignals) -> bool {
+    let Some(target) = session.public_attribution else {
+        return false;
+    };
+    session.loss_recognized
+        && target.is_external()
+        && !(session.attribution_target_in_decision_refs
+            && session.attribution_target_was_corrected)
 }
 
 /// The index of the session whose missed high-salience fact plus FOMO spike
@@ -251,11 +309,13 @@ mod tests {
         BiasKind, BiasObservation, SessionSignals, is_recurring_at, observe, recurrence_count,
         recurrence_count_before,
     };
+    use crate::attribution::AttributionTarget;
     use crate::cognition::ActionKind;
     use crate::thesis::InvalidationState;
 
-    const COUNTER: &str = "fact-hist-001-counter-inventory";
-    const MOMENTUM: &str = "fact-hist-001-momentum";
+    const COUNTER: &str = "fact-hist-001-s01-counter-inventory";
+    const MOMENTUM: &str = "fact-hist-001-s01-momentum";
+    const COLLEAGUE: &str = "acq-hist-001-xiaoyu";
 
     fn quiet_session(session_index: usize) -> SessionSignals {
         SessionSignals {
@@ -272,7 +332,20 @@ mod tests {
             action: ActionKind::Wait,
             thesis_changed: false,
             newly_supported_fact_count: 0,
+            loss_recognized: false,
+            public_attribution: None,
+            attribution_target_in_decision_refs: false,
+            attribution_target_was_corrected: false,
         }
+    }
+
+    /// A loss he named someone else for: the colleague is in no decision
+    /// ref and supplied no fact that was ever corrected.
+    fn named_colleague_after_loss(session_index: usize) -> SessionSignals {
+        let mut session = quiet_session(session_index);
+        session.loss_recognized = true;
+        session.public_attribution = Some(AttributionTarget::ExternalCharacter(COLLEAGUE));
+        session
     }
 
     fn kinds_at(observations: &[BiasObservation], session_index: usize) -> Vec<BiasKind> {
@@ -452,6 +525,94 @@ mod tests {
         // Pressure released: no thesis change at all in a later session.
         let unchanged = quiet_session(5);
         assert!(kinds_at(&observe(std::slice::from_ref(&unchanged)), 5).is_empty());
+    }
+
+    // -- BlameShift ----------------------------------------------------------
+
+    #[test]
+    fn blame_shift_fires_when_the_named_party_played_no_part_in_the_losing_decision() {
+        // Positive: a recognized loss, pinned publicly on a colleague who is
+        // in none of the losing decision's refs and never supplied a fact
+        // that was later corrected.
+        let observed = observe(&[named_colleague_after_loss(20)]);
+        assert_eq!(kinds_at(&observed, 20), vec![BiasKind::BlameShift]);
+
+        // Near-miss that still counts: the named source WAS in his refs, but
+        // nothing ever showed it to be wrong. Relying on a sound fact and
+        // then blaming it is still shifting the loss.
+        let mut relied_on_sound_source = quiet_session(21);
+        relied_on_sound_source.loss_recognized = true;
+        relied_on_sound_source.public_attribution =
+            Some(AttributionTarget::ExternalSource(MOMENTUM));
+        relied_on_sound_source.attribution_target_in_decision_refs = true;
+        relied_on_sound_source.attribution_target_was_corrected = false;
+        assert_eq!(
+            kinds_at(&observe(&[relied_on_sound_source]), 21),
+            vec![BiasKind::BlameShift]
+        );
+
+        // Near-miss that still counts: the source was corrected, but he never
+        // relied on it for this decision.
+        let mut corrected_but_unused = quiet_session(22);
+        corrected_but_unused.loss_recognized = true;
+        corrected_but_unused.public_attribution =
+            Some(AttributionTarget::ExternalSource(MOMENTUM));
+        corrected_but_unused.attribution_target_in_decision_refs = false;
+        corrected_but_unused.attribution_target_was_corrected = true;
+        assert_eq!(
+            kinds_at(&observe(&[corrected_but_unused]), 22),
+            vec![BiasKind::BlameShift]
+        );
+    }
+
+    #[test]
+    fn blame_is_not_shifting_when_the_source_he_relied_on_was_corrected_as_wrong() {
+        // Counter-example (character-story-engine.md 「對方確實提供錯誤資訊時，
+        // 追究責任不能被標成甩鍋」): the early-move signal is in the losing
+        // decision's refs AND the issuer later corrected it. Holding it
+        // responsible is a legitimate complaint.
+        let mut honest_complaint = quiet_session(20);
+        honest_complaint.loss_recognized = true;
+        honest_complaint.public_attribution = Some(AttributionTarget::ExternalSource(MOMENTUM));
+        honest_complaint.attribution_target_in_decision_refs = true;
+        honest_complaint.attribution_target_was_corrected = true;
+        let observed = observe(std::slice::from_ref(&honest_complaint));
+        assert_eq!(recurrence_count(&observed, BiasKind::BlameShift), 0);
+        assert!(kinds_at(&observed, 20).is_empty());
+    }
+
+    #[test]
+    fn blame_is_not_observed_when_he_names_himself() {
+        let mut owns_it = named_colleague_after_loss(20);
+        owns_it.public_attribution = Some(AttributionTarget::SelfOwn);
+        assert!(kinds_at(&observe(std::slice::from_ref(&owns_it)), 20).is_empty());
+
+        // And saying nothing at all is not blame either.
+        let mut silent = named_colleague_after_loss(20);
+        silent.public_attribution = None;
+        assert!(kinds_at(&observe(std::slice::from_ref(&silent)), 20).is_empty());
+    }
+
+    #[test]
+    fn blame_is_not_observed_without_a_recognized_loss() {
+        let mut no_loss = named_colleague_after_loss(20);
+        no_loss.loss_recognized = false;
+        assert!(kinds_at(&observe(std::slice::from_ref(&no_loss)), 20).is_empty());
+    }
+
+    #[test]
+    fn blame_shift_does_not_recur_once_pressure_is_released() {
+        // Pressure released: a later session brings another recognized loss,
+        // and this time he names himself. Exactly one observation, on the
+        // earlier session, and none on the later one.
+        let blamed = named_colleague_after_loss(20);
+        let mut recovered = quiet_session(26);
+        recovered.loss_recognized = true;
+        recovered.public_attribution = Some(AttributionTarget::SelfOwn);
+        let observed = observe(&[blamed, recovered]);
+        assert_eq!(recurrence_count(&observed, BiasKind::BlameShift), 1);
+        assert_eq!(kinds_at(&observed, 20), vec![BiasKind::BlameShift]);
+        assert!(kinds_at(&observed, 26).is_empty());
     }
 
     /// A chapter may only claim recurrence on the strength of sessions that

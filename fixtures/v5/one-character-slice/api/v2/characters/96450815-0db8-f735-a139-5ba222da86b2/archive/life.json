@@ -1,0 +1,938 @@
+{
+  "appliedAudienceScope": "subscriber_archive",
+  "asOf": "2026-04-13T13:30:00+08:00",
+  "chapterTimeline": [
+    {
+      "chapterState": "published",
+      "journalEntryRef": "25bc76d5-0b74-aad4-a091-c41c67b93237",
+      "sessionDate": "2026-03-02",
+      "sourceRefs": [
+        {
+          "eventType": "FactManifestAccepted",
+          "globalPosition": 7,
+          "kind": "canonical_event",
+          "refId": "e7eb6c90-c293-db56-58d8-23c2b31eda5b"
+        },
+        {
+          "eventType": "StoryChapterComposed",
+          "globalPosition": 19,
+          "kind": "canonical_event",
+          "refId": "25bc76d5-0b74-aad4-a091-c41c67b93237"
+        }
+      ],
+      "truthClass": "simulated_narrative"
+    },
+    {
+      "chapterState": "published",
+      "journalEntryRef": "0cc0a7c7-0c49-028a-8218-50ba629437e4",
+      "sessionDate": "2026-03-03",
+      "sourceRefs": [
+        {
+          "eventType": "FactManifestAccepted",
+          "globalPosition": 21,
+          "kind": "canonical_event",
+          "refId": "965e04b1-c5ea-b0f7-0f81-efd0a8ad6a4a"
+        },
+        {
+          "eventType": "StoryChapterComposed",
+          "globalPosition": 39,
+          "kind": "canonical_event",
+          "refId": "0cc0a7c7-0c49-028a-8218-50ba629437e4"
+        }
+      ],
+      "truthClass": "simulated_narrative"
+    },
+    {
+      "chapterState": "published",
+      "journalEntryRef": "b9728167-f578-a33f-fe98-15463ec0ace0",
+      "sessionDate": "2026-03-04",
+      "sourceRefs": [
+        {
+          "eventType": "FactManifestAccepted",
+          "globalPosition": 41,
+          "kind": "canonical_event",
+          "refId": "d161d409-7202-5493-c4b7-ca808b534ca0"
+        },
+        {
+          "eventType": "StoryChapterComposed",
+          "globalPosition": 51,
+          "kind": "canonical_event",
+          "refId": "b9728167-f578-a33f-fe98-15463ec0ace0"
+        }
+      ],
+      "truthClass": "simulated_narrative"
+    },
+    {
+      "chapterState": "published",
+      "journalEntryRef": "606986fd-38db-c5f2-f506-b8ad08008576",
+      "sessionDate": "2026-03-05",
+      "sourceRefs": [
+        {
+          "eventType": "FactManifestAccepted",
+          "globalPosition": 53,
+          "kind": "canonical_event",
+          "refId": "842f7585-84a4-c08c-735b-59aeea64b03e"
+        },
+        {
+          "eventType": "StoryChapterComposed",
+          "globalPosition": 63,
+          "kind": "canonical_event",
+          "refId": "606986fd-38db-c5f2-f506-b8ad08008576"
+        }
+      ],
+      "truthClass": "simulated_narrative"
+    },
+    {
+      "chapterState": "published",
+      "journalEntryRef": "70739f27-8179-886a-d391-373bc5f9aa20",
+      "sessionDate": "2026-03-06",
+      "sourceRefs": [
+        {
+          "eventType": "FactManifestAccepted",
+          "globalPosition": 65,
+          "kind": "canonical_event",
+          "refId": "ebf1ea2c-7d26-0ec3-7a58-73b02e600c13"
+        },
+        {
+          "eventType": "StoryChapterComposed",
+          "globalPosition": 75,
+          "kind": "canonical_event",
+          "refId": "70739f27-8179-886a-d391-373bc5f9aa20"
+        }
+      ],
+      "truthClass": "simulated_narrative"
+    },
+    {
+      "chapterState": "published",
+      "journalEntryRef": "8d1ef90e-57cb-e278-f110-3027715b65ca",
+      "sessionDate": "2026-03-09",
+      "sourceRefs": [
+        {
+          "eventType": "FactManifestAccepted",
+          "globalPosition": 77,
+          "kind": "canonical_event",
+          "refId": "f90f98bd-a698-4fea-fbc5-9b5a6e21b934"
+        },
+        {
+          "eventType": "StoryChapterComposed",
+          "globalPosition": 87,
+          "kind": "canonical_event",
+          "refId": "8d1ef90e-57cb-e278-f110-3027715b65ca"
+        }
+      ],
+      "truthClass": "simulated_narrative"
+    },
+    {
+      "chapterState": "published",
+      "journalEntryRef": "54608a5e-3a1c-6e2f-0365-3fba97e670fb",
+      "sessionDate": "2026-03-10",
+      "sourceRefs": [
+        {
+          "eventType": "FactManifestAccepted",
+          "globalPosition": 89,
+          "kind": "canonical_event",
+          "refId": "59005319-d70b-a438-73ee-af093a940beb"
+        },
+        {
+          "eventType": "StoryChapterComposed",
+          "globalPosition": 103,
+          "kind": "canonical_event",
+          "refId": "54608a5e-3a1c-6e2f-0365-3fba97e670fb"
+        }
+      ],
+      "truthClass": "simulated_narrative"
+    },
+    {
+      "chapterState": "published",
+      "journalEntryRef": "168ca363-b491-649b-e37c-5b05b4879ac2",
+      "sessionDate": "2026-03-11",
+      "sourceRefs": [
+        {
+          "eventType": "FactManifestAccepted",
+          "globalPosition": 105,
+          "kind": "canonical_event",
+          "refId": "5ad67a75-de27-104b-52b7-9da54d5dae5a"
+        },
+        {
+          "eventType": "StoryChapterComposed",
+          "globalPosition": 115,
+          "kind": "canonical_event",
+          "refId": "168ca363-b491-649b-e37c-5b05b4879ac2"
+        }
+      ],
+      "truthClass": "simulated_narrative"
+    },
+    {
+      "chapterState": "published",
+      "journalEntryRef": "43bb9568-0ed3-3966-0d98-69e278aef1cd",
+      "sessionDate": "2026-03-12",
+      "sourceRefs": [
+        {
+          "eventType": "FactManifestAccepted",
+          "globalPosition": 117,
+          "kind": "canonical_event",
+          "refId": "6c55c98a-2ba5-c0c0-b0de-fbfbdbcec574"
+        },
+        {
+          "eventType": "StoryChapterComposed",
+          "globalPosition": 127,
+          "kind": "canonical_event",
+          "refId": "43bb9568-0ed3-3966-0d98-69e278aef1cd"
+        }
+      ],
+      "truthClass": "simulated_narrative"
+    },
+    {
+      "chapterState": "published",
+      "journalEntryRef": "ccb9ee46-83c9-af6d-056b-d877a9b938c6",
+      "sessionDate": "2026-03-13",
+      "sourceRefs": [
+        {
+          "eventType": "FactManifestAccepted",
+          "globalPosition": 129,
+          "kind": "canonical_event",
+          "refId": "10bb3a09-85f1-d8a4-fc89-9c533d899630"
+        },
+        {
+          "eventType": "StoryChapterComposed",
+          "globalPosition": 139,
+          "kind": "canonical_event",
+          "refId": "ccb9ee46-83c9-af6d-056b-d877a9b938c6"
+        }
+      ],
+      "truthClass": "simulated_narrative"
+    },
+    {
+      "chapterState": "published",
+      "journalEntryRef": "f44b5628-9218-d3ba-2a74-bd1459b298b9",
+      "sessionDate": "2026-03-16",
+      "sourceRefs": [
+        {
+          "eventType": "FactManifestAccepted",
+          "globalPosition": 141,
+          "kind": "canonical_event",
+          "refId": "fc9d1826-de37-920c-8d71-2d1d3c4286d5"
+        },
+        {
+          "eventType": "StoryChapterComposed",
+          "globalPosition": 151,
+          "kind": "canonical_event",
+          "refId": "f44b5628-9218-d3ba-2a74-bd1459b298b9"
+        }
+      ],
+      "truthClass": "simulated_narrative"
+    },
+    {
+      "chapterState": "published",
+      "journalEntryRef": "8836dbab-cca9-a653-9e18-96a51cafdf1a",
+      "sessionDate": "2026-03-17",
+      "sourceRefs": [
+        {
+          "eventType": "FactManifestAccepted",
+          "globalPosition": 153,
+          "kind": "canonical_event",
+          "refId": "9037fccb-816e-85b5-37a5-9cdb11d21ee0"
+        },
+        {
+          "eventType": "StoryChapterComposed",
+          "globalPosition": 171,
+          "kind": "canonical_event",
+          "refId": "8836dbab-cca9-a653-9e18-96a51cafdf1a"
+        }
+      ],
+      "truthClass": "simulated_narrative"
+    },
+    {
+      "chapterState": "published",
+      "journalEntryRef": "64731b0d-b9d6-699f-8fa8-c131e937862d",
+      "sessionDate": "2026-03-18",
+      "sourceRefs": [
+        {
+          "eventType": "FactManifestAccepted",
+          "globalPosition": 173,
+          "kind": "canonical_event",
+          "refId": "4069128c-3e00-fc54-6bd8-b5463ef173be"
+        },
+        {
+          "eventType": "StoryChapterComposed",
+          "globalPosition": 183,
+          "kind": "canonical_event",
+          "refId": "64731b0d-b9d6-699f-8fa8-c131e937862d"
+        }
+      ],
+      "truthClass": "simulated_narrative"
+    },
+    {
+      "chapterState": "published",
+      "journalEntryRef": "a1ac13dc-abf0-33a7-bc81-aa2e9246aa7e",
+      "sessionDate": "2026-03-19",
+      "sourceRefs": [
+        {
+          "eventType": "FactManifestAccepted",
+          "globalPosition": 185,
+          "kind": "canonical_event",
+          "refId": "dedcb87f-920a-4f66-4a1d-bc0bdb33e906"
+        },
+        {
+          "eventType": "StoryChapterComposed",
+          "globalPosition": 195,
+          "kind": "canonical_event",
+          "refId": "a1ac13dc-abf0-33a7-bc81-aa2e9246aa7e"
+        }
+      ],
+      "truthClass": "simulated_narrative"
+    },
+    {
+      "chapterState": "published",
+      "journalEntryRef": "b8b91bf3-842d-e670-e416-a9c49581a5e5",
+      "sessionDate": "2026-03-20",
+      "sourceRefs": [
+        {
+          "eventType": "FactManifestAccepted",
+          "globalPosition": 197,
+          "kind": "canonical_event",
+          "refId": "9f323e8f-d1e2-c1c8-f709-68b1b2363571"
+        },
+        {
+          "eventType": "StoryChapterComposed",
+          "globalPosition": 207,
+          "kind": "canonical_event",
+          "refId": "b8b91bf3-842d-e670-e416-a9c49581a5e5"
+        }
+      ],
+      "truthClass": "simulated_narrative"
+    },
+    {
+      "chapterState": "published",
+      "journalEntryRef": "b6b3480b-d146-6901-40ce-23788f07cea0",
+      "sessionDate": "2026-03-23",
+      "sourceRefs": [
+        {
+          "eventType": "FactManifestAccepted",
+          "globalPosition": 209,
+          "kind": "canonical_event",
+          "refId": "2dac240d-c14a-5b70-8a5d-00e048bd689f"
+        },
+        {
+          "eventType": "StoryChapterComposed",
+          "globalPosition": 219,
+          "kind": "canonical_event",
+          "refId": "b6b3480b-d146-6901-40ce-23788f07cea0"
+        }
+      ],
+      "truthClass": "simulated_narrative"
+    },
+    {
+      "chapterState": "published",
+      "journalEntryRef": "d5b6a025-8874-4db8-e04b-73e771df8ffd",
+      "sessionDate": "2026-03-24",
+      "sourceRefs": [
+        {
+          "eventType": "FactManifestAccepted",
+          "globalPosition": 221,
+          "kind": "canonical_event",
+          "refId": "6e2d8b63-a411-79b8-5e70-78f90be854d8"
+        },
+        {
+          "eventType": "StoryChapterComposed",
+          "globalPosition": 232,
+          "kind": "canonical_event",
+          "refId": "d5b6a025-8874-4db8-e04b-73e771df8ffd"
+        }
+      ],
+      "truthClass": "simulated_narrative"
+    },
+    {
+      "chapterState": "published",
+      "journalEntryRef": "a372e41e-263c-ebd4-6828-cc378b8ceb0f",
+      "sessionDate": "2026-03-25",
+      "sourceRefs": [
+        {
+          "eventType": "FactManifestAccepted",
+          "globalPosition": 234,
+          "kind": "canonical_event",
+          "refId": "1e9b7412-3e7f-3c15-0be9-e2ff3224c1b4"
+        },
+        {
+          "eventType": "StoryChapterComposed",
+          "globalPosition": 244,
+          "kind": "canonical_event",
+          "refId": "a372e41e-263c-ebd4-6828-cc378b8ceb0f"
+        }
+      ],
+      "truthClass": "simulated_narrative"
+    },
+    {
+      "chapterState": "published",
+      "journalEntryRef": "ece78972-1e28-b299-9d20-b2e626c32c5e",
+      "sessionDate": "2026-03-26",
+      "sourceRefs": [
+        {
+          "eventType": "FactManifestAccepted",
+          "globalPosition": 246,
+          "kind": "canonical_event",
+          "refId": "cd97913d-c1ae-6700-f928-402102134052"
+        },
+        {
+          "eventType": "StoryChapterComposed",
+          "globalPosition": 256,
+          "kind": "canonical_event",
+          "refId": "ece78972-1e28-b299-9d20-b2e626c32c5e"
+        }
+      ],
+      "truthClass": "simulated_narrative"
+    },
+    {
+      "chapterState": "published",
+      "journalEntryRef": "c66659ee-1557-8675-fe86-9cb3123facea",
+      "sessionDate": "2026-03-27",
+      "sourceRefs": [
+        {
+          "eventType": "FactManifestAccepted",
+          "globalPosition": 258,
+          "kind": "canonical_event",
+          "refId": "003a3a9c-676a-d450-d55c-ac65c4c75dd1"
+        },
+        {
+          "eventType": "StoryChapterComposed",
+          "globalPosition": 272,
+          "kind": "canonical_event",
+          "refId": "c66659ee-1557-8675-fe86-9cb3123facea"
+        }
+      ],
+      "truthClass": "simulated_narrative"
+    },
+    {
+      "chapterState": "published",
+      "journalEntryRef": "52435d2b-7273-cd65-6c8c-ab3aa74fd5b5",
+      "sessionDate": "2026-03-30",
+      "sourceRefs": [
+        {
+          "eventType": "FactManifestAccepted",
+          "globalPosition": 274,
+          "kind": "canonical_event",
+          "refId": "5f7d74cb-d8e8-9456-7c1a-6a89edbf9118"
+        },
+        {
+          "eventType": "StoryChapterComposed",
+          "globalPosition": 284,
+          "kind": "canonical_event",
+          "refId": "52435d2b-7273-cd65-6c8c-ab3aa74fd5b5"
+        }
+      ],
+      "truthClass": "simulated_narrative"
+    },
+    {
+      "chapterState": "published",
+      "journalEntryRef": "4700464e-32dc-1b93-8236-24fd958dca87",
+      "sessionDate": "2026-03-31",
+      "sourceRefs": [
+        {
+          "eventType": "FactManifestAccepted",
+          "globalPosition": 286,
+          "kind": "canonical_event",
+          "refId": "f87c8ad6-728a-48ca-dafc-ab811eb4eb4f"
+        },
+        {
+          "eventType": "StoryChapterComposed",
+          "globalPosition": 296,
+          "kind": "canonical_event",
+          "refId": "4700464e-32dc-1b93-8236-24fd958dca87"
+        }
+      ],
+      "truthClass": "simulated_narrative"
+    },
+    {
+      "chapterState": "published",
+      "journalEntryRef": "a25f4c6e-1d99-29a6-0bee-4af5a3c3fa28",
+      "sessionDate": "2026-04-01",
+      "sourceRefs": [
+        {
+          "eventType": "FactManifestAccepted",
+          "globalPosition": 298,
+          "kind": "canonical_event",
+          "refId": "f8969e29-ae20-b5e9-1cce-8d70593020b6"
+        },
+        {
+          "eventType": "StoryChapterComposed",
+          "globalPosition": 308,
+          "kind": "canonical_event",
+          "refId": "a25f4c6e-1d99-29a6-0bee-4af5a3c3fa28"
+        }
+      ],
+      "truthClass": "simulated_narrative"
+    },
+    {
+      "chapterState": "published",
+      "journalEntryRef": "ed25568a-69ad-17e9-0249-733053055fe3",
+      "sessionDate": "2026-04-02",
+      "sourceRefs": [
+        {
+          "eventType": "FactManifestAccepted",
+          "globalPosition": 310,
+          "kind": "canonical_event",
+          "refId": "1cff7846-b445-4b27-9f3c-73d6e00ad0ac"
+        },
+        {
+          "eventType": "StoryChapterComposed",
+          "globalPosition": 320,
+          "kind": "canonical_event",
+          "refId": "ed25568a-69ad-17e9-0249-733053055fe3"
+        }
+      ],
+      "truthClass": "simulated_narrative"
+    },
+    {
+      "chapterState": "published",
+      "journalEntryRef": "a6a1f3e1-04bd-0433-63fe-bbdd28ccf6e8",
+      "sessionDate": "2026-04-07",
+      "sourceRefs": [
+        {
+          "eventType": "FactManifestAccepted",
+          "globalPosition": 322,
+          "kind": "canonical_event",
+          "refId": "6bed579e-7800-96ff-1398-d461af076350"
+        },
+        {
+          "eventType": "StoryChapterComposed",
+          "globalPosition": 332,
+          "kind": "canonical_event",
+          "refId": "a6a1f3e1-04bd-0433-63fe-bbdd28ccf6e8"
+        }
+      ],
+      "truthClass": "simulated_narrative"
+    },
+    {
+      "chapterState": "published",
+      "journalEntryRef": "a021fce1-fede-ecdc-8033-89cdfeef552f",
+      "sessionDate": "2026-04-08",
+      "sourceRefs": [
+        {
+          "eventType": "FactManifestAccepted",
+          "globalPosition": 334,
+          "kind": "canonical_event",
+          "refId": "292a4e2e-6742-f8f9-b2ef-62bdd0d79c3d"
+        },
+        {
+          "eventType": "StoryChapterComposed",
+          "globalPosition": 347,
+          "kind": "canonical_event",
+          "refId": "a021fce1-fede-ecdc-8033-89cdfeef552f"
+        }
+      ],
+      "truthClass": "simulated_narrative"
+    },
+    {
+      "chapterState": "published",
+      "journalEntryRef": "3fe0837a-dc69-32fa-9087-8b96e7104370",
+      "sessionDate": "2026-04-09",
+      "sourceRefs": [
+        {
+          "eventType": "FactManifestAccepted",
+          "globalPosition": 349,
+          "kind": "canonical_event",
+          "refId": "44e87e4b-3e06-e268-fb6f-1e08f01b5c37"
+        },
+        {
+          "eventType": "StoryChapterComposed",
+          "globalPosition": 359,
+          "kind": "canonical_event",
+          "refId": "3fe0837a-dc69-32fa-9087-8b96e7104370"
+        }
+      ],
+      "truthClass": "simulated_narrative"
+    },
+    {
+      "chapterState": "published",
+      "journalEntryRef": "c5b4c3a1-8974-4aca-35de-d6e87cb9ffae",
+      "sessionDate": "2026-04-10",
+      "sourceRefs": [
+        {
+          "eventType": "FactManifestAccepted",
+          "globalPosition": 361,
+          "kind": "canonical_event",
+          "refId": "a7976f7f-d299-75e6-9dac-af3eb91c6d3b"
+        },
+        {
+          "eventType": "StoryChapterComposed",
+          "globalPosition": 371,
+          "kind": "canonical_event",
+          "refId": "c5b4c3a1-8974-4aca-35de-d6e87cb9ffae"
+        }
+      ],
+      "truthClass": "simulated_narrative"
+    },
+    {
+      "chapterState": "published",
+      "journalEntryRef": "35f6d7a1-5ccc-7667-8cae-64b6303031ec",
+      "sessionDate": "2026-04-13",
+      "sourceRefs": [
+        {
+          "eventType": "FactManifestAccepted",
+          "globalPosition": 373,
+          "kind": "canonical_event",
+          "refId": "3c03945a-bd49-fc0b-1413-e38ea44cc426"
+        },
+        {
+          "eventType": "StoryChapterComposed",
+          "globalPosition": 383,
+          "kind": "canonical_event",
+          "refId": "35f6d7a1-5ccc-7667-8cae-64b6303031ec"
+        }
+      ],
+      "truthClass": "simulated_narrative"
+    },
+    {
+      "chapterState": "in_session",
+      "journalEntryRef": null,
+      "sessionDate": "2026-04-14",
+      "sourceRefs": [
+        {
+          "eventType": "FactManifestAccepted",
+          "globalPosition": 385,
+          "kind": "canonical_event",
+          "refId": "791fe534-e64b-8ea8-ddd6-8987d67c99e6"
+        }
+      ],
+      "truthClass": "simulated_narrative"
+    }
+  ],
+  "characterId": "96450815-0db8-f735-a139-5ba222da86b2",
+  "dataState": "READY",
+  "identity": {
+    "adultFictionalResident": true,
+    "ageYears": 28,
+    "birthDate": "1998-03-14",
+    "birthRegionLabel": "台灣（合成出生地，不對應任何真實個人）",
+    "displayName": "陸硯之",
+    "occupationLabel": "企業研究助理",
+    "sourceRefs": [
+      {
+        "eventType": "CharacterOriginSealed",
+        "globalPosition": 3,
+        "kind": "canonical_event",
+        "refId": "96450815-0db8-f735-a139-5ba222da86b2"
+      },
+      {
+        "eventType": null,
+        "globalPosition": null,
+        "kind": "character_seed",
+        "refId": "character-seed/v1#identity"
+      }
+    ],
+    "truthClass": "fictional_setting"
+  },
+  "joinedWorldOn": "2026-03-02",
+  "milestones": [
+    {
+      "ageYears": 14,
+      "label": "父親的印刷廠在一週內關掉。",
+      "memoryRef": "d5da2f15-3069-85de-261a-aa736cfa40d0",
+      "sourceRefs": [
+        {
+          "eventType": null,
+          "globalPosition": null,
+          "kind": "character_seed",
+          "refId": "character-seed/v1#life-milestones/press-shop-closed"
+        },
+        {
+          "eventType": "MemoryFormed",
+          "globalPosition": 4,
+          "kind": "canonical_event",
+          "refId": "96450815-0db8-f735-a139-5ba222da86b2"
+        }
+      ],
+      "truthClass": "fictional_setting"
+    },
+    {
+      "ageYears": 26,
+      "label": "等資料等到錯過，被同事當著整組的面提起。",
+      "memoryRef": "3841f528-1922-2510-1618-a4239fd03b49",
+      "sourceRefs": [
+        {
+          "eventType": null,
+          "globalPosition": null,
+          "kind": "character_seed",
+          "refId": "character-seed/v1#life-milestones/teased-for-waiting"
+        },
+        {
+          "eventType": "MemoryFormed",
+          "globalPosition": 5,
+          "kind": "canonical_event",
+          "refId": "96450815-0db8-f735-a139-5ba222da86b2"
+        }
+      ],
+      "truthClass": "fictional_setting"
+    },
+    {
+      "ageYears": 28,
+      "label": "在企業研究部門擔任研究助理。",
+      "memoryRef": null,
+      "sourceRefs": [
+        {
+          "eventType": null,
+          "globalPosition": null,
+          "kind": "character_seed",
+          "refId": "character-seed/v1#life-milestones/corporate-research-assistant"
+        }
+      ],
+      "truthClass": "fictional_setting"
+    }
+  ],
+  "originMemories": [
+    {
+      "formedAt": "2026-03-02T08:59:59+08:00",
+      "memoryRef": "d5da2f15-3069-85de-261a-aa736cfa40d0",
+      "note": "十四歲那年，父親的印刷廠在一週內關掉。",
+      "sourceRefs": [
+        {
+          "eventType": "MemoryFormed",
+          "globalPosition": 4,
+          "kind": "canonical_event",
+          "refId": "96450815-0db8-f735-a139-5ba222da86b2"
+        }
+      ],
+      "truthClass": "fictional_setting"
+    },
+    {
+      "formedAt": "2026-03-02T08:59:59+08:00",
+      "memoryRef": "3841f528-1922-2510-1618-a4239fd03b49",
+      "note": "兩年前他等資料等到錯過，被同事當著整組的面提起。",
+      "sourceRefs": [
+        {
+          "eventType": "MemoryFormed",
+          "globalPosition": 5,
+          "kind": "canonical_event",
+          "refId": "96450815-0db8-f735-a139-5ba222da86b2"
+        }
+      ],
+      "truthClass": "fictional_setting"
+    },
+    {
+      "formedAt": "2026-03-02T08:59:59+08:00",
+      "memoryRef": "b320384c-fc1b-a8c0-1458-e27e62085f83",
+      "note": "他對自己的說法是：靠證據做事的人。",
+      "sourceRefs": [
+        {
+          "eventType": "MemoryFormed",
+          "globalPosition": 6,
+          "kind": "canonical_event",
+          "refId": "96450815-0db8-f735-a139-5ba222da86b2"
+        }
+      ],
+      "truthClass": "fictional_setting"
+    }
+  ],
+  "projectionVersion": 393,
+  "sectionKey": "life",
+  "serverNow": "2026-04-14T10:30:00+08:00",
+  "sourceGlobalPosition": 393,
+  "sourceRevisionSet": [
+    {
+      "refId": "wfm_hist_001_s01",
+      "refKind": "world_fact_manifest",
+      "revision": 1
+    },
+    {
+      "refId": "wfm_hist_001_s02",
+      "refKind": "world_fact_manifest",
+      "revision": 2
+    },
+    {
+      "refId": "wfm_hist_001_s03",
+      "refKind": "world_fact_manifest",
+      "revision": 3
+    },
+    {
+      "refId": "wfm_hist_001_s04",
+      "refKind": "world_fact_manifest",
+      "revision": 4
+    },
+    {
+      "refId": "wfm_hist_001_s05",
+      "refKind": "world_fact_manifest",
+      "revision": 5
+    },
+    {
+      "refId": "wfm_hist_001_s06",
+      "refKind": "world_fact_manifest",
+      "revision": 6
+    },
+    {
+      "refId": "wfm_hist_001_s07",
+      "refKind": "world_fact_manifest",
+      "revision": 7
+    },
+    {
+      "refId": "wfm_hist_001_s08",
+      "refKind": "world_fact_manifest",
+      "revision": 8
+    },
+    {
+      "refId": "wfm_hist_001_s09",
+      "refKind": "world_fact_manifest",
+      "revision": 9
+    },
+    {
+      "refId": "wfm_hist_001_s10",
+      "refKind": "world_fact_manifest",
+      "revision": 10
+    },
+    {
+      "refId": "wfm_hist_001_s11",
+      "refKind": "world_fact_manifest",
+      "revision": 11
+    },
+    {
+      "refId": "wfm_hist_001_s12",
+      "refKind": "world_fact_manifest",
+      "revision": 12
+    },
+    {
+      "refId": "wfm_hist_001_s13",
+      "refKind": "world_fact_manifest",
+      "revision": 13
+    },
+    {
+      "refId": "wfm_hist_001_s14",
+      "refKind": "world_fact_manifest",
+      "revision": 14
+    },
+    {
+      "refId": "wfm_hist_001_s15",
+      "refKind": "world_fact_manifest",
+      "revision": 15
+    },
+    {
+      "refId": "wfm_hist_001_s16",
+      "refKind": "world_fact_manifest",
+      "revision": 16
+    },
+    {
+      "refId": "wfm_hist_001_s17",
+      "refKind": "world_fact_manifest",
+      "revision": 17
+    },
+    {
+      "refId": "wfm_hist_001_s18",
+      "refKind": "world_fact_manifest",
+      "revision": 18
+    },
+    {
+      "refId": "wfm_hist_001_s19",
+      "refKind": "world_fact_manifest",
+      "revision": 19
+    },
+    {
+      "refId": "wfm_hist_001_s20",
+      "refKind": "world_fact_manifest",
+      "revision": 20
+    },
+    {
+      "refId": "wfm_hist_001_s21",
+      "refKind": "world_fact_manifest",
+      "revision": 21
+    },
+    {
+      "refId": "wfm_hist_001_s22",
+      "refKind": "world_fact_manifest",
+      "revision": 22
+    },
+    {
+      "refId": "wfm_hist_001_s23",
+      "refKind": "world_fact_manifest",
+      "revision": 23
+    },
+    {
+      "refId": "wfm_hist_001_s24",
+      "refKind": "world_fact_manifest",
+      "revision": 24
+    },
+    {
+      "refId": "wfm_hist_001_s25",
+      "refKind": "world_fact_manifest",
+      "revision": 25
+    },
+    {
+      "refId": "wfm_hist_001_s26",
+      "refKind": "world_fact_manifest",
+      "revision": 26
+    },
+    {
+      "refId": "wfm_hist_001_s27",
+      "refKind": "world_fact_manifest",
+      "revision": 27
+    },
+    {
+      "refId": "wfm_hist_001_s28",
+      "refKind": "world_fact_manifest",
+      "revision": 28
+    },
+    {
+      "refId": "wfm_hist_001_s29",
+      "refKind": "world_fact_manifest",
+      "revision": 29
+    },
+    {
+      "refId": "wfm_hist_001_s30",
+      "refKind": "world_fact_manifest",
+      "revision": 30
+    },
+    {
+      "refId": "345fea46-1f2a-8bcd-c98c-29d944fec75a",
+      "refKind": "paper_account",
+      "revision": 3
+    },
+    {
+      "refId": "a243c129-0297-7b54-e16f-256452eab596",
+      "refKind": "paper_position",
+      "revision": 30
+    }
+  ],
+  "truthClasses": [
+    "fictional_setting",
+    "simulated_narrative"
+  ],
+  "unrecordedFacets": [
+    {
+      "facetKey": "family_structure",
+      "reasonLabel": "人物底盤只封存了父親的印刷廠關掉這一件事，沒有封存完整的家庭結構。",
+      "sourceRefs": [
+        {
+          "eventType": null,
+          "globalPosition": null,
+          "kind": "character_seed",
+          "refId": "character-seed/v1#identity"
+        }
+      ],
+      "truthClass": "fictional_setting"
+    },
+    {
+      "facetKey": "education",
+      "reasonLabel": "人物底盤沒有封存教育經歷。",
+      "sourceRefs": [
+        {
+          "eventType": null,
+          "globalPosition": null,
+          "kind": "character_seed",
+          "refId": "character-seed/v1#identity"
+        }
+      ],
+      "truthClass": "fictional_setting"
+    },
+    {
+      "facetKey": "financial_responsibility",
+      "reasonLabel": "人物底盤沒有封存生活責任與經濟壓力的細節。",
+      "sourceRefs": [
+        {
+          "eventType": null,
+          "globalPosition": null,
+          "kind": "character_seed",
+          "refId": "character-seed/v1#identity"
+        }
+      ],
+      "truthClass": "fictional_setting"
+    }
+  ],
+  "visibilityEpoch": 1
+}

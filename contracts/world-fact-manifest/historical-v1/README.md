@@ -53,8 +53,8 @@ contract review.
 | --- | --- |
 | `schema.json` | JSON Schema (draft 2020-12) for `WorldFactManifestHistoricalV1`. The `../v1` top-level shape plus `provenanceClass` and `truthClass`; `additionalProperties: false`. Does **not** reference the fact-revision schema; the manifest only carries revision ID lists. |
 | `fact-revision.schema.json` | JSON Schema for one historical fact revision record. |
-| `fixtures/synthetic-historical-001.json` | The six sealed session manifests `wfm_hist_001_s1`…`s6`. Every hash/digest is actually computed from the fixture's own content, not a placeholder. |
-| `fixtures/synthetic-historical-001-fact-revisions.json` | The nine fact revision records those manifests' ID lists reference, with their sealed payloads. |
+| `fixtures/synthetic-historical-001.json` | The thirty sealed session manifests `wfm_hist_001_s01`…`s30`. Every hash/digest is actually computed from the fixture's own content, not a placeholder. |
+| `fixtures/synthetic-historical-001-fact-revisions.json` | The thirty-three fact revision records those manifests' ID lists reference, with their sealed payloads. |
 
 `tools/world-fact-manifest-historical-audit.mjs` (repo root `tools/`) validates
 both fixtures against both schemas, recomputes every hash/digest, and checks the
@@ -65,44 +65,92 @@ back the four derived fields (`manifestHash`, `objectHash`,
 `--fix` only ever rewrites those four derived values; every semantic assertion
 still runs afterwards, so `--fix` can never turn a rule violation into a pass.
 
-## The six sessions
+## The thirty sessions
 
 `PSZS-DEMO` is a fictional instrument. Prices are TWD **minor units（分）further
 scaled by 1,000,000**, i.e. the same `sealedPriceMinorUnitsFixed6` convention as
 `contracts/openapi/public-v2.yaml`; NT$96.00 is `9_600_000_000`. No floating-point
 literal appears anywhere in this contract, and the audit asserts that textually.
 
+### A synthetic calendar, not an exchange calendar
+
+The market dates follow `marketCalendarRevision: "synthetic-historical-calendar/v2"`:
+thirty **consecutive weekdays** starting 2026-03-02, minus two **declared synthetic
+market holidays**, 2026-04-03 and 2026-04-06. This calendar was written here for
+the fixture. It does not claim to be, and must never be presented as, a real
+exchange's trading calendar; a real historical feed would need its own calendar
+revision and its own contract review. The audit pins the date list, rejects
+weekends and the declared holidays, and asserts that every weekday skipped between
+two adjacent sessions is one of the declared holidays.
+
+The six original beats keep their original dates and closes (2026-03-02 96.00,
+2026-03-03 100.00, 2026-03-05 93.50, 2026-03-10 91.60, 2026-03-17 88.20, and
+2026-03-18, which is now a settled session); the trading days between and after
+them are filled in.
+
 | Manifest | Market date (Asia/Taipei) | Close | Finality | Publishes outcome evidence |
 | --- | --- | --- | --- | --- |
-| `wfm_hist_001_s1` | 2026-03-02 | 96.00 | accepted | yes |
-| `wfm_hist_001_s2` | 2026-03-03 | 100.00 | accepted | yes |
-| `wfm_hist_001_s3` | 2026-03-05 | 93.50 | accepted | yes |
-| `wfm_hist_001_s4` | 2026-03-10 | 91.60 | accepted | yes |
-| `wfm_hist_001_s5` | 2026-03-17 | 88.20 | accepted | yes |
-| `wfm_hist_001_s6` | 2026-03-18 | 88.20 (carried forward from S5) | **pending** | **no** |
+| `wfm_hist_001_s01` | 2026-03-02 | 96.00 | accepted | yes |
+| `wfm_hist_001_s02` | 2026-03-03 | 100.00 | accepted | yes |
+| `wfm_hist_001_s03` | 2026-03-04 | 96.40 | accepted | yes |
+| `wfm_hist_001_s04` | 2026-03-05 | 93.50 | accepted | yes |
+| `wfm_hist_001_s05` | 2026-03-06 | 94.10 | accepted | yes |
+| `wfm_hist_001_s06` | 2026-03-09 | 92.80 | accepted | yes |
+| `wfm_hist_001_s07` | 2026-03-10 | 91.60 | accepted | yes |
+| `wfm_hist_001_s08` | 2026-03-11 | 90.90 | accepted | yes |
+| `wfm_hist_001_s09` | 2026-03-12 | 91.30 | accepted | yes |
+| `wfm_hist_001_s10` | 2026-03-13 | 90.20 | accepted | yes |
+| `wfm_hist_001_s11` | 2026-03-16 | 89.40 | accepted | yes |
+| `wfm_hist_001_s12` | 2026-03-17 | 88.20 | accepted | yes |
+| `wfm_hist_001_s13` | 2026-03-18 | 88.60 | accepted | yes |
+| `wfm_hist_001_s14` | 2026-03-19 | 89.10 | accepted | yes |
+| `wfm_hist_001_s15` | 2026-03-20 | 88.90 | accepted | yes |
+| `wfm_hist_001_s16` | 2026-03-23 | 88.30 | accepted | yes |
+| `wfm_hist_001_s17` | 2026-03-24 | 87.60 | accepted | yes |
+| `wfm_hist_001_s18` | 2026-03-25 | 86.90 | accepted | yes |
+| `wfm_hist_001_s19` | 2026-03-26 | 86.10 | accepted | yes |
+| `wfm_hist_001_s20` | 2026-03-27 | 85.70 | accepted | yes |
+| `wfm_hist_001_s21` | 2026-03-30 | 86.20 | accepted | yes |
+| `wfm_hist_001_s22` | 2026-03-31 | 86.80 | accepted | yes |
+| `wfm_hist_001_s23` | 2026-04-01 | 87.10 | accepted | yes |
+| `wfm_hist_001_s24` | 2026-04-02 | 87.50 | accepted | yes |
+| `wfm_hist_001_s25` | 2026-04-07 | 86.80 | accepted | yes |
+| `wfm_hist_001_s26` | 2026-04-08 | 86.40 | accepted | yes |
+| `wfm_hist_001_s27` | 2026-04-09 | 86.90 | accepted | yes |
+| `wfm_hist_001_s28` | 2026-04-10 | 87.40 | accepted | yes |
+| `wfm_hist_001_s29` | 2026-04-13 | 87.20 | accepted | yes |
+| `wfm_hist_001_s30` | 2026-04-14 | 87.20 (carried forward from S29) | **pending** | **no** |
 
-S6 is "today": still in session, `MarketSessionFinality` not accepted. Its
+S30 is "today": still in session, `MarketSessionFinality` not accepted. Its
 `outcomeEvidenceRevisionIds` is therefore **empty** and its `permittedPurposes`
 contains only `character_interaction`. Its close-price revision is
 `rightsScope: "interaction"` and declares
-`carriedForwardFromFactRevisionId: "fact-hist-001-price-s5"`, so the reused number
+`carriedForwardFromFactRevisionId: "fact-hist-001-s29-price"`, so the reused number
 is auditable rather than silently duplicated. That is the fail-closed shape the
 rest of the product depends on: an un-finalised session withholds the whole
 allowlist entry, it never publishes a nulled placeholder.
 
-## The four fact revisions the character slice reads
+## Fact revision ids and the plot facts
+
+Every id embeds the zero-padded session it originates in (`fact-hist-001-sNN-…`),
+so ids are stable and their byte order is date order.
 
 | `factRevisionId` | Origin | Kind | Role |
 | --- | --- | --- | --- |
-| `fact-hist-001-momentum-s1` | S1, pre-open | `market_momentum_signal` | The signal available at S1's open that the character does not attend to. |
-| `fact-hist-001-counter-inventory` | S1, intraday | `peer_group_inventory_days` | The counter-evidence, public from S1 and interaction-eligible in every later session; the audit asserts it never drops out of a later interaction allowlist. |
-| `fact-hist-001-correction-s4` | S4, intraday | `issuer_correction_notice` | Supersedes `fact-hist-001-momentum-s1`: the earlier flow was a single institution rebalancing, not demand. |
-| `fact-hist-001-price-s1`…`s6` | each session's close | `sealed_close_price` | The sealed closes above. |
+| `fact-hist-001-s01-momentum` | S1, pre-open | `market_momentum_signal` | The signal available at S1's open that the character does not attend to. |
+| `fact-hist-001-s01-counter-inventory` | S1, intraday | `peer_group_inventory_days` | The counter-evidence, public from S1 and interaction-eligible in every later session; the audit asserts it never drops out of a later interaction allowlist. |
+| `fact-hist-001-s07-correction` | S7 (2026-03-10), intraday | `issuer_correction_notice` | Supersedes `fact-hist-001-s01-momentum`: the earlier flow was a single institution rebalancing, not demand. |
+| `fact-hist-001-s01-price`…`s30-price` | each session's close | `sealed_close_price` | The sealed closes above. |
 
 Each fact revision names the manifest that first sealed it in `manifestId`; later
 sessions reference the same id from their own allowlists without changing that
 field, and the audit asserts each revision became available no later than its own
-session's `evidenceCutoffAt`.
+session's `evidenceCutoffAt`. Every revision becomes visible exactly once, in the
+session that sealed it.
+
+Interaction allowlists follow one rule: the counter-evidence from S2 on, the
+correction from S8 on, and the two most recent sealed closes available before the
+open (for S30, S29's accepted close plus its own carried-forward reference).
 
 ## Cutoffs in historical mode
 
@@ -123,10 +171,10 @@ outcome/editorial evidence eligibility:
 One consequence is load-bearing and intentional: **a fact that first becomes
 available intraday in session S is interaction-eligible only from session S+1's
 manifest onwards.** Within session S it can only be outcome/post-close-editorial
-evidence. That is why `fact-hist-001-counter-inventory` (published intraday on S1)
-appears in S1's *outcome* list and in the *interaction* list of S2 through S6, and
-why `fact-hist-001-correction-s4` (published intraday on S4) is outcome evidence
-for S4 and interaction-eligible only from S5. A character cannot react inside a
+evidence. That is why `fact-hist-001-s01-counter-inventory` (published intraday on
+S1) appears in S1's *outcome* list and in the *interaction* list of S2 through S30,
+and why `fact-hist-001-s07-correction` (published intraday on S7) is outcome
+evidence for S7 and interaction-eligible only from S8. A character cannot react inside a
 session to something that only surfaced mid-session; the fence is the contract, not
 the narrative's convenience.
 
@@ -141,7 +189,7 @@ may only be used for exposure/attention/appraisal/action;
 post-close editorial. A revision cleared for both
 (`rightsScope: "interaction_and_outcome"`) may appear in both lists, but each
 pipeline resolves it through **its own** list's explicit ref. The audit checks the
-rule from both directions, across all six manifests.
+rule from both directions, across all thirty manifests.
 
 ## Digest and canonicalization convention
 
@@ -152,12 +200,12 @@ Identical to `../v1` (RFC 8785 JCS, `sha256:<lowercase-hex>`) with one differenc
 2. **`interactionFactSetDigest`** / **`outcomeEvidenceSetDigest`** — SHA-256 of the
    deduplicated, UTF-8-byte-sorted, `\n`-joined revision IDs of that list (no
    trailing newline), so the digest is a function of the *set*. An empty list
-   digests the empty string — which is exactly what S6 carries.
+   digests the empty string — which is exactly what S30 carries.
 3. **`objectHash`** — SHA-256 of the JCS canonical UTF-8 bytes of **this
    manifest's slice** of `synthetic-historical-001-fact-revisions.json`, i.e. the
    revisions whose `manifestId` equals this manifest's id, in file order. `../v1`
    hashes the whole sibling bundle because it mirrors one manifest per bundle; the
-   six historical manifests share one fixture file, so each seals its own slice
+   thirty historical manifests share one fixture file, so each seals its own slice
    and `objectUri` carries `#<manifestId>` to name it.
 
 `objectUri` uses the authority-less `panshi-fixture:` scheme with a

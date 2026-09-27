@@ -28,10 +28,10 @@ info:
       story-rolls), and search (`GET /api/v2/search`).
     - Also not yet built here (same §11.3 table, later phases): model-core
       catalog, price catalog, market-fact lookup, utterance audio
-      renditions, account settings/export/delete, generic command status,
-      and the remaining deep-archive sections beyond the index and
-      `archive/paper` — namely `archive/relations`, `archive/chart`,
-      `archive/traits`, and `archive/memories`.
+      renditions, account settings/export/delete, and generic command
+      status. All six deep-archive sections are built: the index plus
+      `archive/paper`, `archive/relations`, `archive/chart`,
+      `archive/traits`, `archive/memories` and `archive/life`.
   license:
     name: Proprietary
     identifier: LicenseRef-Proprietary
@@ -136,9 +136,8 @@ paths:
       description: >-
         Deep-archive index and per-section entitlement/as-of/visibility.
         Section payloads are never inlined here — each section's full
-        content is served by its own dedicated endpoint (only
-        `archive/paper` is built in this phase; see the top-level
-        `info.description` for what is not yet built). See
+        content is served by its own dedicated endpoint, and every
+        section's `sectionPath` points at it. See
         `docs/v5/experience-spec.md` §9.1.
       operationId: getCharacterArchiveIndex
       tags: [Characters]
@@ -180,6 +179,130 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CharacterPaperArchiveResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v2/characters/{id}/archive/relations:
+    parameters:
+      - $ref: '#/components/parameters/CharacterId'
+    get:
+      summary: Get a character's relations archive section
+      description: >-
+        Acquaintance nodes by display name and relationship label (never a
+        raw acquaintance key), his one-way observable interactions with
+        each, the relationship signals his own sealed public claims left
+        behind (quoting the claim's `UtteranceArtifactV1` verbatim), and an
+        explicit `unknown` for the counterpart's side when she has no sealed
+        utterance. No affection score. See `docs/v5/experience-spec.md`
+        §9.5.
+      operationId: getCharacterRelationsArchive
+      tags: [Characters]
+      responses:
+        '200':
+          description: >-
+            Relations section, or a tombstone projection if the character
+            has been withdrawn.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterRelationsArchiveResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v2/characters/{id}/archive/chart:
+    parameters:
+      - $ref: '#/components/parameters/CharacterId'
+    get:
+      summary: Get a character's natal-chart archive section
+      description: >-
+        The fictional birth identity, the sealed symbolic motif with its
+        active window and the chapters whose sealed symbolic segment invoked
+        it. Every motif item is `symbolic_interpretation` and states that it
+        only affects attention and interpretation, never price or paper
+        performance. Placements not computed from sealed birth data are a
+        typed empty list with a reason. See `docs/v5/experience-spec.md`
+        §9.6.
+      operationId: getCharacterChartArchive
+      tags: [Characters]
+      responses:
+        '200':
+          description: >-
+            Chart section, or a tombstone projection if the character has
+            been withdrawn.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterChartArchiveResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v2/characters/{id}/archive/traits:
+    parameters:
+      - $ref: '#/components/parameters/CharacterId'
+    get:
+      summary: Get a character's traits-and-habits archive section
+      description: >-
+        Continuous four-axis preferences, core need and fear, blood type
+        (social tone only), habits with the sessions that show them, and
+        every fallible pattern listed once per sealed occurrence beside its
+        evidence sessions, plus the sessions that contradict it. No score,
+        total, count or ranking is carried. See
+        `docs/v5/experience-spec.md` §9.7.
+      operationId: getCharacterTraitsArchive
+      tags: [Characters]
+      responses:
+        '200':
+          description: >-
+            Traits section, or a tombstone projection if the character has
+            been withdrawn.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterTraitsArchiveResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v2/characters/{id}/archive/memories:
+    parameters:
+      - $ref: '#/components/parameters/CharacterId'
+    get:
+      summary: Get a character's memories archive section
+      description: >-
+        Sealed `MemoryFormed` records whose visibility is
+        `subscriber_archive` or `public_edition`, each with its source
+        events. `canonical_restricted` memories are never listed, not even
+        as a count. See `docs/v5/experience-spec.md` §9.8.
+      operationId: getCharacterMemoriesArchive
+      tags: [Characters]
+      responses:
+        '200':
+          description: >-
+            Memories section, or a tombstone projection if the character has
+            been withdrawn.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterMemoriesArchiveResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v2/characters/{id}/archive/life:
+    parameters:
+      - $ref: '#/components/parameters/CharacterId'
+    get:
+      summary: Get a character's life archive section
+      description: >-
+        The fictional adult's identity and synthetic birthplace, fictional
+        life milestones, the origin memories he arrived with, the life
+        facets the chassis never sealed (listed as unrecorded, not written),
+        and a pointer per market session into the canonical chapter
+        timeline. See `docs/v5/experience-spec.md` §9.9.
+      operationId: getCharacterLifeArchive
+      tags: [Characters]
+      responses:
+        '200':
+          description: >-
+            Life section, or a tombstone projection if the character has
+            been withdrawn.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterLifeArchiveResponse'
         '404':
           $ref: '#/components/responses/NotFound'
   /events/v2/world:
@@ -364,9 +487,11 @@ components:
       type: string
       description: >-
         The fixed set of deep-archive sections from
-        `docs/v5/system-design.md` §11.3. Only `paper` has a dedicated
-        endpoint in this phase; the others are indexed for
-        entitlement/as-of/visibility but have no route in this file yet.
+        `docs/v5/system-design.md` §11.3, in index order. Every section has
+        its own dedicated endpoint at `/api/v2/characters/{id}/archive/{key}`
+        (`paper`, `relations`, `chart`, `traits`, `memories`, `life`), and
+        each section item there carries a `truthClass` and non-empty
+        `sourceRefs`.
       enum:
         - paper
         - relations
@@ -1008,15 +1133,24 @@ components:
             $ref: '#/components/schemas/Uuid'
     LifeJournalEntry:
       type: object
-      description: One canonical day-chapter, ordered per experience-spec §8.1.
+      description: >-
+        One published canonical day-chapter, ordered per experience-spec
+        §8.1. A withheld chapter is never an entry here: it is listed in
+        `LifeJournalPage.heldEntries` as a `HeldLifeJournalEntry`.
       additionalProperties: false
       required:
         - entryId
         - chapterDate
+        - entryVisibility
+        - narrativeState
+        - narrativeSegments
         - sceneSummary
         - knownAtTheTimeSummary
         - actionSummary
         - consequence
+        - evidenceCard
+        - relationshipConsequence
+        - relationshipConsequenceNullReason
         - openQuestionSummary
         - archiveRefs
       properties:
@@ -1025,9 +1159,46 @@ components:
         chapterDate:
           type: string
           format: date
+        entryVisibility:
+          type: string
+          description: >-
+            Always `PUBLIC` on an entry; `HELD` chapters carry only a label
+            and live in `heldEntries`.
+          const: PUBLIC
+        narrativeState:
+          type: string
+          description: >-
+            `composed` when the chapter's sealed narrative is available;
+            `evidence_card_only` when it is not — then
+            `narrativeSegments` is empty, `sceneSummary` is a fixed system
+            label, and `evidenceCard` still carries the whole consequence.
+          enum: [composed, evidence_card_only]
+        narrativeSegments:
+          type: array
+          items:
+            $ref: '#/components/schemas/NarrativeSegment'
+        evidenceCard:
+          $ref: '#/components/schemas/EvidenceCard'
+        relationshipConsequence:
+          description: >-
+            The chapter's readable relationship consequence, from its
+            `RelationshipSignalObserved`; `null` when there is none.
+          oneOf:
+            - $ref: '#/components/schemas/RelationshipSignalView'
+            - type: 'null'
+        relationshipConsequenceNullReason:
+          description: Non-null exactly when `relationshipConsequence` is `null`.
+          oneOf:
+            - type: string
+              minLength: 1
+              maxLength: 200
+            - type: 'null'
         sceneSummary:
           type: string
-          description: "今天他怎麼了"
+          description: >-
+            "今天他怎麼了" — the chapter's sealed observable segment; with
+            `narrativeState: evidence_card_only`, a fixed system label that
+            makes no claim about him.
           minLength: 1
           maxLength: 300
         contemporaneousClaim:
@@ -1076,6 +1247,7 @@ components:
         - characterId
         - appliedAudienceScope
         - entries
+        - heldEntries
         - nextCursor
       properties:
         projectionVersion:
@@ -1106,6 +1278,14 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/LifeJournalEntry'
+        heldEntries:
+          type: array
+          description: >-
+            Settled chapters withheld from this page, each with only an id,
+            a date and a reason label. Merge with `entries` by
+            `chapterDate` to render the canonical order.
+          items:
+            $ref: '#/components/schemas/HeldLifeJournalEntry'
         nextCursor:
           oneOf:
             - type: string
@@ -1146,8 +1326,11 @@ components:
           $ref: '#/components/schemas/Version'
         sectionPath:
           description: >-
-            Same-origin path for this section's dedicated endpoint, or
-            `null` if it has none in this phase (see `ArchiveSectionKey`).
+            Same-origin path for this section's dedicated endpoint. Every
+            `ArchiveSectionKey` has one, so this is non-null for all six
+            sections; `null` stays in the type only so a future section
+            key can be indexed before its page exists without a breaking
+            change.
           oneOf:
             - type: string
               pattern: '^/api/v2/characters/[0-9a-f-]{36}/archive/[a-z]+$'
@@ -1294,6 +1477,8 @@ components:
         - invalidationCondition
         - rationaleSummary
         - influencedByCharacterRefs
+        - influencedBy
+        - influencedByEmptyReason
         - consequenceSummary
       properties:
         positionId:
@@ -1351,6 +1536,23 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Uuid'
+        influencedBy:
+          type: array
+          description: >-
+            `influencedByCharacterRefs`, resolved to display names and
+            relationship labels with their evidence. Empty when no sealed
+            event shows anyone shaping this position's decisions — a
+            character's own public claim that someone else was the reason
+            is his claim, shown in `/archive/relations`, never here.
+          items:
+            $ref: '#/components/schemas/InfluenceRef'
+        influencedByEmptyReason:
+          description: Non-null exactly when `influencedBy` is empty.
+          oneOf:
+            - type: string
+              minLength: 1
+              maxLength: 200
+            - type: 'null'
         consequenceSummary:
           type: string
           minLength: 1
@@ -1530,6 +1732,1376 @@ components:
     CharacterPaperArchiveResponse:
       oneOf:
         - $ref: '#/components/schemas/PaperArchiveProjection'
+        - $ref: '#/components/schemas/WithdrawnCharacterProjection'
+    ArchiveSourceRef:
+      type: object
+      description: >-
+        Where one archive or evidence item came from: a canonical event (by
+        event type and 1-based global log position — the coordinate
+        `sourceGlobalPosition` counts in — plus the stream it was appended
+        to), or a named anchor in the frozen character chassis for a value
+        no canonical event carries. `eventType` and `globalPosition` are
+        non-null exactly when `kind` is `canonical_event`.
+      additionalProperties: false
+      required: [kind, eventType, globalPosition, refId]
+      properties:
+        kind:
+          type: string
+          enum: [canonical_event, character_seed]
+        eventType:
+          oneOf:
+            - type: string
+              minLength: 1
+              maxLength: 64
+            - type: 'null'
+        globalPosition:
+          oneOf:
+            - $ref: '#/components/schemas/Version'
+            - type: 'null'
+        refId:
+          type: string
+          minLength: 1
+          maxLength: 160
+    ArchiveSourceRefs:
+      type: array
+      minItems: 1
+      description: Never empty — an item with no source is not rendered.
+      items:
+        $ref: '#/components/schemas/ArchiveSourceRef'
+    ArchiveSessionPointer:
+      type: object
+      description: One market session and the journal entry it published, if any.
+      additionalProperties: false
+      required: [sessionDate, journalEntryRef]
+      properties:
+        sessionDate:
+          type: string
+          format: date
+        journalEntryRef:
+          oneOf:
+            - $ref: '#/components/schemas/Uuid'
+            - type: 'null'
+    ArchivePersonLabel:
+      type: object
+      description: >-
+        A counterpart resolved to a display name and relationship label.
+        The raw canonical acquaintance key is never shown to a viewer.
+      additionalProperties: false
+      required: [displayName, relationLabel]
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 40
+        relationLabel:
+          type: string
+          minLength: 1
+          maxLength: 40
+    NarrativeSegment:
+      description: >-
+        One segment of the chapter's sealed `StoryChapterComposed`, in
+        sealed order. A claim segment carries the artifact's canonical bytes
+        verbatim; a narrator segment is never first person.
+      oneOf:
+        - type: object
+          additionalProperties: false
+          required: [segmentId, kind, truthClass, text, sourceRefs]
+          properties:
+            segmentId:
+              type: string
+              minLength: 1
+              maxLength: 64
+            kind:
+              type: string
+              const: narrator
+            truthClass:
+              $ref: '#/components/schemas/TruthClass'
+            text:
+              type: string
+              minLength: 1
+              maxLength: 400
+            sourceRefs:
+              $ref: '#/components/schemas/ArchiveSourceRefs'
+        - type: object
+          additionalProperties: false
+          required:
+            - segmentId
+            - kind
+            - truthClass
+            - utteranceArtifactId
+            - canonicalTextSha256
+            - canonicalTextUtf8
+            - sourceRefs
+          properties:
+            segmentId:
+              type: string
+              minLength: 1
+              maxLength: 64
+            kind:
+              type: string
+              const: character_claim
+            truthClass:
+              $ref: '#/components/schemas/TruthClass'
+            utteranceArtifactId:
+              $ref: '#/components/schemas/Uuid'
+            canonicalTextSha256:
+              $ref: '#/components/schemas/Digest'
+            canonicalTextUtf8:
+              type: string
+              minLength: 1
+            sourceRefs:
+              $ref: '#/components/schemas/ArchiveSourceRefs'
+    EvidenceAction:
+      type: object
+      description: The committed intent, as a fixed label. It says what, never why.
+      additionalProperties: false
+      required: [kind, label, truthClass, sourceRefs]
+      properties:
+        kind:
+          $ref: '#/components/schemas/PaperActionKind'
+        label:
+          type: string
+          minLength: 1
+          maxLength: 40
+        truthClass:
+          $ref: '#/components/schemas/TruthClass'
+        sourceRefs:
+          $ref: '#/components/schemas/ArchiveSourceRefs'
+    EvidencePaperOutcome:
+      type: object
+      description: >-
+        The session's paper consequence, from canonical ledger events only:
+        filled quantity and sealed price with the manifest that sealed it
+        (`null` on a day without a fill), the realized P&L the session
+        booked, the unrealized P&L its last mark left (`null` without a
+        mark), and fees and taxes, all integer minor units or `*Fixed6`.
+        Equal to the same trading day's figures in `/archive/paper`.
+      additionalProperties: false
+      required:
+        - positionRef
+        - filledQuantityFixed6
+        - sealedPriceMinorUnitsFixed6
+        - fillPriceSourceRef
+        - markPriceSourceRef
+        - realizedPnlMinorUnits
+        - unrealizedPnlMinorUnits
+        - feeMinorUnits
+        - taxMinorUnits
+        - asOf
+        - truthClass
+        - sourceRefs
+      properties:
+        positionRef:
+          $ref: '#/components/schemas/Uuid'
+        filledQuantityFixed6:
+          oneOf:
+            - type: integer
+            - type: 'null'
+        sealedPriceMinorUnitsFixed6:
+          oneOf:
+            - type: integer
+            - type: 'null'
+        fillPriceSourceRef:
+          oneOf:
+            - $ref: '#/components/schemas/Digest'
+            - type: 'null'
+        markPriceSourceRef:
+          oneOf:
+            - $ref: '#/components/schemas/Digest'
+            - type: 'null'
+        realizedPnlMinorUnits:
+          type: integer
+        unrealizedPnlMinorUnits:
+          oneOf:
+            - type: integer
+            - type: 'null'
+        feeMinorUnits:
+          type: integer
+        taxMinorUnits:
+          type: integer
+        asOf:
+          type: string
+          format: date-time
+        truthClass:
+          $ref: '#/components/schemas/TruthClass'
+        sourceRefs:
+          $ref: '#/components/schemas/ArchiveSourceRefs'
+    EvidenceQuotedUtterance:
+      type: object
+      description: A sealed `UtteranceArtifactV1`, verbatim, with its surface.
+      additionalProperties: false
+      required:
+        - utteranceArtifactId
+        - canonicalTextSha256
+        - canonicalTextUtf8
+        - surface
+        - truthClass
+        - sourceRefs
+      properties:
+        utteranceArtifactId:
+          $ref: '#/components/schemas/Uuid'
+        canonicalTextSha256:
+          $ref: '#/components/schemas/Digest'
+        canonicalTextUtf8:
+          type: string
+          minLength: 1
+        surface:
+          type: string
+          enum: [public_claim, self_acknowledged]
+        truthClass:
+          $ref: '#/components/schemas/TruthClass'
+        sourceRefs:
+          $ref: '#/components/schemas/ArchiveSourceRefs'
+    EvidenceMemoryRef:
+      type: object
+      additionalProperties: false
+      required: [memoryRef, truthClass, sourceRefs]
+      properties:
+        memoryRef:
+          $ref: '#/components/schemas/Uuid'
+        truthClass:
+          $ref: '#/components/schemas/TruthClass'
+        sourceRefs:
+          $ref: '#/components/schemas/ArchiveSourceRefs'
+    EvidenceRelationshipRef:
+      type: object
+      additionalProperties: false
+      required: [dyadRef, relationshipSignalRef, truthClass, sourceRefs]
+      properties:
+        dyadRef:
+          $ref: '#/components/schemas/Uuid'
+        relationshipSignalRef:
+          $ref: '#/components/schemas/Uuid'
+        truthClass:
+          $ref: '#/components/schemas/TruthClass'
+        sourceRefs:
+          $ref: '#/components/schemas/ArchiveSourceRefs'
+    EvidenceCard:
+      type: object
+      description: >-
+        The typed consequence card of one chapter, built from canonical
+        events only, so it survives the chapter's rich narrative failing
+        (`docs/v5/system-design.md` "Story generation failure"). It carries
+        no first-person sentence: its only prose is a fixed action label
+        and fixed empty-reason labels.
+      additionalProperties: false
+      required:
+        - action
+        - paperOutcome
+        - paperOutcomeNullReason
+        - quotedUtterances
+        - memoryRefs
+        - relationshipRefs
+      properties:
+        action:
+          $ref: '#/components/schemas/EvidenceAction'
+        paperOutcome:
+          oneOf:
+            - $ref: '#/components/schemas/EvidencePaperOutcome'
+            - type: 'null'
+        paperOutcomeNullReason:
+          description: Non-null exactly when `paperOutcome` is `null`.
+          oneOf:
+            - type: string
+              minLength: 1
+              maxLength: 200
+            - type: 'null'
+        quotedUtterances:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceQuotedUtterance'
+        memoryRefs:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceMemoryRef'
+        relationshipRefs:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceRelationshipRef'
+    RelationshipSignalView:
+      type: object
+      description: >-
+        One `RelationshipSignalObserved`, readable: the counterpart by
+        display name and relationship label, the signal kind, the sealed
+        claim that caused it (verbatim from its artifact, same hash), and
+        the memory it left.
+      additionalProperties: false
+      required:
+        - dyadRef
+        - relationshipSignalRef
+        - displayName
+        - relationLabel
+        - signalKind
+        - summary
+        - utterance
+        - consequenceMemoryRefs
+        - observedAt
+        - sessionDate
+        - journalEntryRef
+        - truthClass
+        - sourceRefs
+      properties:
+        dyadRef:
+          $ref: '#/components/schemas/Uuid'
+        relationshipSignalRef:
+          $ref: '#/components/schemas/Uuid'
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 40
+        relationLabel:
+          type: string
+          minLength: 1
+          maxLength: 40
+        signalKind:
+          type: string
+          enum: [public_outcome_attribution]
+        summary:
+          type: string
+          minLength: 1
+          maxLength: 300
+        utterance:
+          $ref: '#/components/schemas/CharacterUtterance'
+        consequenceMemoryRefs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Uuid'
+        observedAt:
+          type: string
+          format: date-time
+        sessionDate:
+          type: string
+          format: date
+        journalEntryRef:
+          oneOf:
+            - $ref: '#/components/schemas/Uuid'
+            - type: 'null'
+        truthClass:
+          $ref: '#/components/schemas/TruthClass'
+        sourceRefs:
+          $ref: '#/components/schemas/ArchiveSourceRefs'
+    HeldLifeJournalEntry:
+      type: object
+      description: >-
+        A settled chapter withheld from the public journal. It carries its
+        identity, its date and one reason label — no content field exists
+        on this shape, so nothing about the day can leak through it.
+      additionalProperties: false
+      required: [entryId, chapterDate, entryVisibility, heldReasonLabel]
+      properties:
+        entryId:
+          $ref: '#/components/schemas/Uuid'
+        chapterDate:
+          type: string
+          format: date
+        entryVisibility:
+          type: string
+          const: HELD
+        heldReasonLabel:
+          type: string
+          minLength: 1
+          maxLength: 160
+    InfluenceRef:
+      type: object
+      description: >-
+        A character or acquaintance a sealed event shows shaping this
+        position's decisions, resolved to a display name and relationship
+        label.
+      additionalProperties: false
+      required: [displayName, relationLabel, influenceSummary, truthClass, sourceRefs]
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 40
+        relationLabel:
+          type: string
+          minLength: 1
+          maxLength: 40
+        influenceSummary:
+          type: string
+          minLength: 1
+          maxLength: 200
+        truthClass:
+          $ref: '#/components/schemas/TruthClass'
+        sourceRefs:
+          $ref: '#/components/schemas/ArchiveSourceRefs'
+    ArchiveObservedInteraction:
+      type: object
+      description: One-way and observable — what he did around her, never her words.
+      additionalProperties: false
+      required:
+        - sessionDate
+        - journalEntryRef
+        - observableAction
+        - direction
+        - truthClass
+        - sourceRefs
+      properties:
+        sessionDate:
+          type: string
+          format: date
+        journalEntryRef:
+          oneOf:
+            - $ref: '#/components/schemas/Uuid'
+            - type: 'null'
+        observableAction:
+          type: string
+          minLength: 1
+          maxLength: 200
+        direction:
+          type: string
+          const: one_way_observed
+        truthClass:
+          $ref: '#/components/schemas/TruthClass'
+        sourceRefs:
+          $ref: '#/components/schemas/ArchiveSourceRefs'
+    ArchiveCounterpartAccount:
+      type: object
+      description: >-
+        The counterpart's side of the relationship. `unknown` whenever she
+        has no sealed utterance — the archive never writes a line or a
+        reaction for her (experience-spec §9.5: 尚未說出口的部分只能標未知).
+      additionalProperties: false
+      required: [state, reasonLabel, truthClass, sourceRefs]
+      properties:
+        state:
+          type: string
+          enum: [unknown]
+        reasonLabel:
+          type: string
+          minLength: 1
+          maxLength: 200
+        truthClass:
+          $ref: '#/components/schemas/TruthClass'
+        sourceRefs:
+          $ref: '#/components/schemas/ArchiveSourceRefs'
+    ArchiveAcquaintance:
+      type: object
+      additionalProperties: false
+      required:
+        - dyadRef
+        - displayName
+        - relationLabel
+        - relationNote
+        - truthClass
+        - sourceRefs
+        - observedInteractions
+        - observedInteractionsEmptyReason
+        - relationshipSignals
+        - relationshipSignalsEmptyReason
+        - counterpartAccount
+      properties:
+        dyadRef:
+          $ref: '#/components/schemas/Uuid'
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 40
+        relationLabel:
+          type: string
+          minLength: 1
+          maxLength: 40
+        relationNote:
+          type: string
+          minLength: 1
+          maxLength: 200
+        truthClass:
+          $ref: '#/components/schemas/TruthClass'
+        sourceRefs:
+          $ref: '#/components/schemas/ArchiveSourceRefs'
+        observedInteractions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArchiveObservedInteraction'
+        observedInteractionsEmptyReason:
+          oneOf:
+            - type: string
+              minLength: 1
+              maxLength: 200
+            - type: 'null'
+        relationshipSignals:
+          type: array
+          items:
+            $ref: '#/components/schemas/RelationshipSignalView'
+        relationshipSignalsEmptyReason:
+          oneOf:
+            - type: string
+              minLength: 1
+              maxLength: 200
+            - type: 'null'
+        counterpartAccount:
+          $ref: '#/components/schemas/ArchiveCounterpartAccount'
+    RelationsArchiveProjection:
+      type: object
+      additionalProperties: false
+      required:
+        - projectionVersion
+        - sourceGlobalPosition
+        - serverNow
+        - dataState
+        - visibilityEpoch
+        - truthClasses
+        - sourceRevisionSet
+        - characterId
+        - appliedAudienceScope
+        - sectionKey
+        - asOf
+        - acquaintances
+        - acquaintancesEmptyReason
+      properties:
+        projectionVersion:
+          $ref: '#/components/schemas/Version'
+        sourceGlobalPosition:
+          $ref: '#/components/schemas/Version'
+        serverNow:
+          type: string
+          format: date-time
+        dataState:
+          $ref: '#/components/schemas/DataState'
+        visibilityEpoch:
+          $ref: '#/components/schemas/Version'
+        truthClasses:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/TruthClass'
+        sourceRevisionSet:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceRevisionRef'
+        characterId:
+          $ref: '#/components/schemas/Uuid'
+        appliedAudienceScope:
+          $ref: '#/components/schemas/AudienceScope'
+        sectionKey:
+          type: string
+          const: relations
+        asOf:
+          type: string
+          format: date-time
+        acquaintances:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArchiveAcquaintance'
+        acquaintancesEmptyReason:
+          oneOf:
+            - type: string
+              minLength: 1
+              maxLength: 200
+            - type: 'null'
+    CharacterRelationsArchiveResponse:
+      oneOf:
+        - $ref: '#/components/schemas/RelationsArchiveProjection'
+        - $ref: '#/components/schemas/WithdrawnCharacterProjection'
+    ArchiveBirthIdentity:
+      type: object
+      description: The fictional birth identity. Never a real person's data.
+      additionalProperties: false
+      required: [birthDate, birthRegionLabel, truthClass, sourceRefs]
+      properties:
+        birthDate:
+          type: string
+          format: date
+        birthRegionLabel:
+          type: string
+          minLength: 1
+          maxLength: 80
+        truthClass:
+          $ref: '#/components/schemas/TruthClass'
+        sourceRefs:
+          $ref: '#/components/schemas/ArchiveSourceRefs'
+    ChartPlacement:
+      type: object
+      description: One placement computed from the sealed birth data.
+      additionalProperties: false
+      required: [placementLabel, signLabel, truthClass, sourceRefs]
+      properties:
+        placementLabel:
+          type: string
+          minLength: 1
+          maxLength: 40
+        signLabel:
+          type: string
+          minLength: 1
+          maxLength: 40
+        truthClass:
+          type: string
+          const: symbolic_interpretation
+        sourceRefs:
+          $ref: '#/components/schemas/ArchiveSourceRefs'
+    ChartMotifInvocation:
+      type: object
+      description: A chapter whose sealed symbolic segment invoked the motif, quoted as sealed.
+      additionalProperties: false
+      required: [sessionDate, journalEntryRef, readingText, truthClass, sourceRefs]
+      properties:
+        sessionDate:
+          type: string
+          format: date
+        journalEntryRef:
+          oneOf:
+            - $ref: '#/components/schemas/Uuid'
+            - type: 'null'
+        readingText:
+          type: string
+          minLength: 1
+          maxLength: 300
+        truthClass:
+          type: string
+          const: symbolic_interpretation
+        sourceRefs:
+          $ref: '#/components/schemas/ArchiveSourceRefs'
+    ChartMotif:
+      type: object
+      description: >-
+        A symbolic theme. It reaches behaviour only through attention and
+        interpretation; `effectScopeLabel` says so in words, and no field
+        links it to a price, a direction or paper performance.
+      additionalProperties: false
+      required:
+        - motifLabel
+        - effectScopeLabel
+        - activeWindow
+        - activeSessions
+        - invocations
+        - invocationsEmptyReason
+        - truthClass
+        - sourceRefs
+      properties:
+        motifLabel:
+          type: string
+          minLength: 1
+          maxLength: 40
+        effectScopeLabel:
+          type: string
+          minLength: 1
+          maxLength: 120
+        activeWindow:
+          type: object
+          additionalProperties: false
+          required: [activeFrom, activeUntil]
+          properties:
+            activeFrom:
+              type: string
+              format: date-time
+            activeUntil:
+              type: string
+              format: date-time
+        activeSessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArchiveSessionPointer'
+        invocations:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChartMotifInvocation'
+        invocationsEmptyReason:
+          oneOf:
+            - type: string
+              minLength: 1
+              maxLength: 200
+            - type: 'null'
+        truthClass:
+          type: string
+          const: symbolic_interpretation
+        sourceRefs:
+          $ref: '#/components/schemas/ArchiveSourceRefs'
+    ChartArchiveProjection:
+      type: object
+      additionalProperties: false
+      required:
+        - projectionVersion
+        - sourceGlobalPosition
+        - serverNow
+        - dataState
+        - visibilityEpoch
+        - truthClasses
+        - sourceRevisionSet
+        - characterId
+        - appliedAudienceScope
+        - sectionKey
+        - asOf
+        - birthIdentity
+        - placements
+        - placementsEmptyReason
+        - motifs
+      properties:
+        projectionVersion:
+          $ref: '#/components/schemas/Version'
+        sourceGlobalPosition:
+          $ref: '#/components/schemas/Version'
+        serverNow:
+          type: string
+          format: date-time
+        dataState:
+          $ref: '#/components/schemas/DataState'
+        visibilityEpoch:
+          $ref: '#/components/schemas/Version'
+        truthClasses:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/TruthClass'
+        sourceRevisionSet:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceRevisionRef'
+        characterId:
+          $ref: '#/components/schemas/Uuid'
+        appliedAudienceScope:
+          $ref: '#/components/schemas/AudienceScope'
+        sectionKey:
+          type: string
+          const: chart
+        asOf:
+          type: string
+          format: date-time
+        birthIdentity:
+          $ref: '#/components/schemas/ArchiveBirthIdentity'
+        placements:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChartPlacement'
+        placementsEmptyReason:
+          oneOf:
+            - type: string
+              minLength: 1
+              maxLength: 200
+            - type: 'null'
+        motifs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChartMotif'
+    CharacterChartArchiveResponse:
+      oneOf:
+        - $ref: '#/components/schemas/ChartArchiveProjection'
+        - $ref: '#/components/schemas/WithdrawnCharacterProjection'
+    TraitAxis:
+      type: object
+      description: >-
+        One continuous four-axis preference on the canonical
+        `-10000..=10000` basis-point axis; negative leans to the low pole.
+        Not a type label and not a capability score.
+      additionalProperties: false
+      required:
+        - axisKey
+        - lowPoleLabel
+        - highPoleLabel
+        - orientationBp
+        - leaningLabel
+        - truthClass
+        - sourceRefs
+      properties:
+        axisKey:
+          type: string
+          enum: [social, information, decision, closure]
+        lowPoleLabel:
+          type: string
+          minLength: 1
+          maxLength: 20
+        highPoleLabel:
+          type: string
+          minLength: 1
+          maxLength: 20
+        orientationBp:
+          type: integer
+          minimum: -10000
+          maximum: 10000
+        leaningLabel:
+          type: string
+          minLength: 1
+          maxLength: 20
+        truthClass:
+          $ref: '#/components/schemas/TruthClass'
+        sourceRefs:
+          $ref: '#/components/schemas/ArchiveSourceRefs'
+    TraitLabel:
+      type: object
+      additionalProperties: false
+      required: [label, truthClass, sourceRefs]
+      properties:
+        label:
+          type: string
+          minLength: 1
+          maxLength: 80
+        truthClass:
+          $ref: '#/components/schemas/TruthClass'
+        sourceRefs:
+          $ref: '#/components/schemas/ArchiveSourceRefs'
+    TraitBloodType:
+      type: object
+      description: Cultural self-description and social tone only; never a capability or market term.
+      additionalProperties: false
+      required: [bloodType, effectScopeLabel, truthClass, sourceRefs]
+      properties:
+        bloodType:
+          type: string
+          enum: [A, B, O, AB]
+        effectScopeLabel:
+          type: string
+          minLength: 1
+          maxLength: 120
+        truthClass:
+          $ref: '#/components/schemas/TruthClass'
+        sourceRefs:
+          $ref: '#/components/schemas/ArchiveSourceRefs'
+    TraitSelfDescription:
+      type: object
+      description: How he describes himself, from his sealed self-narrative memory; not a quote.
+      additionalProperties: false
+      required: [label, memoryRef, truthClass, sourceRefs]
+      properties:
+        label:
+          type: string
+          minLength: 1
+          maxLength: 200
+        memoryRef:
+          $ref: '#/components/schemas/Uuid'
+        truthClass:
+          $ref: '#/components/schemas/TruthClass'
+        sourceRefs:
+          $ref: '#/components/schemas/ArchiveSourceRefs'
+    TraitHabit:
+      type: object
+      additionalProperties: false
+      required: [label, evidenceSessions, truthClass, sourceRefs]
+      properties:
+        label:
+          type: string
+          minLength: 1
+          maxLength: 120
+        evidenceSessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArchiveSessionPointer'
+        truthClass:
+          $ref: '#/components/schemas/TruthClass'
+        sourceRefs:
+          $ref: '#/components/schemas/ArchiveSourceRefs'
+    BiasKind:
+      type: string
+      description: A fallible pattern detected from sealed state and history.
+      enum:
+        - fomo_chase
+        - confirmation_bias
+        - sunk_cost_escalation
+        - rationalization_switch
+        - blame_shift
+    BiasOccurrence:
+      type: object
+      description: >-
+        One sealed occurrence of a pattern, beside the sessions that
+        evidence it. Listed once per occurrence; no count, total or score
+        is attached.
+      additionalProperties: false
+      required:
+        - biasKind
+        - biasLabel
+        - sessionDate
+        - journalEntryRef
+        - evidenceSessions
+        - truthClass
+        - sourceRefs
+      properties:
+        biasKind:
+          $ref: '#/components/schemas/BiasKind'
+        biasLabel:
+          type: string
+          minLength: 1
+          maxLength: 80
+        sessionDate:
+          type: string
+          format: date
+        journalEntryRef:
+          oneOf:
+            - $ref: '#/components/schemas/Uuid'
+            - type: 'null'
+        evidenceSessions:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/ArchiveSessionPointer'
+        truthClass:
+          $ref: '#/components/schemas/TruthClass'
+        sourceRefs:
+          $ref: '#/components/schemas/ArchiveSourceRefs'
+    BiasCounterExample:
+      type: object
+      description: A session where a pattern he had shown did not happen.
+      additionalProperties: false
+      required:
+        - biasKind
+        - sessionDate
+        - journalEntryRef
+        - observedLabel
+        - truthClass
+        - sourceRefs
+      properties:
+        biasKind:
+          $ref: '#/components/schemas/BiasKind'
+        sessionDate:
+          type: string
+          format: date
+        journalEntryRef:
+          oneOf:
+            - $ref: '#/components/schemas/Uuid'
+            - type: 'null'
+        observedLabel:
+          type: string
+          minLength: 1
+          maxLength: 120
+        truthClass:
+          $ref: '#/components/schemas/TruthClass'
+        sourceRefs:
+          $ref: '#/components/schemas/ArchiveSourceRefs'
+    TraitsArchiveProjection:
+      type: object
+      additionalProperties: false
+      required:
+        - projectionVersion
+        - sourceGlobalPosition
+        - serverNow
+        - dataState
+        - visibilityEpoch
+        - truthClasses
+        - sourceRevisionSet
+        - characterId
+        - appliedAudienceScope
+        - sectionKey
+        - asOf
+        - fourAxis
+        - coreNeed
+        - coreFear
+        - bloodType
+        - selfDescription
+        - habits
+        - biasOccurrences
+        - biasOccurrencesEmptyReason
+        - counterExamples
+        - counterExamplesEmptyReason
+      properties:
+        projectionVersion:
+          $ref: '#/components/schemas/Version'
+        sourceGlobalPosition:
+          $ref: '#/components/schemas/Version'
+        serverNow:
+          type: string
+          format: date-time
+        dataState:
+          $ref: '#/components/schemas/DataState'
+        visibilityEpoch:
+          $ref: '#/components/schemas/Version'
+        truthClasses:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/TruthClass'
+        sourceRevisionSet:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceRevisionRef'
+        characterId:
+          $ref: '#/components/schemas/Uuid'
+        appliedAudienceScope:
+          $ref: '#/components/schemas/AudienceScope'
+        sectionKey:
+          type: string
+          const: traits
+        asOf:
+          type: string
+          format: date-time
+        fourAxis:
+          type: array
+          minItems: 4
+          maxItems: 4
+          items:
+            $ref: '#/components/schemas/TraitAxis'
+        coreNeed:
+          $ref: '#/components/schemas/TraitLabel'
+        coreFear:
+          $ref: '#/components/schemas/TraitLabel'
+        bloodType:
+          $ref: '#/components/schemas/TraitBloodType'
+        selfDescription:
+          $ref: '#/components/schemas/TraitSelfDescription'
+        habits:
+          type: array
+          items:
+            $ref: '#/components/schemas/TraitHabit'
+        biasOccurrences:
+          type: array
+          items:
+            $ref: '#/components/schemas/BiasOccurrence'
+        biasOccurrencesEmptyReason:
+          oneOf:
+            - type: string
+              minLength: 1
+              maxLength: 200
+            - type: 'null'
+        counterExamples:
+          type: array
+          items:
+            $ref: '#/components/schemas/BiasCounterExample'
+        counterExamplesEmptyReason:
+          oneOf:
+            - type: string
+              minLength: 1
+              maxLength: 200
+            - type: 'null'
+    CharacterTraitsArchiveResponse:
+      oneOf:
+        - $ref: '#/components/schemas/TraitsArchiveProjection'
+        - $ref: '#/components/schemas/WithdrawnCharacterProjection'
+    MemoryReinterpretation:
+      type: object
+      description: A later sealed reading of the same memory, shown beside the original.
+      additionalProperties: false
+      required: [reinterpretedAt, note, truthClass, sourceRefs]
+      properties:
+        reinterpretedAt:
+          type: string
+          format: date-time
+        note:
+          type: string
+          minLength: 1
+          maxLength: 300
+        truthClass:
+          $ref: '#/components/schemas/TruthClass'
+        sourceRefs:
+          $ref: '#/components/schemas/ArchiveSourceRefs'
+    ArchiveMemory:
+      type: object
+      description: One sealed memory whose visibility allows the archive to show it.
+      additionalProperties: false
+      required:
+        - memoryRef
+        - memoryKind
+        - kindLabel
+        - formedAt
+        - sessionDate
+        - journalEntryRef
+        - formedBeforeFirstSession
+        - note
+        - involvedPeople
+        - emotionalValence
+        - confidenceBp
+        - visibility
+        - reinterpretations
+        - reinterpretationsEmptyReason
+        - truthClass
+        - sourceRefs
+      properties:
+        memoryRef:
+          $ref: '#/components/schemas/Uuid'
+        memoryKind:
+          type: string
+          enum: [episodic, belief, relationship, self_narrative]
+        kindLabel:
+          type: string
+          minLength: 1
+          maxLength: 20
+        formedAt:
+          type: string
+          format: date-time
+        sessionDate:
+          oneOf:
+            - type: string
+              format: date
+            - type: 'null'
+        journalEntryRef:
+          oneOf:
+            - $ref: '#/components/schemas/Uuid'
+            - type: 'null'
+        formedBeforeFirstSession:
+          type: boolean
+        note:
+          type: string
+          minLength: 1
+          maxLength: 300
+        involvedPeople:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArchivePersonLabel'
+        emotionalValence:
+          type: string
+          enum: [negative, neutral, positive]
+        confidenceBp:
+          type: integer
+          minimum: 0
+          maximum: 10000
+        visibility:
+          type: string
+          description: Never `canonical_restricted`; those memories are not listed at all.
+          enum: [subscriber_archive, public_edition]
+        reinterpretations:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemoryReinterpretation'
+        reinterpretationsEmptyReason:
+          oneOf:
+            - type: string
+              minLength: 1
+              maxLength: 200
+            - type: 'null'
+        truthClass:
+          $ref: '#/components/schemas/TruthClass'
+        sourceRefs:
+          $ref: '#/components/schemas/ArchiveSourceRefs'
+    MemoriesArchiveProjection:
+      type: object
+      additionalProperties: false
+      required:
+        - projectionVersion
+        - sourceGlobalPosition
+        - serverNow
+        - dataState
+        - visibilityEpoch
+        - truthClasses
+        - sourceRevisionSet
+        - characterId
+        - appliedAudienceScope
+        - sectionKey
+        - asOf
+        - memories
+        - memoriesEmptyReason
+      properties:
+        projectionVersion:
+          $ref: '#/components/schemas/Version'
+        sourceGlobalPosition:
+          $ref: '#/components/schemas/Version'
+        serverNow:
+          type: string
+          format: date-time
+        dataState:
+          $ref: '#/components/schemas/DataState'
+        visibilityEpoch:
+          $ref: '#/components/schemas/Version'
+        truthClasses:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/TruthClass'
+        sourceRevisionSet:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceRevisionRef'
+        characterId:
+          $ref: '#/components/schemas/Uuid'
+        appliedAudienceScope:
+          $ref: '#/components/schemas/AudienceScope'
+        sectionKey:
+          type: string
+          const: memories
+        asOf:
+          type: string
+          format: date-time
+        memories:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArchiveMemory'
+        memoriesEmptyReason:
+          oneOf:
+            - type: string
+              minLength: 1
+              maxLength: 200
+            - type: 'null'
+    CharacterMemoriesArchiveResponse:
+      oneOf:
+        - $ref: '#/components/schemas/MemoriesArchiveProjection'
+        - $ref: '#/components/schemas/WithdrawnCharacterProjection'
+    LifeIdentity:
+      type: object
+      description: A fictional adult resident. Nothing here identifies a real person.
+      additionalProperties: false
+      required:
+        - displayName
+        - ageYears
+        - occupationLabel
+        - birthDate
+        - birthRegionLabel
+        - adultFictionalResident
+        - truthClass
+        - sourceRefs
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 40
+        ageYears:
+          type: integer
+          minimum: 18
+          maximum: 130
+        occupationLabel:
+          type: string
+          minLength: 1
+          maxLength: 80
+        birthDate:
+          type: string
+          format: date
+        birthRegionLabel:
+          type: string
+          minLength: 1
+          maxLength: 80
+        adultFictionalResident:
+          type: boolean
+          const: true
+        truthClass:
+          $ref: '#/components/schemas/TruthClass'
+        sourceRefs:
+          $ref: '#/components/schemas/ArchiveSourceRefs'
+    LifeMilestone:
+      type: object
+      additionalProperties: false
+      required: [ageYears, label, memoryRef, truthClass, sourceRefs]
+      properties:
+        ageYears:
+          type: integer
+          minimum: 0
+          maximum: 130
+        label:
+          type: string
+          minLength: 1
+          maxLength: 200
+        memoryRef:
+          oneOf:
+            - $ref: '#/components/schemas/Uuid'
+            - type: 'null'
+        truthClass:
+          $ref: '#/components/schemas/TruthClass'
+        sourceRefs:
+          $ref: '#/components/schemas/ArchiveSourceRefs'
+    LifeOriginMemory:
+      type: object
+      additionalProperties: false
+      required: [memoryRef, note, formedAt, truthClass, sourceRefs]
+      properties:
+        memoryRef:
+          $ref: '#/components/schemas/Uuid'
+        note:
+          type: string
+          minLength: 1
+          maxLength: 300
+        formedAt:
+          type: string
+          format: date-time
+        truthClass:
+          $ref: '#/components/schemas/TruthClass'
+        sourceRefs:
+          $ref: '#/components/schemas/ArchiveSourceRefs'
+    LifeUnrecordedFacet:
+      type: object
+      description: A life facet the chassis never sealed. Listed, not written.
+      additionalProperties: false
+      required: [facetKey, reasonLabel, truthClass, sourceRefs]
+      properties:
+        facetKey:
+          type: string
+          enum: [family_structure, education, financial_responsibility]
+        reasonLabel:
+          type: string
+          minLength: 1
+          maxLength: 200
+        truthClass:
+          $ref: '#/components/schemas/TruthClass'
+        sourceRefs:
+          $ref: '#/components/schemas/ArchiveSourceRefs'
+    LifeChapterPointer:
+      type: object
+      description: One market session in the canonical timeline and its chapter, if published.
+      additionalProperties: false
+      required: [sessionDate, chapterState, journalEntryRef, truthClass, sourceRefs]
+      properties:
+        sessionDate:
+          type: string
+          format: date
+        chapterState:
+          type: string
+          enum: [published, in_session]
+        journalEntryRef:
+          oneOf:
+            - $ref: '#/components/schemas/Uuid'
+            - type: 'null'
+        truthClass:
+          $ref: '#/components/schemas/TruthClass'
+        sourceRefs:
+          $ref: '#/components/schemas/ArchiveSourceRefs'
+    LifeArchiveProjection:
+      type: object
+      additionalProperties: false
+      required:
+        - projectionVersion
+        - sourceGlobalPosition
+        - serverNow
+        - dataState
+        - visibilityEpoch
+        - truthClasses
+        - sourceRevisionSet
+        - characterId
+        - appliedAudienceScope
+        - sectionKey
+        - asOf
+        - identity
+        - milestones
+        - originMemories
+        - unrecordedFacets
+        - joinedWorldOn
+        - chapterTimeline
+      properties:
+        projectionVersion:
+          $ref: '#/components/schemas/Version'
+        sourceGlobalPosition:
+          $ref: '#/components/schemas/Version'
+        serverNow:
+          type: string
+          format: date-time
+        dataState:
+          $ref: '#/components/schemas/DataState'
+        visibilityEpoch:
+          $ref: '#/components/schemas/Version'
+        truthClasses:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/TruthClass'
+        sourceRevisionSet:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceRevisionRef'
+        characterId:
+          $ref: '#/components/schemas/Uuid'
+        appliedAudienceScope:
+          $ref: '#/components/schemas/AudienceScope'
+        sectionKey:
+          type: string
+          const: life
+        asOf:
+          type: string
+          format: date-time
+        identity:
+          $ref: '#/components/schemas/LifeIdentity'
+        milestones:
+          type: array
+          items:
+            $ref: '#/components/schemas/LifeMilestone'
+        originMemories:
+          type: array
+          items:
+            $ref: '#/components/schemas/LifeOriginMemory'
+        unrecordedFacets:
+          type: array
+          items:
+            $ref: '#/components/schemas/LifeUnrecordedFacet'
+        joinedWorldOn:
+          type: string
+          format: date
+        chapterTimeline:
+          type: array
+          items:
+            $ref: '#/components/schemas/LifeChapterPointer'
+    CharacterLifeArchiveResponse:
+      oneOf:
+        - $ref: '#/components/schemas/LifeArchiveProjection'
         - $ref: '#/components/schemas/WithdrawnCharacterProjection'
     WorldStreamEventEnvelope:
       type: object

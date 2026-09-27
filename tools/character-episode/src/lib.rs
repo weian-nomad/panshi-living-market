@@ -26,7 +26,7 @@ use panshi_character_domain::{
     character::{CommitmentRationale, DynamicState, FourAxisPreference},
     cognition::{
         ActionIntentRef, ActionKind as DomainActionKind, AppraisalRef, AppraisalSource,
-        AttentionRef, CognitiveEpisode, SpeechActOutcome,
+        AttentionRef, CandidateFact, CognitiveEpisode, SealInputRequest, SpeechActOutcome,
     },
     fallback::{
         FALLBACK_POLICY_REVISION, SealFallbackUtteranceRequest, deterministic_appraisal_fallback,
@@ -52,6 +52,7 @@ use panshi_protocol::{canonical_bytes, character, common::v2 as common_v2, portf
 use prost::Message;
 use sha2::{Digest as _, Sha256};
 
+pub mod correction;
 pub mod projection;
 pub mod public_api;
 pub mod slice;
@@ -278,9 +279,27 @@ pub fn golden_episode() -> GoldenEpisode {
     );
 
     // -- CognitionInputSealed --------------------------------------------------
+    // The episode enforces the three-way cutoff itself: the character's world
+    // time at seal is the seal instant, and the one candidate fact is the one
+    // `FactBecameVisible` above made available.
     let input_digest = payload_digest(b"v5-golden-cognition-input/v1");
     episode
-        .seal_input(0, input_digest)
+        .bind_manifest(market.manifest_id)
+        .expect("fixed episode sequence: manifest bound before seal");
+    episode
+        .seal_input(
+            0,
+            &SealInputRequest {
+                manifest_id: market.manifest_id,
+                candidate_facts: &[CandidateFact {
+                    fact_revision_id: market.fact_revision_id,
+                    available_at_unix_micros: fact_visible.available_at_unix_micros,
+                }],
+                character_world_time_unix_micros: 16_000,
+                sealed_at_unix_micros: 16_000,
+                input_digest,
+            },
+        )
         .expect("fixed episode sequence: Opened -> InputSealed");
     let cognition_input_sealed = character::v1::CognitionInputSealedV1 {
         cognitive_episode_id: ids.cognitive_episode_id.to_vec(),
@@ -499,6 +518,10 @@ pub fn golden_episode() -> GoldenEpisode {
         world_time_unix_micros: 18_500,
         source_state_digest: payload_digest(b"v5-golden-source-state").to_vec(),
         behavior_policy_revision: "behavior-policy/v1".to_owned(),
+        // Unset on purpose: the golden speech act attributes no outcome, and
+        // an unset message field encodes to zero bytes, so the frozen parity
+        // payload is unchanged.
+        outcome_attribution: None,
     };
     push_event(
         &mut events,
