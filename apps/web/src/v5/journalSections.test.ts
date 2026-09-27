@@ -17,6 +17,25 @@ function minimalEntry(overrides: Partial<LifeJournalEntry> = {}): LifeJournalEnt
   return {
     entryId: "3f6f8b6e-8f3c-4a67-9d6d-0f3f7f1f2a11",
     chapterDate: "2026-03-03",
+    // 契約必填（public-v2.yaml `LifeJournalEntry`）；九段 mapper 不讀這幾個欄位。
+    entryVisibility: "PUBLIC",
+    narrativeState: "composed",
+    narrativeSegments: [],
+    evidenceCard: {
+      action: {
+        kind: "NO_ACTION",
+        label: "沒有下單",
+        truthClass: "simulated_narrative",
+        sourceRefs: [{ kind: "character_seed", eventType: null, globalPosition: null, refId: "test-seed" }],
+      },
+      paperOutcome: null,
+      paperOutcomeNullReason: "測試：這一天沒有紙上後果。",
+      quotedUtterances: [],
+      memoryRefs: [],
+      relationshipRefs: [],
+    },
+    relationshipConsequence: null,
+    relationshipConsequenceNullReason: "測試：這一天沒有關係訊號。",
     sceneSummary: "他在開盤後又打開了同一家公司的資料。",
     knownAtTheTimeSummary: "他當時看過昨天的公告附註與早盤那段上漲。",
     actionSummary: "他建立了一筆紙上部位，數量與價格記在模擬紀錄。",

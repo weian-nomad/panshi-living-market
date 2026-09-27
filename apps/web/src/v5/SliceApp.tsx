@@ -2,7 +2,8 @@
 //
 // 這個外殼負責三件事，其餘全部交給各層畫面：
 // 1. 路由：`/world`、`/people/:id`、`/people/:id/journal`、`/people/:id/archive`、
-//    `/people/:id/archive/paper`（experience-spec §12.1 的 W01、C01–C04）。
+//    `/people/:id/archive/{paper|relations|chart|traits|memories|life}`
+//   （experience-spec §12.1 的 W01、C01–C04，以及 §9.1 深層檔案的其餘五節）。
 // 2. 資料狀態的真相：loading／空／過期／held／退出／離線／錯誤／不可見。
 //    任何一種都不補值，一律落在 `FAIL_CLOSED_NOTE`。
 // 3. 元件狀態矩陣：skip link、焦點管理、aria-live 播報、reduced motion、窄寬版。
@@ -10,49 +11,98 @@
 // 導覽刻意只有「公共世界」一項：
 // experience-spec §3.1「績效、持股與交易沒有全站入口，只能從某一位人物進入」，
 // §3.2「人生誌底部才出現 `打開完整人生檔案`」。深層檔案與模擬紀錄因此沒有全站
-// 連結，只能沿著 世界 → 近景 → 人生誌 → 檔案索引 → 模擬紀錄 一路走進去
+// 連結，只能從某一位人物走進去：世界 → 近景 → 人生誌 → 檔案索引 → 各節；
+// 近景另有一個直接到他自己模擬紀錄的「持股與理由」入口（世界 →（1）近景 →（2）
+// 模擬紀錄），那仍然是從一個人進去，不是全站入口
 //（深連結仍然有效，那是 §3.3 要求的分享行為，不是站內入口）。
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type Ref } from "react";
 
 import type {
   ArchiveSectionKey,
   CharacterArchiveIndexResponse,
+  CharacterChartArchiveResponse,
   CharacterCloseUpResponse,
+  CharacterLifeArchiveResponse,
   CharacterLifeJournalResponse,
+  CharacterMemoriesArchiveResponse,
   CharacterPaperArchiveResponse,
-  DataState,
+  CharacterRelationsArchiveResponse,
+  CharacterTraitsArchiveResponse,
   TruthClass,
   WorldSnapshot,
 } from "../api/generated-v2/types.gen";
 import "./tokens.css";
 import { ArchiveIndexScreen } from "./ArchiveIndexScreen";
+import { ArchiveSectionScreen } from "./ArchiveSectionScreen";
 import { CloseUpScreen } from "./CloseUpScreen";
 import { LifeJournalScreen } from "./LifeJournalScreen";
 import { PaperArchiveScreen } from "./PaperArchiveScreen";
 import { WorldScreen } from "./WorldScreen";
 import {
   fetchArchiveIndex,
+  fetchChartArchive,
   fetchCloseUp,
+  fetchLifeArchive,
   fetchLifeJournal,
+  fetchMemoriesArchive,
   fetchPaperArchive,
+  fetchRelationsArchive,
+  fetchTraitsArchive,
   fetchWorld,
+  isValidProjection,
   type ApiResult,
+  type ProjectionKind,
   type UnavailableReason,
 } from "./apiClient";
-import { characterIdOf, parsePath, routeLabel, routeToPath, type Route } from "./router";
+import { lastKnownCache, type LastKnownCache } from "./lastKnownCache";
+import { chapterAnchorId } from "./journalRevisions";
+import {
+  archiveSectionRoute,
+  characterIdOf,
+  parsePath,
+  routeLabel,
+  routeToPath,
+  type Route,
+} from "./router";
+import {
+  CorrectedBanner,
+  DATA_STATE_LABEL,
+  EMPTY_STATE_COPY,
+  FAIL_CLOSED_NOTE,
+  HeldPanel,
+  LoadingPanel,
+  NotFoundPanel,
+  OfflineCachedBanner,
+  OfflinePanel,
+  PAPER_CORRECTIONS_ANCHOR,
+  ReadFailurePanel,
+  STATE_HEADING_ID,
+  StaleBanner,
+  UNAVAILABLE_LABEL,
+  UnavailablePanel,
+  WithdrawnPanel,
+  type EmptyReason,
+} from "./statePanels";
 
-type SliceData =
+export type SliceData =
   | { kind: "world"; data: WorldSnapshot }
   | { kind: "closeUp"; data: CharacterCloseUpResponse }
   | { kind: "journal"; data: CharacterLifeJournalResponse }
   | { kind: "archive"; data: CharacterArchiveIndexResponse }
-  | { kind: "archivePaper"; data: CharacterPaperArchiveResponse };
+  | { kind: "archivePaper"; data: CharacterPaperArchiveResponse }
+  | { kind: "archiveRelations"; data: CharacterRelationsArchiveResponse }
+  | { kind: "archiveChart"; data: CharacterChartArchiveResponse }
+  | { kind: "archiveTraits"; data: CharacterTraitsArchiveResponse }
+  | { kind: "archiveMemories"; data: CharacterMemoriesArchiveResponse }
+  | { kind: "archiveLife"; data: CharacterLifeArchiveResponse };
 
-type Loadable =
+export type Loadable =
   | { phase: "idle" }
   | { phase: "loading" }
   | { phase: "ready"; value: SliceData }
+  /** 取不到最新投影（離線或傳輸失敗），改顯示這個路由上次成功載入的版本。 */
+  | { phase: "offline"; value: SliceData }
   | { phase: "unavailable"; reasonCode: UnavailableReason; httpStatus: number }
   | { phase: "error" };
 
@@ -63,30 +113,6 @@ const TRUTH_CLASS_LABEL: Readonly<Record<TruthClass, string>> = {
   symbolic_interpretation: "象徵解讀",
   simulated_narrative: "模擬敘事",
 };
-
-const DATA_STATE_LABEL: Readonly<Record<DataState, string>> = {
-  READY: "資料已就緒",
-  STALE: "資料已過期，顯示的是上一次通過封存的版本",
-  HELD: "這頁的內容正在人工覆核中，暫不顯示",
-  CORRECTED: "這頁有更正紀錄",
-  WITHDRAWN: "這名居民已退出世界，只保留退出說明",
-};
-
-const UNAVAILABLE_LABEL: Readonly<Record<UnavailableReason, string>> = {
-  UNKNOWN_RESOURCE: "這個資源還沒有發布",
-  VISIBILITY_HELD: "這頁的可見性正在覆核中",
-  WITHDRAWN: "這名居民已退出世界",
-  RIGHTS_REVOKED: "這頁引用的來源授權已收回",
-  PROJECTION_LAGGING: "投影落後於事件流，暫不顯示",
-  CANONICAL_RESTRICTED: "這份資料不對外開放",
-  MALFORMED_CURSOR: "翻頁位置無效",
-  UNRECOGNIZED_RESPONSE: "回應格式無法辨識",
-  MALFORMED_PAYLOAD: "回應不是合法的 JSON",
-  INCOMPLETE_PROJECTION: "回應缺少契約必填欄位",
-};
-
-// The slice never fills a gap with a guess; every failure lands on this line.
-const FAIL_CLOSED_NOTE = "資料未到，這裡不補值。";
 
 const STYLES = `
 .v5-shell {
@@ -126,6 +152,8 @@ const STYLES = `
 .v5-panel h2 { font-size: 15px; margin: 0 0 6px; font-weight: 500; }
 .v5-panel p { margin: 0 0 4px; }
 .v5-meta { color: var(--copper-500); font-size: 13px; }
+.v5-corrections { margin: 6px 0 4px; padding-inline-start: 1.1rem; }
+.v5-corrections li { margin: 0 0 2px; overflow-wrap: anywhere; }
 .v5-truth { display: flex; flex-wrap: wrap; gap: 6px; padding: 0; margin: 8px 0 0; list-style: none; }
 .v5-truth li {
   border: 1px solid var(--rule-paper);
@@ -179,8 +207,14 @@ const STYLES = `
 }
 `;
 
+/** 初次 render 不得假設有 `window`（node 端渲染測試、預渲染）。沒有就先當成世界。 */
 function currentRoute(): Route {
+  if (typeof window === "undefined") return { kind: "world" };
   return parsePath(window.location.pathname);
+}
+
+function initialLoadable(route: Route): Loadable {
+  return route.kind === "notFound" ? { phase: "idle" } : { phase: "loading" };
 }
 
 function useReducedMotion(): boolean {
@@ -216,41 +250,69 @@ function useOnline(): boolean {
   return online;
 }
 
-async function loadRoute(route: Route, signal: AbortSignal): Promise<Loadable | null> {
-  const wrap = <T,>(result: ApiResult<T>, toData: (data: T) => SliceData): Loadable => {
-    if (result.status === "ready") return { phase: "ready", value: toData(result.data) };
+function toSliceData(kind: ProjectionKind, data: unknown): SliceData {
+  // `data` 已經過 `isValidProjection(kind, …)` 或 apiClient 的同一道契約檢查。
+  return { kind, data } as SliceData;
+}
+
+/**
+ * 讀一個路由的投影。
+ *
+ * - 成功：把這份公開投影記進 last-known 快取（只有公開投影，沒有使用者資料）。
+ * - 傳輸失敗（離線、DNS、連線中斷）：若這個路由有上次成功載入、而且**仍通過契約
+ *   驗證**的版本，回 `offline` 讓外殼顯示它；否則回 `error`。
+ * - `unavailable`（held、withdrawn、授權收回…）是伺服器明確說「不可見」，
+ *   **不得**用快取蓋過去，否則已撤下的內容會從快取復活。
+ */
+export async function loadRoute(
+  route: Route,
+  signal: AbortSignal,
+  cache: LastKnownCache = lastKnownCache,
+): Promise<Loadable | null> {
+  if (route.kind === "notFound") {
+    // Nothing to request: an unknown address is not a missing projection.
+    return null;
+  }
+
+  const kind: ProjectionKind = route.kind;
+  const path = routeToPath(route);
+
+  const wrap = <T,>(result: ApiResult<T>): Loadable => {
+    if (result.status === "ready") {
+      cache.remember(path, result.data);
+      return { phase: "ready", value: toSliceData(kind, result.data) };
+    }
     if (result.status === "unavailable") {
       return { phase: "unavailable", reasonCode: result.reasonCode, httpStatus: result.httpStatus };
+    }
+    const cached = cache.recall(path);
+    if (cached !== null && isValidProjection(kind, cached)) {
+      return { phase: "offline", value: toSliceData(kind, cached) };
     }
     return { phase: "error" };
   };
 
   switch (route.kind) {
     case "world":
-      return wrap(await fetchWorld(signal), (data) => ({ kind: "world", data }));
+      return wrap(await fetchWorld(signal));
     case "closeUp":
-      return wrap(await fetchCloseUp(route.characterId, signal), (data) => ({
-        kind: "closeUp",
-        data,
-      }));
+      return wrap(await fetchCloseUp(route.characterId, signal));
     case "journal":
-      return wrap(await fetchLifeJournal(route.characterId, signal), (data) => ({
-        kind: "journal",
-        data,
-      }));
+      return wrap(await fetchLifeJournal(route.characterId, signal));
     case "archive":
-      return wrap(await fetchArchiveIndex(route.characterId, signal), (data) => ({
-        kind: "archive",
-        data,
-      }));
+      return wrap(await fetchArchiveIndex(route.characterId, signal));
     case "archivePaper":
-      return wrap(await fetchPaperArchive(route.characterId, signal), (data) => ({
-        kind: "archivePaper",
-        data,
-      }));
-    case "notFound":
-      // Nothing to request: an unknown address is not a missing projection.
-      return null;
+      return wrap(await fetchPaperArchive(route.characterId, signal));
+    case "archiveRelations":
+      return wrap(await fetchRelationsArchive(route.characterId, signal));
+    case "archiveChart":
+      return wrap(await fetchChartArchive(route.characterId, signal));
+    case "archiveTraits":
+      return wrap(await fetchTraitsArchive(route.characterId, signal));
+    case "archiveMemories":
+      return wrap(await fetchMemoriesArchive(route.characterId, signal));
+    case "archiveLife":
+      return wrap(await fetchLifeArchive(route.characterId, signal));
   }
 }
 
@@ -295,6 +357,26 @@ function humanHookOf(value: SliceData): string | null {
       const position = data.positions[0];
       return position ? position.consequenceSummary : null;
     }
+    case "archiveRelations": {
+      const data = value.data;
+      if (data.dataState === "WITHDRAWN" || data.dataState === "HELD") return null;
+      return data.acquaintances[0]?.relationNote ?? null;
+    }
+    case "archiveTraits": {
+      const data = value.data;
+      if (data.dataState === "WITHDRAWN" || data.dataState === "HELD") return null;
+      return data.selfDescription.label;
+    }
+    case "archiveMemories": {
+      const data = value.data;
+      if (data.dataState === "WITHDRAWN" || data.dataState === "HELD") return null;
+      return data.memories[0]?.note ?? null;
+    }
+    case "archiveChart":
+    case "archiveLife":
+      // 這兩節沒有一句「人的句子」可以放在第一屏：命盤的解讀不是他說的話，
+      // 生平的身分欄位是資料不是鉤子。不補一句。
+      return null;
   }
 }
 
@@ -306,21 +388,38 @@ type NavItem = { route: Route; label: string };
  */
 const NAV_ITEMS: readonly NavItem[] = [{ route: { kind: "world" }, label: "公共世界" }];
 
+export type Navigate = (next: Route, hash?: string) => void;
+
+function stateFocusKey(state: Loadable): string {
+  if (state.phase === "ready" || state.phase === "offline") {
+    return `${state.phase}:${state.value.data.dataState}`;
+  }
+  return state.phase;
+}
+
 export function SliceApp() {
   const [route, setRoute] = useState<Route>(() => currentRoute());
-  const [state, setState] = useState<Loadable>({ phase: "idle" });
+  const [state, setState] = useState<Loadable>(() => initialLoadable(route));
   const reducedMotion = useReducedMotion();
   const online = useOnline();
   const headingRef = useRef<HTMLHeadingElement | null>(null);
 
   useEffect(() => {
-    const onPopState = () => setRoute(currentRoute());
+    // 同一頁內的錨點跳轉（例如人生誌的「回到原話」）也會觸發 popstate；路徑沒變就
+    // 不換路由，否則整頁會重新載入、把讀者剛跳到的章節捲掉。
+    const onPopState = () =>
+      setRoute((previous) => {
+        const next = currentRoute();
+        return next.kind === previous.kind && routeToPath(next) === routeToPath(previous)
+          ? previous
+          : next;
+      });
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
-  const navigate = useCallback((next: Route) => {
-    window.history.pushState({}, "", routeToPath(next));
+  const navigate = useCallback<Navigate>((next, hash) => {
+    window.history.pushState({}, "", routeToPath(next) + (hash ?? ""));
     setRoute(next);
   }, []);
 
@@ -349,11 +448,48 @@ export function SliceApp() {
     headingRef.current?.focus();
   }, [route]);
 
+  // 切換到非 READY 的狀態時，把焦點移到狀態標題（播報另由 live region 負責）。
+  // 網址帶錨點（例如 `#paper-corrections`）時尊重錨點，不搶焦點。
+  const focusKey = stateFocusKey(state);
+  useEffect(() => {
+    if (focusKey === "idle" || focusKey === "loading" || focusKey === "ready:READY") return;
+    const hash = window.location.hash.slice(1);
+    if (hash.length > 0 && document.getElementById(hash) !== null) return;
+    document.getElementById(STATE_HEADING_ID)?.focus();
+  }, [focusKey]);
+
+  return (
+    <SliceView
+      route={route}
+      state={state}
+      online={online}
+      reducedMotion={reducedMotion}
+      navigate={navigate}
+      headingRef={headingRef}
+    />
+  );
+}
+
+export type SliceViewProps = {
+  route: Route;
+  state: Loadable;
+  online: boolean;
+  reducedMotion: boolean;
+  navigate: Navigate;
+  headingRef?: Ref<HTMLHeadingElement>;
+};
+
+/**
+ * 外殼的純呈現部分：沒有 effect、不碰 `window`，node 端可以直接
+ * `renderToStaticMarkup(<SliceView … />)` 檢查七種狀態。
+ */
+export function SliceView({ route, state, online, reducedMotion, navigate, headingRef }: SliceViewProps) {
   const characterId = characterIdOf(route);
   const items = useMemo(() => NAV_ITEMS, []);
 
   const heading = routeLabel(route);
   const announcement = describeState(heading, state, online);
+  const hasContent = state.phase === "ready" || state.phase === "offline";
 
   return (
     <div className="v5-shell">
@@ -398,54 +534,28 @@ export function SliceApp() {
           {announcement}
         </p>
 
-        {!online ? (
-          <section className="v5-panel" data-tone="warn">
-            <h2>離線</h2>
-            <p>目前沒有連線。世界仍在繼續，只是這台裝置看不到最新一筆。</p>
-            <p className="v5-meta">{FAIL_CLOSED_NOTE}</p>
-          </section>
-        ) : null}
+        {/* 沒有任何可顯示的版本時才用整塊離線面板；有上次版本時改用內容前的橫幅。 */}
+        {!online && !hasContent ? <OfflinePanel /> : null}
 
-        {route.kind === "notFound" ? (
-          <section className="v5-panel" data-tone="warn">
-            <h2>找不到這個頁面</h2>
-            <p className="v5-meta">
-              這個網址不屬於切片的五個公開位址。{FAIL_CLOSED_NOTE}
-            </p>
-          </section>
-        ) : null}
+        {route.kind === "notFound" ? <NotFoundPanel /> : null}
 
         {state.phase === "loading" ? (
-          <section className="v5-panel" aria-busy="true">
-            <h2 className={reducedMotion ? undefined : "v5-busy"}>載入中</h2>
-            <p className="v5-meta">正在讀取 {heading} 的投影。</p>
-          </section>
+          <LoadingPanel heading={heading} reducedMotion={reducedMotion} />
         ) : null}
 
-        {state.phase === "error" ? (
-          <section className="v5-panel" data-tone="warn">
-            <h2>讀取失敗</h2>
-            <p>連線中斷或請求被取消，沒有取得任何投影。</p>
-            <p className="v5-meta">{FAIL_CLOSED_NOTE}</p>
-          </section>
-        ) : null}
+        {state.phase === "error" ? <ReadFailurePanel /> : null}
 
         {state.phase === "unavailable" ? (
-          <section className="v5-panel" data-tone="warn">
-            <h2>這頁現在不可見</h2>
-            <p>{UNAVAILABLE_LABEL[state.reasonCode]}</p>
-            <p className="v5-meta">
-              HTTP {state.httpStatus}／reasonCode {state.reasonCode}。{FAIL_CLOSED_NOTE}
-            </p>
-          </section>
+          <UnavailablePanel reasonCode={state.reasonCode} httpStatus={state.httpStatus} />
         ) : null}
 
-        {state.phase === "ready" ? (
-          <>
-            <HumanHook value={state.value} />
-            <ReadyScreen value={state.value} characterId={characterId} navigate={navigate} />
-            <DataStatePanel value={state.value} />
-          </>
+        {hasContent ? (
+          <ProjectionView
+            value={state.value}
+            lastKnown={state.phase === "offline" || !online}
+            characterId={characterId}
+            navigate={navigate}
+          />
         ) : null}
       </main>
     </div>
@@ -453,10 +563,125 @@ export function SliceApp() {
 }
 
 /**
+ * 一份投影在頁面上的完整排列。順序是硬規則：
+ *
+ * 1. 離線橫幅（顯示的是上次載入的版本時）永遠最前面。
+ * 2. held／withdrawn 只有說明面板，**不渲染任何內容**（連鉤子句都沒有）。
+ * 3. 過期、更正橫幅排在第一個內容標題之前。
+ * 4. 然後才是鉤子句、畫面本體與資料身分／稽核區。
+ */
+function ProjectionView({
+  value,
+  lastKnown,
+  characterId,
+  navigate,
+}: {
+  value: SliceData;
+  lastKnown: boolean;
+  characterId: string | null;
+  navigate: Navigate;
+}) {
+  const { data } = value;
+  const dataTime = dataTimeOf(value);
+  const offlineBanner = lastKnown ? <OfflineCachedBanner dataTime={dataTime} /> : null;
+
+  if (data.dataState === "HELD") {
+    return (
+      <>
+        {offlineBanner}
+        <HeldPanel />
+      </>
+    );
+  }
+
+  if (data.dataState === "WITHDRAWN") {
+    return (
+      <>
+        {offlineBanner}
+        <WithdrawnPanel
+          tombstoneReasonLabel={"tombstoneReasonLabel" in data ? data.tombstoneReasonLabel : null}
+          truthClasses={data.truthClasses}
+        />
+      </>
+    );
+  }
+
+  return (
+    <>
+      {offlineBanner}
+      {data.dataState === "STALE" ? <StaleBanner dataTime={dataTime} /> : null}
+      {data.dataState === "CORRECTED" ? (
+        <CorrectionNotice value={value} characterId={characterId} navigate={navigate} />
+      ) : null}
+      <HumanHook value={value} />
+      <ReadyScreen value={value} characterId={characterId} navigate={navigate} />
+      <DataStatePanel value={value} />
+    </>
+  );
+}
+
+function CorrectionNotice({
+  value,
+  characterId,
+  navigate,
+}: {
+  value: SliceData;
+  characterId: string | null;
+  navigate: Navigate;
+}) {
+  if (value.kind === "archivePaper" && value.data.dataState !== "WITHDRAWN") {
+    return <CorrectedBanner scope="paper" revisions={value.data.dataRevisions} />;
+  }
+
+  const owner = characterId ?? ("characterId" in value.data ? value.data.characterId : null);
+  const paperRoute: Route | null = owner === null ? null : { kind: "archivePaper", characterId: owner };
+  return (
+    <CorrectedBanner
+      scope="other"
+      refs={value.data.sourceRevisionSet}
+      correctionsHref={
+        paperRoute === null ? null : `${routeToPath(paperRoute)}#${PAPER_CORRECTIONS_ANCHOR}`
+      }
+      onOpenCorrections={
+        paperRoute === null ? undefined : () => navigate(paperRoute, `#${PAPER_CORRECTIONS_ANCHOR}`)
+      }
+    />
+  );
+}
+
+/** 這份投影的資料時間：模擬紀錄用整份的 `asOf`，其餘用 `serverNow`。 */
+export function dataTimeOf(value: SliceData): string {
+  if (value.kind === "archivePaper" && value.data.dataState !== "WITHDRAWN") {
+    return value.data.asOf;
+  }
+  return value.data.serverNow;
+}
+
+/** 本來就是空的狀態；held／withdrawn 沒有內容，不算空。 */
+export function emptyReasonOf(value: SliceData): EmptyReason | null {
+  const { data } = value;
+  if (data.dataState === "HELD" || data.dataState === "WITHDRAWN") return null;
+  switch (value.kind) {
+    case "world":
+      return value.data.characterPositions.length === 0 ? "world_no_residents" : null;
+    case "journal":
+      return value.data.dataState !== "WITHDRAWN" && value.data.entries.length === 0
+        ? "journal_no_chapters"
+        : null;
+    case "archivePaper":
+      return value.data.dataState !== "WITHDRAWN" && value.data.positions.length === 0
+        ? "paper_no_positions"
+        : null;
+    default:
+      return null;
+  }
+}
+
+/**
  * 把已就緒的投影交給對應層的畫面。
  *
  * 退出（`WITHDRAWN`）與 held 都不進畫面元件：那兩種狀態沒有可畫的內容，
- * 只有一句說明，由 `DataStatePanel` 負責。
+ * 只有一句說明，由 `ProjectionView` 換成 `HeldPanel`／`WithdrawnPanel`。
  */
 function ReadyScreen({
   value,
@@ -465,7 +690,7 @@ function ReadyScreen({
 }: {
   value: SliceData;
   characterId: string | null;
-  navigate: (route: Route) => void;
+  navigate: Navigate;
 }) {
   if (value.data.dataState === "WITHDRAWN" || value.data.dataState === "HELD") return null;
 
@@ -488,6 +713,9 @@ function ReadyScreen({
             navigate({ kind: "journal", characterId: closeUp.characterId })
           }
           onBackToWorld={() => navigate({ kind: "world" })}
+          // 「持股與理由」：從這個人直接到他的模擬紀錄（世界 →（1）近景 →（2）模擬紀錄）。
+          paperHref={routeToPath({ kind: "archivePaper", characterId: closeUp.characterId })}
+          onOpenPaper={() => navigate({ kind: "archivePaper", characterId: closeUp.characterId })}
         />
       );
     }
@@ -511,11 +739,9 @@ function ReadyScreen({
       return (
         <ArchiveIndexScreen
           index={index}
-          onOpenSection={(sectionKey: ArchiveSectionKey) => {
-            // 本切片只有「模擬紀錄」有真頁；其餘五節在索引上就沒有可點的入口。
-            if (sectionKey !== "paper") return;
-            navigate({ kind: "archivePaper", characterId: index.characterId });
-          }}
+          onOpenSection={(sectionKey: ArchiveSectionKey) =>
+            navigate(archiveSectionRoute(sectionKey, index.characterId))
+          }
           onBackToJournal={() => navigate({ kind: "journal", characterId: index.characterId })}
         />
       );
@@ -533,6 +759,25 @@ function ReadyScreen({
               characterId: characterId ?? archive.characterId,
             })
           }
+        />
+      );
+    }
+
+    case "archiveRelations":
+    case "archiveChart":
+    case "archiveTraits":
+    case "archiveMemories":
+    case "archiveLife": {
+      const section = value.data;
+      if (section.dataState === "WITHDRAWN") return null;
+      const owner = characterId ?? section.characterId;
+      const journalRoute: Route = { kind: "journal", characterId: owner };
+      return (
+        <ArchiveSectionScreen
+          section={section}
+          journalPath={routeToPath(journalRoute)}
+          onOpenChapter={(chapterDate) => navigate(journalRoute, `#${chapterAnchorId(chapterDate)}`)}
+          onBackToArchiveIndex={() => navigate({ kind: "archive", characterId: owner })}
         />
       );
     }
@@ -556,17 +801,10 @@ function HumanHook({ value }: { value: SliceData }) {
  */
 function DataStatePanel({ value }: { value: SliceData }) {
   const { data } = value;
-  const held = data.dataState === "HELD";
-  const withdrawn = data.dataState === "WITHDRAWN";
   const ready = data.dataState === "READY";
-  const tone = ready ? undefined : "warn";
-
+  // 非 READY 的狀態標題已經在內容之前的橫幅裡，這裡只留資料身分與稽核資訊。
   return (
-    <section className="v5-panel" data-tone={tone}>
-      {ready ? null : <h2>{DATA_STATE_LABEL[data.dataState]}</h2>}
-
-      {held || withdrawn ? <p className="v5-meta">{FAIL_CLOSED_NOTE}</p> : null}
-
+    <section className="v5-panel" data-tone={ready ? undefined : "warn"}>
       <ul className="v5-truth" aria-label="本頁事實類別">
         {truthClassesOf(value).map((truthClass) => (
           <li key={truthClass}>{TRUTH_CLASS_LABEL[truthClass]}</li>
@@ -575,7 +813,7 @@ function DataStatePanel({ value }: { value: SliceData }) {
 
       <details className="v5-audit">
         <summary>資料稽核資訊</summary>
-        {ready ? <p className="v5-meta">{DATA_STATE_LABEL.READY}</p> : null}
+        <p className="v5-meta">{DATA_STATE_LABEL[data.dataState]}</p>
         <p className="v5-meta">
           投影版本 {data.projectionVersion}／可見性紀元 {data.visibilityEpoch}／伺服器時間{" "}
           {data.serverNow}
@@ -589,7 +827,22 @@ function DataStatePanel({ value }: { value: SliceData }) {
   );
 }
 
-function describeState(heading: string, state: Loadable, online: boolean): string {
+/** 一份投影的狀態句（不含頁名），外殼的 live region 用它播報。 */
+function projectionStatusText(value: SliceData): string {
+  const dataState = value.data.dataState;
+  const label = DATA_STATE_LABEL[dataState];
+  if (dataState === "STALE") return `${label}（資料時間 ${dataTimeOf(value)}）。`;
+  if (dataState === "HELD") return `${label}。${FAIL_CLOSED_NOTE}`;
+  if (dataState === "WITHDRAWN") return `${label}。`;
+  const empty = emptyReasonOf(value);
+  return empty === null ? `${label}。` : `${label}；${EMPTY_STATE_COPY[empty].title}。`;
+}
+
+export function describeState(heading: string, state: Loadable, online: boolean): string {
+  if (state.phase === "offline" || (!online && state.phase === "ready")) {
+    const offline = `離線中，顯示你上次載入的版本（截至 ${dataTimeOf(state.value)}）。`;
+    return `${heading}：${offline}${projectionStatusText(state.value)}`;
+  }
   if (!online) return `${heading}：離線，沒有取得投影。`;
   switch (state.phase) {
     case "idle":
@@ -597,7 +850,7 @@ function describeState(heading: string, state: Loadable, online: boolean): strin
     case "loading":
       return `${heading}：載入中。`;
     case "ready":
-      return `${heading}：${DATA_STATE_LABEL[state.value.data.dataState]}。`;
+      return `${heading}：${projectionStatusText(state.value)}`;
     case "unavailable":
       return `${heading}：${UNAVAILABLE_LABEL[state.reasonCode]}。`;
     case "error":

@@ -3,12 +3,27 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   characterPath,
   fetchArchiveIndex,
+  fetchChartArchive,
   fetchCloseUp,
+  fetchLifeArchive,
   fetchLifeJournal,
+  fetchMemoriesArchive,
   fetchPaperArchive,
+  fetchRelationsArchive,
+  fetchTraitsArchive,
   fetchWorld,
+  isValidProjection,
   worldPath,
+  type ApiResult,
 } from "./apiClient";
+import {
+  SLICE_CHARACTER_ID,
+  sliceChart,
+  sliceLife,
+  sliceMemories,
+  sliceRelations,
+  sliceTraits,
+} from "./testing/sliceFixtures";
 
 const CHARACTER_ID = "1f0c2a5e-6a2d-4d1b-9a3f-0c9d2f5b7e41";
 
@@ -51,6 +66,7 @@ const journalPage = {
   characterId: CHARACTER_ID,
   appliedAudienceScope: "public_current",
   entries: [],
+  heldEntries: [],
   nextCursor: null,
 };
 
@@ -247,4 +263,150 @@ describe("v5 public api client", () => {
     expect(await fetchWorld(controller.signal)).toEqual({ status: "error" });
     expect(spy.mock.calls[0]?.[1]?.signal).toBe(controller.signal);
   });
+});
+
+// ---------------------------------------------------------------------------
+// 深層檔案其餘五節的 fail-closed validator：用切片產生器輸出的真 fixture。
+// ---------------------------------------------------------------------------
+
+type JsonRecord = Record<string, unknown>;
+
+/** 深拷貝後交給 `mutate` 動手腳，原 fixture 不被污染。 */
+function mutated<T>(value: T, mutate: (copy: JsonRecord) => void): JsonRecord {
+  const copy = JSON.parse(JSON.stringify(value)) as JsonRecord;
+  mutate(copy);
+  return copy;
+}
+
+function firstOf(record: JsonRecord, key: string): JsonRecord {
+  const list = record[key];
+  if (!Array.isArray(list) || list.length === 0) throw new Error(`fixture has no ${key}`);
+  return list[0] as JsonRecord;
+}
+
+type SectionCase = {
+  key: "relations" | "chart" | "traits" | "memories" | "life";
+  kind: "archiveRelations" | "archiveChart" | "archiveTraits" | "archiveMemories" | "archiveLife";
+  fixture: () => unknown;
+  fetch: (characterId: string) => Promise<ApiResult<unknown>>;
+  /** 拿掉一個 item 層級的必填欄位（truthClass／sourceRefs／內容字串）。 */
+  breakItem: (copy: JsonRecord) => void;
+  /** 清空一個清單卻不附原因（或反過來）。 */
+  breakEmptyReason: (copy: JsonRecord) => void;
+};
+
+const SECTION_CASES: readonly SectionCase[] = [
+  {
+    key: "relations",
+    kind: "archiveRelations",
+    fixture: sliceRelations,
+    fetch: fetchRelationsArchive,
+    breakItem: (copy) => {
+      delete firstOf(firstOf(copy, "acquaintances"), "observedInteractions")["truthClass"];
+    },
+    breakEmptyReason: (copy) => {
+      copy["acquaintances"] = [];
+      copy["acquaintancesEmptyReason"] = null;
+    },
+  },
+  {
+    key: "chart",
+    kind: "archiveChart",
+    fixture: sliceChart,
+    fetch: fetchChartArchive,
+    breakItem: (copy) => {
+      firstOf(firstOf(copy, "motifs"), "invocations")["sourceRefs"] = [];
+    },
+    breakEmptyReason: (copy) => {
+      copy["placementsEmptyReason"] = null;
+    },
+  },
+  {
+    key: "traits",
+    kind: "archiveTraits",
+    fixture: sliceTraits,
+    fetch: fetchTraitsArchive,
+    breakItem: (copy) => {
+      delete firstOf(copy, "biasOccurrences")["biasLabel"];
+    },
+    breakEmptyReason: (copy) => {
+      copy["counterExamplesEmptyReason"] = "明明有反例卻附了空清單原因";
+    },
+  },
+  {
+    key: "memories",
+    kind: "archiveMemories",
+    fixture: sliceMemories,
+    fetch: fetchMemoriesArchive,
+    breakItem: (copy) => {
+      firstOf(copy, "memories")["truthClass"] = "gossip";
+    },
+    breakEmptyReason: (copy) => {
+      firstOf(copy, "memories")["reinterpretationsEmptyReason"] = null;
+    },
+  },
+  {
+    key: "life",
+    kind: "archiveLife",
+    fixture: sliceLife,
+    fetch: fetchLifeArchive,
+    breakItem: (copy) => {
+      (copy["identity"] as JsonRecord)["adultFictionalResident"] = false;
+    },
+    breakEmptyReason: (copy) => {
+      delete copy["joinedWorldOn"];
+    },
+  },
+];
+
+describe("深層檔案五節的 fail-closed validator", () => {
+  for (const testCase of SECTION_CASES) {
+    it(`[archive:${testCase.key}] 真 fixture 通過契約檢查，打的是 /archive/${testCase.key}`, async () => {
+      const fixture = testCase.fixture();
+      const spy = stubFetch(async () => jsonResponse(fixture));
+      const result = await testCase.fetch(SLICE_CHARACTER_ID);
+      expect(result).toEqual({ status: "ready", data: fixture });
+      expect(spy.mock.calls[0]?.[0]).toBe(
+        `/api/v2/characters/${SLICE_CHARACTER_ID}/archive/${testCase.key}`,
+      );
+      expect(isValidProjection(testCase.kind, fixture)).toBe(true);
+    });
+
+    it(`[archive:${testCase.key}] 缺頂層必填欄位、item 缺身分或內容、空清單原因不一致都是 INCOMPLETE_PROJECTION`, async () => {
+      const fixture = testCase.fixture();
+      const broken = [
+        mutated(fixture, (copy) => {
+          delete copy["asOf"];
+        }),
+        mutated(fixture, (copy) => {
+          copy["sectionKey"] = testCase.key === "life" ? "chart" : "life";
+        }),
+        mutated(fixture, (copy) => {
+          copy["truthClasses"] = [];
+        }),
+        mutated(fixture, testCase.breakItem),
+        mutated(fixture, testCase.breakEmptyReason),
+      ];
+      for (const body of broken) {
+        expect(isValidProjection(testCase.kind, body)).toBe(false);
+        stubFetch(async () => jsonResponse(body));
+        expect(await testCase.fetch(SLICE_CHARACTER_ID)).toEqual({
+          status: "unavailable",
+          reasonCode: "INCOMPLETE_PROJECTION",
+          httpStatus: 200,
+        });
+      }
+    });
+
+    it(`[archive:${testCase.key}] 退出後的 tombstone 不要求五節欄位`, async () => {
+      const tombstone = {
+        ...envelope,
+        characterId: SLICE_CHARACTER_ID,
+        dataState: "WITHDRAWN",
+        tombstoneReasonLabel: "這名居民依設定離開了這座城市。",
+      };
+      stubFetch(async () => jsonResponse(tombstone));
+      expect((await testCase.fetch(SLICE_CHARACTER_ID)).status).toBe("ready");
+    });
+  }
 });

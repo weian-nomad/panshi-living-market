@@ -170,6 +170,31 @@
 }
 
 /* ------------------------------------------------------------------------ */
+/* 角色原話（Utterance.tsx）                                                  */
+/* 引號由 CSS 產生，不寫進文字節點：元素文字＝artifact 原文，可以直接重算    */
+/* sha256。原話一律用紙本字面。                                               */
+/* ------------------------------------------------------------------------ */
+
+.panshi-utterance {
+  quotes: "「" "」" "『" "』";
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.panshi-utterance::before {
+  content: open-quote;
+}
+
+.panshi-utterance::after {
+  content: close-quote;
+}
+
+.panshi-utterance-absent {
+  font-size: 0.85rem;
+  color: var(--copper-500);
+}
+
+/* ------------------------------------------------------------------------ */
 /* Reduced motion（visual-system.md「Reduced motion」）                       */
 /* 取消縮放、景深、視差、漂移與星軌；只留淡入、描邊與狀態文字。               */
 /* 時間上限由 motion.ts 的 REDUCED_FADE_MAX_MS 注入 --panshi-reduced-fade。   */

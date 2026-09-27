@@ -126,8 +126,9 @@ function quoteBody(utterance: CharacterUtterance | undefined): JournalSectionBod
 
   return {
     kind: "quote",
-    // 逐字：只去掉外圍空白，不改寫、不截斷、不補標點。
-    text,
+    // 逐字：artifact 的 canonical bytes 原封不動，不 trim、不改寫、不截斷、不補標點
+    //（`Utterance.tsx` 會把這串文字放進元素並附 digest，任何人都能重算核對）。
+    text: utterance.canonicalTextUtf8,
     utteranceArtifactId: utterance.utteranceArtifactId,
     canonicalTextSha256: digest,
     digestPrefix: digest.slice(0, DIGEST_PREFIX_LENGTH),

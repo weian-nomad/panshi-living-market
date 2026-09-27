@@ -46,7 +46,7 @@ export type SceneLayer = 'foreground' | 'midground' | 'background';
 export type DetailTier = 'high_detail' | 'edge_silhouette';
 
 /**
- * The fixed set of deep-archive sections from `docs/v5/system-design.md` §11.3. Only `paper` has a dedicated endpoint in this phase; the others are indexed for entitlement/as-of/visibility but have no route in this file yet.
+ * The fixed set of deep-archive sections from `docs/v5/system-design.md` §11.3, in index order. Every section has its own dedicated endpoint at `/api/v2/characters/{id}/archive/{key}` (`paper`, `relations`, `chart`, `traits`, `memories`, `life`), and each section item there carries a `truthClass` and non-empty `sourceRefs`.
  */
 export type ArchiveSectionKey = 'paper' | 'relations' | 'chart' | 'traits' | 'memories' | 'life';
 
@@ -322,13 +322,31 @@ export type LifeJournalArchiveRefs = {
 };
 
 /**
- * One canonical day-chapter, ordered per experience-spec §8.1.
+ * One published canonical day-chapter, ordered per experience-spec §8.1. A withheld chapter is never an entry here: it is listed in `LifeJournalPage.heldEntries` as a `HeldLifeJournalEntry`.
  */
 export type LifeJournalEntry = {
     entryId: Uuid;
     chapterDate: string;
     /**
-     * 今天他怎麼了
+     * Always `PUBLIC` on an entry; `HELD` chapters carry only a label and live in `heldEntries`.
+     */
+    entryVisibility: 'PUBLIC';
+    /**
+     * `composed` when the chapter's sealed narrative is available; `evidence_card_only` when it is not — then `narrativeSegments` is empty, `sceneSummary` is a fixed system label, and `evidenceCard` still carries the whole consequence.
+     */
+    narrativeState: 'composed' | 'evidence_card_only';
+    narrativeSegments: Array<NarrativeSegment>;
+    evidenceCard: EvidenceCard;
+    /**
+     * The chapter's readable relationship consequence, from its `RelationshipSignalObserved`; `null` when there is none.
+     */
+    relationshipConsequence: RelationshipSignalView | null;
+    /**
+     * Non-null exactly when `relationshipConsequence` is `null`.
+     */
+    relationshipConsequenceNullReason: string | null;
+    /**
+     * "今天他怎麼了" — the chapter's sealed observable segment; with `narrativeState: evidence_card_only`, a fixed system label that makes no claim about him.
      */
     sceneSummary: string;
     /**
@@ -371,6 +389,10 @@ export type LifeJournalPage = {
     characterId: Uuid;
     appliedAudienceScope: AudienceScope;
     entries: Array<LifeJournalEntry>;
+    /**
+     * Settled chapters withheld from this page, each with only an id, a date and a reason label. Merge with `entries` by `chapterDate` to render the canonical order.
+     */
+    heldEntries: Array<HeldLifeJournalEntry>;
     nextCursor: string | null;
 };
 
@@ -389,7 +411,7 @@ export type ArchiveSectionIndexEntry = {
     asOf: string;
     visibilityEpoch: Version;
     /**
-     * Same-origin path for this section's dedicated endpoint, or `null` if it has none in this phase (see `ArchiveSectionKey`).
+     * Same-origin path for this section's dedicated endpoint. Every `ArchiveSectionKey` has one, so this is non-null for all six sections; `null` stays in the type only so a future section key can be indexed before its page exists without a breaking change.
      */
     sectionPath: string | null;
 };
@@ -482,6 +504,14 @@ export type PaperPositionPublic = {
     concurrentClaim?: CharacterUtterance;
     currentNarration?: CharacterNarrationOrSummary;
     influencedByCharacterRefs: Array<Uuid>;
+    /**
+     * `influencedByCharacterRefs`, resolved to display names and relationship labels with their evidence. Empty when no sealed event shows anyone shaping this position's decisions — a character's own public claim that someone else was the reason is his claim, shown in `/archive/relations`, never here.
+     */
+    influencedBy: Array<InfluenceRef>;
+    /**
+     * Non-null exactly when `influencedBy` is empty.
+     */
+    influencedByEmptyReason: string | null;
     consequenceSummary: string;
 };
 
@@ -560,6 +590,519 @@ export type PaperArchiveProjection = {
 };
 
 export type CharacterPaperArchiveResponse = PaperArchiveProjection | WithdrawnCharacterProjection;
+
+/**
+ * Where one archive or evidence item came from: a canonical event (by event type and 1-based global log position — the coordinate `sourceGlobalPosition` counts in — plus the stream it was appended to), or a named anchor in the frozen character chassis for a value no canonical event carries. `eventType` and `globalPosition` are non-null exactly when `kind` is `canonical_event`.
+ */
+export type ArchiveSourceRef = {
+    kind: 'canonical_event' | 'character_seed';
+    eventType: string | null;
+    globalPosition: Version | null;
+    refId: string;
+};
+
+/**
+ * Never empty — an item with no source is not rendered.
+ */
+export type ArchiveSourceRefs = Array<ArchiveSourceRef>;
+
+/**
+ * One market session and the journal entry it published, if any.
+ */
+export type ArchiveSessionPointer = {
+    sessionDate: string;
+    journalEntryRef: Uuid | null;
+};
+
+/**
+ * A counterpart resolved to a display name and relationship label. The raw canonical acquaintance key is never shown to a viewer.
+ */
+export type ArchivePersonLabel = {
+    displayName: string;
+    relationLabel: string;
+};
+
+/**
+ * One segment of the chapter's sealed `StoryChapterComposed`, in sealed order. A claim segment carries the artifact's canonical bytes verbatim; a narrator segment is never first person.
+ */
+export type NarrativeSegment = {
+    segmentId: string;
+    kind: 'narrator';
+    truthClass: TruthClass;
+    text: string;
+    sourceRefs: ArchiveSourceRefs;
+} | {
+    segmentId: string;
+    kind: 'character_claim';
+    truthClass: TruthClass;
+    utteranceArtifactId: Uuid;
+    canonicalTextSha256: Digest;
+    canonicalTextUtf8: string;
+    sourceRefs: ArchiveSourceRefs;
+};
+
+/**
+ * The committed intent, as a fixed label. It says what, never why.
+ */
+export type EvidenceAction = {
+    kind: PaperActionKind;
+    label: string;
+    truthClass: TruthClass;
+    sourceRefs: ArchiveSourceRefs;
+};
+
+/**
+ * The session's paper consequence, from canonical ledger events only: filled quantity and sealed price with the manifest that sealed it (`null` on a day without a fill), the realized P&L the session booked, the unrealized P&L its last mark left (`null` without a mark), and fees and taxes, all integer minor units or `*Fixed6`. Equal to the same trading day's figures in `/archive/paper`.
+ */
+export type EvidencePaperOutcome = {
+    positionRef: Uuid;
+    filledQuantityFixed6: number | null;
+    sealedPriceMinorUnitsFixed6: number | null;
+    fillPriceSourceRef: Digest | null;
+    markPriceSourceRef: Digest | null;
+    realizedPnlMinorUnits: number;
+    unrealizedPnlMinorUnits: number | null;
+    feeMinorUnits: number;
+    taxMinorUnits: number;
+    asOf: string;
+    truthClass: TruthClass;
+    sourceRefs: ArchiveSourceRefs;
+};
+
+/**
+ * A sealed `UtteranceArtifactV1`, verbatim, with its surface.
+ */
+export type EvidenceQuotedUtterance = {
+    utteranceArtifactId: Uuid;
+    canonicalTextSha256: Digest;
+    canonicalTextUtf8: string;
+    surface: 'public_claim' | 'self_acknowledged';
+    truthClass: TruthClass;
+    sourceRefs: ArchiveSourceRefs;
+};
+
+export type EvidenceMemoryRef = {
+    memoryRef: Uuid;
+    truthClass: TruthClass;
+    sourceRefs: ArchiveSourceRefs;
+};
+
+export type EvidenceRelationshipRef = {
+    dyadRef: Uuid;
+    relationshipSignalRef: Uuid;
+    truthClass: TruthClass;
+    sourceRefs: ArchiveSourceRefs;
+};
+
+/**
+ * The typed consequence card of one chapter, built from canonical events only, so it survives the chapter's rich narrative failing (`docs/v5/system-design.md` "Story generation failure"). It carries no first-person sentence: its only prose is a fixed action label and fixed empty-reason labels.
+ */
+export type EvidenceCard = {
+    action: EvidenceAction;
+    paperOutcome: EvidencePaperOutcome | null;
+    /**
+     * Non-null exactly when `paperOutcome` is `null`.
+     */
+    paperOutcomeNullReason: string | null;
+    quotedUtterances: Array<EvidenceQuotedUtterance>;
+    memoryRefs: Array<EvidenceMemoryRef>;
+    relationshipRefs: Array<EvidenceRelationshipRef>;
+};
+
+/**
+ * One `RelationshipSignalObserved`, readable: the counterpart by display name and relationship label, the signal kind, the sealed claim that caused it (verbatim from its artifact, same hash), and the memory it left.
+ */
+export type RelationshipSignalView = {
+    dyadRef: Uuid;
+    relationshipSignalRef: Uuid;
+    displayName: string;
+    relationLabel: string;
+    signalKind: 'public_outcome_attribution';
+    summary: string;
+    utterance: CharacterUtterance;
+    consequenceMemoryRefs: Array<Uuid>;
+    observedAt: string;
+    sessionDate: string;
+    journalEntryRef: Uuid | null;
+    truthClass: TruthClass;
+    sourceRefs: ArchiveSourceRefs;
+};
+
+/**
+ * A settled chapter withheld from the public journal. It carries its identity, its date and one reason label — no content field exists on this shape, so nothing about the day can leak through it.
+ */
+export type HeldLifeJournalEntry = {
+    entryId: Uuid;
+    chapterDate: string;
+    entryVisibility: 'HELD';
+    heldReasonLabel: string;
+};
+
+/**
+ * A character or acquaintance a sealed event shows shaping this position's decisions, resolved to a display name and relationship label.
+ */
+export type InfluenceRef = {
+    displayName: string;
+    relationLabel: string;
+    influenceSummary: string;
+    truthClass: TruthClass;
+    sourceRefs: ArchiveSourceRefs;
+};
+
+/**
+ * One-way and observable — what he did around her, never her words.
+ */
+export type ArchiveObservedInteraction = {
+    sessionDate: string;
+    journalEntryRef: Uuid | null;
+    observableAction: string;
+    direction: 'one_way_observed';
+    truthClass: TruthClass;
+    sourceRefs: ArchiveSourceRefs;
+};
+
+/**
+ * The counterpart's side of the relationship. `unknown` whenever she has no sealed utterance — the archive never writes a line or a reaction for her (experience-spec §9.5: 尚未說出口的部分只能標未知).
+ */
+export type ArchiveCounterpartAccount = {
+    state: 'unknown';
+    reasonLabel: string;
+    truthClass: TruthClass;
+    sourceRefs: ArchiveSourceRefs;
+};
+
+export type ArchiveAcquaintance = {
+    dyadRef: Uuid;
+    displayName: string;
+    relationLabel: string;
+    relationNote: string;
+    truthClass: TruthClass;
+    sourceRefs: ArchiveSourceRefs;
+    observedInteractions: Array<ArchiveObservedInteraction>;
+    observedInteractionsEmptyReason: string | null;
+    relationshipSignals: Array<RelationshipSignalView>;
+    relationshipSignalsEmptyReason: string | null;
+    counterpartAccount: ArchiveCounterpartAccount;
+};
+
+export type RelationsArchiveProjection = {
+    projectionVersion: Version;
+    sourceGlobalPosition: Version;
+    serverNow: string;
+    dataState: DataState;
+    visibilityEpoch: Version;
+    truthClasses: Array<TruthClass>;
+    sourceRevisionSet: Array<SourceRevisionRef>;
+    characterId: Uuid;
+    appliedAudienceScope: AudienceScope;
+    sectionKey: 'relations';
+    asOf: string;
+    acquaintances: Array<ArchiveAcquaintance>;
+    acquaintancesEmptyReason: string | null;
+};
+
+export type CharacterRelationsArchiveResponse = RelationsArchiveProjection | WithdrawnCharacterProjection;
+
+/**
+ * The fictional birth identity. Never a real person's data.
+ */
+export type ArchiveBirthIdentity = {
+    birthDate: string;
+    birthRegionLabel: string;
+    truthClass: TruthClass;
+    sourceRefs: ArchiveSourceRefs;
+};
+
+/**
+ * One placement computed from the sealed birth data.
+ */
+export type ChartPlacement = {
+    placementLabel: string;
+    signLabel: string;
+    truthClass: 'symbolic_interpretation';
+    sourceRefs: ArchiveSourceRefs;
+};
+
+/**
+ * A chapter whose sealed symbolic segment invoked the motif, quoted as sealed.
+ */
+export type ChartMotifInvocation = {
+    sessionDate: string;
+    journalEntryRef: Uuid | null;
+    readingText: string;
+    truthClass: 'symbolic_interpretation';
+    sourceRefs: ArchiveSourceRefs;
+};
+
+/**
+ * A symbolic theme. It reaches behaviour only through attention and interpretation; `effectScopeLabel` says so in words, and no field links it to a price, a direction or paper performance.
+ */
+export type ChartMotif = {
+    motifLabel: string;
+    effectScopeLabel: string;
+    activeWindow: {
+        activeFrom: string;
+        activeUntil: string;
+    };
+    activeSessions: Array<ArchiveSessionPointer>;
+    invocations: Array<ChartMotifInvocation>;
+    invocationsEmptyReason: string | null;
+    truthClass: 'symbolic_interpretation';
+    sourceRefs: ArchiveSourceRefs;
+};
+
+export type ChartArchiveProjection = {
+    projectionVersion: Version;
+    sourceGlobalPosition: Version;
+    serverNow: string;
+    dataState: DataState;
+    visibilityEpoch: Version;
+    truthClasses: Array<TruthClass>;
+    sourceRevisionSet: Array<SourceRevisionRef>;
+    characterId: Uuid;
+    appliedAudienceScope: AudienceScope;
+    sectionKey: 'chart';
+    asOf: string;
+    birthIdentity: ArchiveBirthIdentity;
+    placements: Array<ChartPlacement>;
+    placementsEmptyReason: string | null;
+    motifs: Array<ChartMotif>;
+};
+
+export type CharacterChartArchiveResponse = ChartArchiveProjection | WithdrawnCharacterProjection;
+
+/**
+ * One continuous four-axis preference on the canonical `-10000..=10000` basis-point axis; negative leans to the low pole. Not a type label and not a capability score.
+ */
+export type TraitAxis = {
+    axisKey: 'social' | 'information' | 'decision' | 'closure';
+    lowPoleLabel: string;
+    highPoleLabel: string;
+    orientationBp: number;
+    leaningLabel: string;
+    truthClass: TruthClass;
+    sourceRefs: ArchiveSourceRefs;
+};
+
+export type TraitLabel = {
+    label: string;
+    truthClass: TruthClass;
+    sourceRefs: ArchiveSourceRefs;
+};
+
+/**
+ * Cultural self-description and social tone only; never a capability or market term.
+ */
+export type TraitBloodType = {
+    bloodType: 'A' | 'B' | 'O' | 'AB';
+    effectScopeLabel: string;
+    truthClass: TruthClass;
+    sourceRefs: ArchiveSourceRefs;
+};
+
+/**
+ * How he describes himself, from his sealed self-narrative memory; not a quote.
+ */
+export type TraitSelfDescription = {
+    label: string;
+    memoryRef: Uuid;
+    truthClass: TruthClass;
+    sourceRefs: ArchiveSourceRefs;
+};
+
+export type TraitHabit = {
+    label: string;
+    evidenceSessions: Array<ArchiveSessionPointer>;
+    truthClass: TruthClass;
+    sourceRefs: ArchiveSourceRefs;
+};
+
+/**
+ * A fallible pattern detected from sealed state and history.
+ */
+export type BiasKind = 'fomo_chase' | 'confirmation_bias' | 'sunk_cost_escalation' | 'rationalization_switch' | 'blame_shift';
+
+/**
+ * One sealed occurrence of a pattern, beside the sessions that evidence it. Listed once per occurrence; no count, total or score is attached.
+ */
+export type BiasOccurrence = {
+    biasKind: BiasKind;
+    biasLabel: string;
+    sessionDate: string;
+    journalEntryRef: Uuid | null;
+    evidenceSessions: Array<ArchiveSessionPointer>;
+    truthClass: TruthClass;
+    sourceRefs: ArchiveSourceRefs;
+};
+
+/**
+ * A session where a pattern he had shown did not happen.
+ */
+export type BiasCounterExample = {
+    biasKind: BiasKind;
+    sessionDate: string;
+    journalEntryRef: Uuid | null;
+    observedLabel: string;
+    truthClass: TruthClass;
+    sourceRefs: ArchiveSourceRefs;
+};
+
+export type TraitsArchiveProjection = {
+    projectionVersion: Version;
+    sourceGlobalPosition: Version;
+    serverNow: string;
+    dataState: DataState;
+    visibilityEpoch: Version;
+    truthClasses: Array<TruthClass>;
+    sourceRevisionSet: Array<SourceRevisionRef>;
+    characterId: Uuid;
+    appliedAudienceScope: AudienceScope;
+    sectionKey: 'traits';
+    asOf: string;
+    fourAxis: [
+        TraitAxis,
+        TraitAxis,
+        TraitAxis,
+        TraitAxis
+    ];
+    coreNeed: TraitLabel;
+    coreFear: TraitLabel;
+    bloodType: TraitBloodType;
+    selfDescription: TraitSelfDescription;
+    habits: Array<TraitHabit>;
+    biasOccurrences: Array<BiasOccurrence>;
+    biasOccurrencesEmptyReason: string | null;
+    counterExamples: Array<BiasCounterExample>;
+    counterExamplesEmptyReason: string | null;
+};
+
+export type CharacterTraitsArchiveResponse = TraitsArchiveProjection | WithdrawnCharacterProjection;
+
+/**
+ * A later sealed reading of the same memory, shown beside the original.
+ */
+export type MemoryReinterpretation = {
+    reinterpretedAt: string;
+    note: string;
+    truthClass: TruthClass;
+    sourceRefs: ArchiveSourceRefs;
+};
+
+/**
+ * One sealed memory whose visibility allows the archive to show it.
+ */
+export type ArchiveMemory = {
+    memoryRef: Uuid;
+    memoryKind: 'episodic' | 'belief' | 'relationship' | 'self_narrative';
+    kindLabel: string;
+    formedAt: string;
+    sessionDate: string | null;
+    journalEntryRef: Uuid | null;
+    formedBeforeFirstSession: boolean;
+    note: string;
+    involvedPeople: Array<ArchivePersonLabel>;
+    emotionalValence: 'negative' | 'neutral' | 'positive';
+    confidenceBp: number;
+    /**
+     * Never `canonical_restricted`; those memories are not listed at all.
+     */
+    visibility: 'subscriber_archive' | 'public_edition';
+    reinterpretations: Array<MemoryReinterpretation>;
+    reinterpretationsEmptyReason: string | null;
+    truthClass: TruthClass;
+    sourceRefs: ArchiveSourceRefs;
+};
+
+export type MemoriesArchiveProjection = {
+    projectionVersion: Version;
+    sourceGlobalPosition: Version;
+    serverNow: string;
+    dataState: DataState;
+    visibilityEpoch: Version;
+    truthClasses: Array<TruthClass>;
+    sourceRevisionSet: Array<SourceRevisionRef>;
+    characterId: Uuid;
+    appliedAudienceScope: AudienceScope;
+    sectionKey: 'memories';
+    asOf: string;
+    memories: Array<ArchiveMemory>;
+    memoriesEmptyReason: string | null;
+};
+
+export type CharacterMemoriesArchiveResponse = MemoriesArchiveProjection | WithdrawnCharacterProjection;
+
+/**
+ * A fictional adult resident. Nothing here identifies a real person.
+ */
+export type LifeIdentity = {
+    displayName: string;
+    ageYears: number;
+    occupationLabel: string;
+    birthDate: string;
+    birthRegionLabel: string;
+    adultFictionalResident: true;
+    truthClass: TruthClass;
+    sourceRefs: ArchiveSourceRefs;
+};
+
+export type LifeMilestone = {
+    ageYears: number;
+    label: string;
+    memoryRef: Uuid | null;
+    truthClass: TruthClass;
+    sourceRefs: ArchiveSourceRefs;
+};
+
+export type LifeOriginMemory = {
+    memoryRef: Uuid;
+    note: string;
+    formedAt: string;
+    truthClass: TruthClass;
+    sourceRefs: ArchiveSourceRefs;
+};
+
+/**
+ * A life facet the chassis never sealed. Listed, not written.
+ */
+export type LifeUnrecordedFacet = {
+    facetKey: 'family_structure' | 'education' | 'financial_responsibility';
+    reasonLabel: string;
+    truthClass: TruthClass;
+    sourceRefs: ArchiveSourceRefs;
+};
+
+/**
+ * One market session in the canonical timeline and its chapter, if published.
+ */
+export type LifeChapterPointer = {
+    sessionDate: string;
+    chapterState: 'published' | 'in_session';
+    journalEntryRef: Uuid | null;
+    truthClass: TruthClass;
+    sourceRefs: ArchiveSourceRefs;
+};
+
+export type LifeArchiveProjection = {
+    projectionVersion: Version;
+    sourceGlobalPosition: Version;
+    serverNow: string;
+    dataState: DataState;
+    visibilityEpoch: Version;
+    truthClasses: Array<TruthClass>;
+    sourceRevisionSet: Array<SourceRevisionRef>;
+    characterId: Uuid;
+    appliedAudienceScope: AudienceScope;
+    sectionKey: 'life';
+    asOf: string;
+    identity: LifeIdentity;
+    milestones: Array<LifeMilestone>;
+    originMemories: Array<LifeOriginMemory>;
+    unrecordedFacets: Array<LifeUnrecordedFacet>;
+    joinedWorldOn: string;
+    chapterTimeline: Array<LifeChapterPointer>;
+};
+
+export type CharacterLifeArchiveResponse = LifeArchiveProjection | WithdrawnCharacterProjection;
 
 /**
  * The JSON shape carried in each SSE frame's `data:` field for `GET /events/v2/world`. This only signals "resource changed" — never authoritative content; clients must re-`GET` `resourceRef`.
@@ -725,6 +1268,141 @@ export type GetCharacterPaperArchiveResponses = {
 };
 
 export type GetCharacterPaperArchiveResponse = GetCharacterPaperArchiveResponses[keyof GetCharacterPaperArchiveResponses];
+
+export type GetCharacterRelationsArchiveData = {
+    body?: never;
+    path: {
+        id: Uuid;
+    };
+    query?: never;
+    url: '/api/v2/characters/{id}/archive/relations';
+};
+
+export type GetCharacterRelationsArchiveErrors = {
+    /**
+     * Unknown or inaccessible resource.
+     */
+    404: Problem;
+};
+
+export type GetCharacterRelationsArchiveError = GetCharacterRelationsArchiveErrors[keyof GetCharacterRelationsArchiveErrors];
+
+export type GetCharacterRelationsArchiveResponses = {
+    /**
+     * Relations section, or a tombstone projection if the character has been withdrawn.
+     */
+    200: CharacterRelationsArchiveResponse;
+};
+
+export type GetCharacterRelationsArchiveResponse = GetCharacterRelationsArchiveResponses[keyof GetCharacterRelationsArchiveResponses];
+
+export type GetCharacterChartArchiveData = {
+    body?: never;
+    path: {
+        id: Uuid;
+    };
+    query?: never;
+    url: '/api/v2/characters/{id}/archive/chart';
+};
+
+export type GetCharacterChartArchiveErrors = {
+    /**
+     * Unknown or inaccessible resource.
+     */
+    404: Problem;
+};
+
+export type GetCharacterChartArchiveError = GetCharacterChartArchiveErrors[keyof GetCharacterChartArchiveErrors];
+
+export type GetCharacterChartArchiveResponses = {
+    /**
+     * Chart section, or a tombstone projection if the character has been withdrawn.
+     */
+    200: CharacterChartArchiveResponse;
+};
+
+export type GetCharacterChartArchiveResponse = GetCharacterChartArchiveResponses[keyof GetCharacterChartArchiveResponses];
+
+export type GetCharacterTraitsArchiveData = {
+    body?: never;
+    path: {
+        id: Uuid;
+    };
+    query?: never;
+    url: '/api/v2/characters/{id}/archive/traits';
+};
+
+export type GetCharacterTraitsArchiveErrors = {
+    /**
+     * Unknown or inaccessible resource.
+     */
+    404: Problem;
+};
+
+export type GetCharacterTraitsArchiveError = GetCharacterTraitsArchiveErrors[keyof GetCharacterTraitsArchiveErrors];
+
+export type GetCharacterTraitsArchiveResponses = {
+    /**
+     * Traits section, or a tombstone projection if the character has been withdrawn.
+     */
+    200: CharacterTraitsArchiveResponse;
+};
+
+export type GetCharacterTraitsArchiveResponse = GetCharacterTraitsArchiveResponses[keyof GetCharacterTraitsArchiveResponses];
+
+export type GetCharacterMemoriesArchiveData = {
+    body?: never;
+    path: {
+        id: Uuid;
+    };
+    query?: never;
+    url: '/api/v2/characters/{id}/archive/memories';
+};
+
+export type GetCharacterMemoriesArchiveErrors = {
+    /**
+     * Unknown or inaccessible resource.
+     */
+    404: Problem;
+};
+
+export type GetCharacterMemoriesArchiveError = GetCharacterMemoriesArchiveErrors[keyof GetCharacterMemoriesArchiveErrors];
+
+export type GetCharacterMemoriesArchiveResponses = {
+    /**
+     * Memories section, or a tombstone projection if the character has been withdrawn.
+     */
+    200: CharacterMemoriesArchiveResponse;
+};
+
+export type GetCharacterMemoriesArchiveResponse = GetCharacterMemoriesArchiveResponses[keyof GetCharacterMemoriesArchiveResponses];
+
+export type GetCharacterLifeArchiveData = {
+    body?: never;
+    path: {
+        id: Uuid;
+    };
+    query?: never;
+    url: '/api/v2/characters/{id}/archive/life';
+};
+
+export type GetCharacterLifeArchiveErrors = {
+    /**
+     * Unknown or inaccessible resource.
+     */
+    404: Problem;
+};
+
+export type GetCharacterLifeArchiveError = GetCharacterLifeArchiveErrors[keyof GetCharacterLifeArchiveErrors];
+
+export type GetCharacterLifeArchiveResponses = {
+    /**
+     * Life section, or a tombstone projection if the character has been withdrawn.
+     */
+    200: CharacterLifeArchiveResponse;
+};
+
+export type GetCharacterLifeArchiveResponse = GetCharacterLifeArchiveResponses[keyof GetCharacterLifeArchiveResponses];
 
 export type StreamWorldEventsData = {
     body?: never;

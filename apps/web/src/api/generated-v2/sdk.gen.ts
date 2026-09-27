@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, ServerSentEventsResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetCharacterArchiveIndexData, GetCharacterArchiveIndexErrors, GetCharacterArchiveIndexResponses, GetCharacterCloseUpData, GetCharacterCloseUpErrors, GetCharacterCloseUpResponses, GetCharacterLifeJournalData, GetCharacterLifeJournalErrors, GetCharacterLifeJournalResponses, GetCharacterPaperArchiveData, GetCharacterPaperArchiveErrors, GetCharacterPaperArchiveResponses, GetWorldSnapshotData, GetWorldSnapshotErrors, GetWorldSnapshotResponses, StreamWorldEventsData, StreamWorldEventsErrors, StreamWorldEventsResponse, StreamWorldEventsResponses } from './types.gen';
+import type { GetCharacterArchiveIndexData, GetCharacterArchiveIndexErrors, GetCharacterArchiveIndexResponses, GetCharacterChartArchiveData, GetCharacterChartArchiveErrors, GetCharacterChartArchiveResponses, GetCharacterCloseUpData, GetCharacterCloseUpErrors, GetCharacterCloseUpResponses, GetCharacterLifeArchiveData, GetCharacterLifeArchiveErrors, GetCharacterLifeArchiveResponses, GetCharacterLifeJournalData, GetCharacterLifeJournalErrors, GetCharacterLifeJournalResponses, GetCharacterMemoriesArchiveData, GetCharacterMemoriesArchiveErrors, GetCharacterMemoriesArchiveResponses, GetCharacterPaperArchiveData, GetCharacterPaperArchiveErrors, GetCharacterPaperArchiveResponses, GetCharacterRelationsArchiveData, GetCharacterRelationsArchiveErrors, GetCharacterRelationsArchiveResponses, GetCharacterTraitsArchiveData, GetCharacterTraitsArchiveErrors, GetCharacterTraitsArchiveResponses, GetWorldSnapshotData, GetWorldSnapshotErrors, GetWorldSnapshotResponses, StreamWorldEventsData, StreamWorldEventsErrors, StreamWorldEventsResponse, StreamWorldEventsResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -54,7 +54,7 @@ export const getCharacterLifeJournal = <ThrowOnError extends boolean = false>(op
 /**
  * Get a character's deep-archive index
  *
- * Deep-archive index and per-section entitlement/as-of/visibility. Section payloads are never inlined here — each section's full content is served by its own dedicated endpoint (only `archive/paper` is built in this phase; see the top-level `info.description` for what is not yet built). See `docs/v5/experience-spec.md` §9.1.
+ * Deep-archive index and per-section entitlement/as-of/visibility. Section payloads are never inlined here — each section's full content is served by its own dedicated endpoint, and every section's `sectionPath` points at it. See `docs/v5/experience-spec.md` §9.1.
  */
 export const getCharacterArchiveIndex = <ThrowOnError extends boolean = false>(options: Options<GetCharacterArchiveIndexData, ThrowOnError>): RequestResult<GetCharacterArchiveIndexResponses, GetCharacterArchiveIndexErrors, ThrowOnError> => (options.client ?? client).get<GetCharacterArchiveIndexResponses, GetCharacterArchiveIndexErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -70,6 +70,61 @@ export const getCharacterArchiveIndex = <ThrowOnError extends boolean = false>(o
 export const getCharacterPaperArchive = <ThrowOnError extends boolean = false>(options: Options<GetCharacterPaperArchiveData, ThrowOnError>): RequestResult<GetCharacterPaperArchiveResponses, GetCharacterPaperArchiveErrors, ThrowOnError> => (options.client ?? client).get<GetCharacterPaperArchiveResponses, GetCharacterPaperArchiveErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v2/characters/{id}/archive/paper',
+    ...options
+});
+
+/**
+ * Get a character's relations archive section
+ *
+ * Acquaintance nodes by display name and relationship label (never a raw acquaintance key), his one-way observable interactions with each, the relationship signals his own sealed public claims left behind (quoting the claim's `UtteranceArtifactV1` verbatim), and an explicit `unknown` for the counterpart's side when she has no sealed utterance. No affection score. See `docs/v5/experience-spec.md` §9.5.
+ */
+export const getCharacterRelationsArchive = <ThrowOnError extends boolean = false>(options: Options<GetCharacterRelationsArchiveData, ThrowOnError>): RequestResult<GetCharacterRelationsArchiveResponses, GetCharacterRelationsArchiveErrors, ThrowOnError> => (options.client ?? client).get<GetCharacterRelationsArchiveResponses, GetCharacterRelationsArchiveErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v2/characters/{id}/archive/relations',
+    ...options
+});
+
+/**
+ * Get a character's natal-chart archive section
+ *
+ * The fictional birth identity, the sealed symbolic motif with its active window and the chapters whose sealed symbolic segment invoked it. Every motif item is `symbolic_interpretation` and states that it only affects attention and interpretation, never price or paper performance. Placements not computed from sealed birth data are a typed empty list with a reason. See `docs/v5/experience-spec.md` §9.6.
+ */
+export const getCharacterChartArchive = <ThrowOnError extends boolean = false>(options: Options<GetCharacterChartArchiveData, ThrowOnError>): RequestResult<GetCharacterChartArchiveResponses, GetCharacterChartArchiveErrors, ThrowOnError> => (options.client ?? client).get<GetCharacterChartArchiveResponses, GetCharacterChartArchiveErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v2/characters/{id}/archive/chart',
+    ...options
+});
+
+/**
+ * Get a character's traits-and-habits archive section
+ *
+ * Continuous four-axis preferences, core need and fear, blood type (social tone only), habits with the sessions that show them, and every fallible pattern listed once per sealed occurrence beside its evidence sessions, plus the sessions that contradict it. No score, total, count or ranking is carried. See `docs/v5/experience-spec.md` §9.7.
+ */
+export const getCharacterTraitsArchive = <ThrowOnError extends boolean = false>(options: Options<GetCharacterTraitsArchiveData, ThrowOnError>): RequestResult<GetCharacterTraitsArchiveResponses, GetCharacterTraitsArchiveErrors, ThrowOnError> => (options.client ?? client).get<GetCharacterTraitsArchiveResponses, GetCharacterTraitsArchiveErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v2/characters/{id}/archive/traits',
+    ...options
+});
+
+/**
+ * Get a character's memories archive section
+ *
+ * Sealed `MemoryFormed` records whose visibility is `subscriber_archive` or `public_edition`, each with its source events. `canonical_restricted` memories are never listed, not even as a count. See `docs/v5/experience-spec.md` §9.8.
+ */
+export const getCharacterMemoriesArchive = <ThrowOnError extends boolean = false>(options: Options<GetCharacterMemoriesArchiveData, ThrowOnError>): RequestResult<GetCharacterMemoriesArchiveResponses, GetCharacterMemoriesArchiveErrors, ThrowOnError> => (options.client ?? client).get<GetCharacterMemoriesArchiveResponses, GetCharacterMemoriesArchiveErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v2/characters/{id}/archive/memories',
+    ...options
+});
+
+/**
+ * Get a character's life archive section
+ *
+ * The fictional adult's identity and synthetic birthplace, fictional life milestones, the origin memories he arrived with, the life facets the chassis never sealed (listed as unrecorded, not written), and a pointer per market session into the canonical chapter timeline. See `docs/v5/experience-spec.md` §9.9.
+ */
+export const getCharacterLifeArchive = <ThrowOnError extends boolean = false>(options: Options<GetCharacterLifeArchiveData, ThrowOnError>): RequestResult<GetCharacterLifeArchiveResponses, GetCharacterLifeArchiveErrors, ThrowOnError> => (options.client ?? client).get<GetCharacterLifeArchiveResponses, GetCharacterLifeArchiveErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v2/characters/{id}/archive/life',
     ...options
 });
 

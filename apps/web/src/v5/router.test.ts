@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { characterIdOf, parsePath, routeToPath, type Route } from "./router";
+import {
+  archiveSectionKeyOf,
+  archiveSectionRoute,
+  characterIdOf,
+  parsePath,
+  routeLabel,
+  routeToPath,
+  type Route,
+} from "./router";
 
 const CHARACTER_ID = "1f0c2a5e-6a2d-4d1b-9a3f-0c9d2f5b7e41";
 
@@ -18,6 +26,26 @@ const roundTrippable: readonly { path: string; route: Route }[] = [
   {
     path: `/people/${CHARACTER_ID}/archive/paper`,
     route: { kind: "archivePaper", characterId: CHARACTER_ID },
+  },
+  {
+    path: `/people/${CHARACTER_ID}/archive/relations`,
+    route: { kind: "archiveRelations", characterId: CHARACTER_ID },
+  },
+  {
+    path: `/people/${CHARACTER_ID}/archive/chart`,
+    route: { kind: "archiveChart", characterId: CHARACTER_ID },
+  },
+  {
+    path: `/people/${CHARACTER_ID}/archive/traits`,
+    route: { kind: "archiveTraits", characterId: CHARACTER_ID },
+  },
+  {
+    path: `/people/${CHARACTER_ID}/archive/memories`,
+    route: { kind: "archiveMemories", characterId: CHARACTER_ID },
+  },
+  {
+    path: `/people/${CHARACTER_ID}/archive/life`,
+    route: { kind: "archiveLife", characterId: CHARACTER_ID },
   },
 ];
 
@@ -86,8 +114,10 @@ describe("v5 slice router", () => {
       "/people",
       "/people/",
       `/people/${CHARACTER_ID}/journals`,
-      `/people/${CHARACTER_ID}/archive/relations`,
+      `/people/${CHARACTER_ID}/archive/relation`,
+      `/people/${CHARACTER_ID}/archive/toString`,
       `/people/${CHARACTER_ID}/archive/paper/lots`,
+      `/people/${CHARACTER_ID}/archive/life/extra`,
       "/api/v2/world",
       "/people/%E0%A4%A",
     ];
@@ -100,5 +130,21 @@ describe("v5 slice router", () => {
     expect(characterIdOf({ kind: "world" })).toBeNull();
     expect(characterIdOf({ kind: "notFound" })).toBeNull();
     expect(characterIdOf({ kind: "archivePaper", characterId: CHARACTER_ID })).toBe(CHARACTER_ID);
+    expect(characterIdOf({ kind: "archiveLife", characterId: CHARACTER_ID })).toBe(CHARACTER_ID);
+  });
+
+  it("maps every archive section key to its own route and back", () => {
+    const keys = ["paper", "relations", "chart", "traits", "memories", "life"] as const;
+    const labels = new Set<string>();
+    for (const key of keys) {
+      const route = archiveSectionRoute(key, CHARACTER_ID);
+      expect(archiveSectionKeyOf(route)).toBe(key);
+      expect(routeToPath(route)).toBe(`/people/${CHARACTER_ID}/archive/${key}`);
+      labels.add(routeLabel(route));
+    }
+    // 每一節都有自己的頁名，不共用一個模糊標題。
+    expect(labels.size).toBe(keys.length);
+    expect(archiveSectionKeyOf({ kind: "archive", characterId: CHARACTER_ID })).toBeNull();
+    expect(archiveSectionKeyOf({ kind: "journal", characterId: CHARACTER_ID })).toBeNull();
   });
 });

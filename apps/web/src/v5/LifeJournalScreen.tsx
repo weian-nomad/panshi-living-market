@@ -10,11 +10,35 @@
 //   兩種字面不得混用（tokens.css）。
 //
 // 「打開完整人生檔案」只在**頁面最底部**出現（§3.2：深層檔案不是全站入口）。
+//
+// 單章的三種呈現（public-v2.yaml `LifeJournalEntry`／`HeldLifeJournalEntry`）：
+// - `composed`：九段 ＋（有改口時）「回到原話」連結與四欄並排比較。
+// - `evidence_card_only`：**只**渲染證據卡（動作、紙上後果數字、原話逐字），
+//   不渲染任何 narrative segment，也不渲染九段。
+// - `HELD`：只渲染 `heldReasonLabel`，這個形狀本來就沒有內容欄位。
+//
+// 每章都有錨點 `id="chapter-YYYY-MM-DD"`。改口旁的「回到原話」指向原話那一章的錨點，
+// 那一章同時有當時的逐字原話、「他其實知道什麼」與「他漏掉了什麼」：一次點擊就到。
+// 深層檔案各節用 `/people/{id}/journal#chapter-YYYY-MM-DD` 連回來。
 
-import type { LifeJournalEntry, LifeJournalPage, TruthClass } from "../api/generated-v2/types.gen";
+import { useEffect, type ReactNode } from "react";
+
+import type {
+  CharacterUtterance,
+  HeldLifeJournalEntry,
+  LifeJournalEntry,
+  LifeJournalPage,
+  TruthClass,
+} from "../api/generated-v2/types.gen";
+import { ClaimComparison } from "./ClaimComparison";
+import { EvidenceCardView, SignedMoney } from "./EvidenceCardView";
+import { ItemTruthTag } from "./ItemTruthTag";
 import { TruthTag } from "./TruthTag";
+import { Utterance } from "./Utterance";
 import { DATA_UNAVAILABLE_LABEL } from "./format";
+import { chapterAnchorId, claimRevisions, type ClaimRevision } from "./journalRevisions";
 import { journalSections, type JournalSectionBody } from "./journalSections";
+import { EmptyStatePanel } from "./statePanels";
 
 const STYLES = `
 .v5-journal { margin: 0 0 16px; }
@@ -41,6 +65,9 @@ const STYLES = `
 .v5-journal__attr { font-size: .72rem; color: var(--copper-500); }
 .v5-journal__absent { font-size: .85rem; color: var(--copper-500); }
 .v5-journal__figures { display: flex; flex-wrap: wrap; gap: .2rem 1.2rem; margin: 0 0 .2rem; }
+.v5-journal__back { margin: .15rem 0 .2rem; font-size: .85rem; }
+.v5-journal__back a { min-height: 44px; display: inline-flex; align-items: center; }
+.v5-journal__held { font-size: .9rem; }
 .v5-journal__foot { margin: 18px 0 0; display: flex; flex-wrap: wrap; gap: 10px; }
 .v5-journal__foot button {
   min-height: 44px;
@@ -68,7 +95,19 @@ const ABSENT_LABEL: Readonly<Record<"missing" | "unverifiable", string>> = {
   unverifiable: `${DATA_UNAVAILABLE_LABEL}：這句話無法核對，因此不顯示。`,
 };
 
-function SectionBody({ body }: { body: JournalSectionBody }) {
+/** 「回到原話」：同一頁的章節錨點，一次點擊（說明文字未經 copy-taste 審稿）。 */
+function BackToOriginal({ revision }: { revision: ClaimRevision }) {
+  const date = revision.original.chapterDate;
+  return (
+    <p className="v5-journal__back">
+      <a href={`#${chapterAnchorId(date)}`} data-nav="reply-to-original">
+        回到原話（{date}）
+      </a>
+    </p>
+  );
+}
+
+function SectionBody({ body, beside }: { body: JournalSectionBody; beside?: ReactNode }) {
   switch (body.kind) {
     case "absent":
       return <p className="v5-journal__absent panshi-paper">{ABSENT_LABEL[body.reason]}</p>;
@@ -80,10 +119,19 @@ function SectionBody({ body }: { body: JournalSectionBody }) {
     case "quote":
       return (
         <>
-          <p className="v5-journal__quote panshi-paper">「{body.text}」</p>
+          <p className="v5-journal__quote">
+            <Utterance
+              utterance={{
+                utteranceArtifactId: body.utteranceArtifactId,
+                canonicalTextSha256: body.canonicalTextSha256,
+                canonicalTextUtf8: body.text,
+              }}
+            />
+          </p>
           <p className="v5-journal__attr panshi-data">
             {body.utteranceArtifactId}／sha256 {body.digestPrefix}
           </p>
+          {beside}
         </>
       );
 
@@ -118,21 +166,193 @@ function SectionBody({ body }: { body: JournalSectionBody }) {
   }
 }
 
-function Chapter({ entry }: { entry: LifeJournalEntry }) {
-  const sections = journalSections(entry);
+/** 同一章裡這一句原話宣告的資料身分（證據卡或敘事的原話段）；找不到就是 `null`。 */
+function utteranceTruthClass(entry: LifeJournalEntry, artifactId: string): TruthClass | null {
+  const quoted = entry.evidenceCard?.quotedUtterances?.find(
+    (candidate) => candidate.utteranceArtifactId === artifactId,
+  );
+  if (quoted) return quoted.truthClass;
+  for (const segment of entry.narrativeSegments ?? []) {
+    if (segment.kind === "character_claim" && segment.utteranceArtifactId === artifactId) {
+      return segment.truthClass;
+    }
+  }
+  return null;
+}
+
+function QuotedWithTag({
+  entry,
+  utterance,
+  caption,
+  versionLabel,
+}: {
+  entry: LifeJournalEntry;
+  utterance: CharacterUtterance;
+  caption: string;
+  versionLabel: string;
+}) {
+  const truthClass = utteranceTruthClass(entry, utterance.utteranceArtifactId);
+  return (
+    <>
+      <p>
+        <Utterance utterance={utterance} />
+      </p>
+      <p className="v5-journal__attr panshi-data">{caption}</p>
+      {truthClass === null ? (
+        <p className="v5-journal__absent panshi-paper">
+          {DATA_UNAVAILABLE_LABEL}：這一章沒有宣告這句原話的資料身分，所以這裡不掛標籤。
+        </p>
+      ) : (
+        <ItemTruthTag truthClass={truthClass} asOfLabel={entry.chapterDate} versionLabel={versionLabel} />
+      )}
+    </>
+  );
+}
+
+/** 改口章節的四欄並排：原本理由｜現在說法｜紙上代價｜關係後果。 */
+function RevisionComparison({ revision, versionLabel }: { revision: ClaimRevision; versionLabel: string }) {
+  const { entry, original } = revision;
+  const outcome = entry.evidenceCard?.paperOutcome ?? null;
+  const relationship = entry.relationshipConsequence;
 
   return (
-    <article className="v5-journal__chapter" aria-label={`${entry.chapterDate} 的章節`}>
+    <ClaimComparison
+      title={`和 ${original.chapterDate} 的原話並排`}
+      columns={{
+        originalReason: (
+          <QuotedWithTag
+            entry={original}
+            utterance={revision.originalClaim}
+            caption={`${original.chapterDate} 當時的原話`}
+            versionLabel={versionLabel}
+          />
+        ),
+        currentClaim: (
+          <QuotedWithTag
+            entry={entry}
+            utterance={revision.revision}
+            caption={`${entry.chapterDate} 的說法`}
+            versionLabel={versionLabel}
+          />
+        ),
+        paperCost:
+          outcome === null ? (
+            <p className="panshi-paper">
+              {entry.evidenceCard?.paperOutcomeNullReason ?? DATA_UNAVAILABLE_LABEL}
+            </p>
+          ) : (
+            <>
+              <SignedMoney label="已實現損益" amountMinorUnits={outcome.realizedPnlMinorUnits} />
+              <SignedMoney label="未實現損益" amountMinorUnits={outcome.unrealizedPnlMinorUnits} />
+              <p className="v5-journal__attr panshi-data">資料截至 {outcome.asOf}</p>
+              <ItemTruthTag truthClass={outcome.truthClass} asOfLabel={outcome.asOf} versionLabel={versionLabel} />
+            </>
+          ),
+        relationship:
+          relationship === null || relationship === undefined ? (
+            <p className="panshi-paper">
+              {entry.relationshipConsequenceNullReason ?? DATA_UNAVAILABLE_LABEL}
+            </p>
+          ) : (
+            <>
+              <p className="panshi-paper">
+                {relationship.displayName}（{relationship.relationLabel}）
+              </p>
+              <p className="panshi-paper">{relationship.summary}</p>
+              <ItemTruthTag
+                truthClass={relationship.truthClass}
+                asOfLabel={relationship.observedAt}
+                versionLabel={versionLabel}
+              />
+            </>
+          ),
+      }}
+    />
+  );
+}
+
+function Chapter({
+  entry,
+  revision,
+  versionLabel,
+  serverNow,
+}: {
+  entry: LifeJournalEntry;
+  revision: ClaimRevision | undefined;
+  versionLabel: string;
+  serverNow: string;
+}) {
+  const anchor = chapterAnchorId(entry.chapterDate);
+
+  if (entry.narrativeState === "evidence_card_only") {
+    // 敘事沒有到：只剩證據卡。不渲染九段，也不渲染任何 narrative segment。
+    return (
+      <article
+        className="v5-journal__chapter"
+        id={anchor}
+        tabIndex={-1}
+        aria-label={`${entry.chapterDate} 的章節`}
+        data-narrative-state="evidence_card_only"
+      >
+        <h3 className="v5-journal__date panshi-data">{entry.chapterDate}</h3>
+        <EvidenceCardView card={entry.evidenceCard} versionLabel={versionLabel} asOfFallback={serverNow} />
+      </article>
+    );
+  }
+
+  const sections = journalSections(entry);
+  const revisionArtifactId = revision?.revision.utteranceArtifactId ?? null;
+
+  return (
+    <article
+      className="v5-journal__chapter"
+      id={anchor}
+      tabIndex={-1}
+      aria-label={`${entry.chapterDate} 的章節`}
+      data-narrative-state="composed"
+    >
       <h3 className="v5-journal__date panshi-data">{entry.chapterDate}</h3>
       {sections.map((section) => (
         <section className="v5-journal__section" key={`${entry.entryId}-${section.key}`}>
           <h4>{section.title}</h4>
-          <SectionBody body={section.body} />
+          <SectionBody
+            body={section.body}
+            beside={
+              revision !== undefined &&
+              section.body.kind === "quote" &&
+              section.body.utteranceArtifactId === revisionArtifactId ? (
+                <BackToOriginal revision={revision} />
+              ) : undefined
+            }
+          />
         </section>
       ))}
+      {revision === undefined ? null : (
+        <RevisionComparison revision={revision} versionLabel={versionLabel} />
+      )}
     </article>
   );
 }
+
+/** 被 HELD 的一章：只有日期與原因標籤，這個形狀沒有任何內容欄位。 */
+function HeldChapter({ held }: { held: HeldLifeJournalEntry }) {
+  return (
+    <article
+      className="v5-journal__chapter"
+      id={chapterAnchorId(held.chapterDate)}
+      tabIndex={-1}
+      aria-label={`${held.chapterDate} 的章節`}
+      data-entry-visibility="HELD"
+    >
+      <h3 className="v5-journal__date panshi-data">{held.chapterDate}</h3>
+      <p className="v5-journal__held panshi-paper">{held.heldReasonLabel}</p>
+    </article>
+  );
+}
+
+type JournalItem =
+  | { kind: "published"; chapterDate: string; entry: LifeJournalEntry }
+  | { kind: "held"; chapterDate: string; held: HeldLifeJournalEntry };
 
 export type LifeJournalScreenProps = {
   page: LifeJournalPage;
@@ -141,10 +361,26 @@ export type LifeJournalScreenProps = {
 };
 
 export function LifeJournalScreen({ page, onBackToCloseUp, onOpenArchive }: LifeJournalScreenProps) {
+  const heldEntries = page.heldEntries ?? [];
   // canonical 時間順序：由舊到新，讓「後來改口」永遠排在「當時怎麼說」之後。
-  const chapters = [...page.entries].sort((left, right) =>
-    left.chapterDate.localeCompare(right.chapterDate),
-  );
+  // HELD 的章節依 `chapterDate` 併進同一條時間軸（public-v2.yaml `heldEntries`）。
+  const chapters: JournalItem[] = [
+    ...page.entries.map((entry): JournalItem => ({ kind: "published", chapterDate: entry.chapterDate, entry })),
+    ...heldEntries.map((held): JournalItem => ({ kind: "held", chapterDate: held.chapterDate, held })),
+  ].sort((left, right) => left.chapterDate.localeCompare(right.chapterDate));
+  const revisions = claimRevisions(page.entries, heldEntries);
+  const versionLabel = `projection v${page.projectionVersion}`;
+
+  // 從深層檔案連過來（`#chapter-YYYY-MM-DD`）時內容是非同步載入的，瀏覽器自己的
+  // 錨點捲動已經錯過；掛載後補一次捲動與焦點。
+  useEffect(() => {
+    const hash = window.location.hash.slice(1);
+    if (!hash.startsWith("chapter-")) return;
+    const target = document.getElementById(hash);
+    if (target === null) return;
+    target.scrollIntoView?.();
+    target.focus();
+  }, []);
 
   return (
     <section className="v5-journal" aria-label="人生誌">
@@ -163,11 +399,22 @@ export function LifeJournalScreen({ page, onBackToCloseUp, onOpenArchive }: Life
       </div>
 
       {chapters.length === 0 ? (
-        <p className="panshi-paper">
-          {DATA_UNAVAILABLE_LABEL}：還沒有出版任何章節。第一章出版後會留在這裡。
-        </p>
+        // typed 空狀態：說明為什麼是空的，不是讀取失敗。
+        <EmptyStatePanel reason="journal_no_chapters" />
       ) : (
-        chapters.map((entry) => <Chapter entry={entry} key={entry.entryId} />)
+        chapters.map((item) =>
+          item.kind === "held" ? (
+            <HeldChapter held={item.held} key={item.held.entryId} />
+          ) : (
+            <Chapter
+              entry={item.entry}
+              revision={revisions.get(item.entry.entryId)}
+              versionLabel={versionLabel}
+              serverNow={page.serverNow}
+              key={item.entry.entryId}
+            />
+          ),
+        )
       )}
 
       {/* 深層檔案入口只在最底部，且只有這一個。 */}

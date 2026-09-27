@@ -10,8 +10,9 @@
 //
 // 1. **順序固定**：六節依 `ARCHIVE_SECTION_ORDER` 排列，不依投影回傳順序，
 //    也不依「有沒有真頁」重排。缺某一節就顯示缺，不補、不遞補。
-// 2. **只有真頁可以點**：`sectionPath` 是 `null` 的節不做成 disabled 假按鈕，
-//    而是一段可讀的說明——本切片只做入口，摘要本身已經是最終形狀。
+// 2. **只有真頁可以點**：六節都有自己的頁面，`sectionPath` 非 null 就是一顆「打開」按鈕。
+//    投影若給了 `null`（契約保留給未來新增的節），不做成 disabled 假按鈕，也不自己
+//    組一個路徑，而是一段可讀的說明。
 // 3. **每一節都掛 truth_class**：對應表逐格照 `docs/v5/product-constitution.md`
 //    「角色資料的五種身分」。投影沒有宣告該身分時 fail closed，不自己加標籤。
 //
@@ -58,9 +59,8 @@ const TRUTH_CLASS_EXPLANATION: Readonly<Record<TruthClass, string>> = {
   simulated_narrative: "由已封存事件編成的模擬敘事，包含他的紙上交易與故事投影。",
 };
 
-/** 本切片只出版了模擬紀錄一頁；其餘五節是入口，不是壞掉的按鈕。 */
-const ENTRY_ONLY_TEXT =
-  "本切片只做到入口：這一節的完整頁面還沒有出版。上面這句索引摘要已經是最終形狀，之後補上的是頁面，不是資料結構。";
+/** 投影沒有給這一節頁面路徑時的說明（未經 copy-taste 審稿）。 */
+const NO_SECTION_PATH_TEXT = "這份投影沒有給這一節的頁面路徑，介面不自己組一個。";
 
 const STYLES = `
 .v5-archive { margin: 0 0 16px; }
@@ -179,7 +179,7 @@ function SectionEntry({
       )}
 
       {onOpen === null ? (
-        <p className="v5-archive__entry-only panshi-paper">{ENTRY_ONLY_TEXT}</p>
+        <p className="v5-archive__entry-only panshi-paper">{NO_SECTION_PATH_TEXT}</p>
       ) : (
         <p>
           <button type="button" className="v5-archive__open" onClick={onOpen}>
@@ -197,7 +197,7 @@ function SectionEntry({
 
 export type ArchiveIndexScreenProps = {
   index: CharacterArchiveIndex;
-  /** 只有 `sectionPath` 非 null 的節會被呼叫；本切片只有模擬紀錄。 */
+  /** 只有 `sectionPath` 非 null 的節會被呼叫。 */
   onOpenSection: (sectionKey: ArchiveSectionKey) => void;
   onBackToJournal: () => void;
 };

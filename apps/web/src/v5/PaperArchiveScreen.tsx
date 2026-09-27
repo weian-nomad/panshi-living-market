@@ -9,19 +9,32 @@
 // - 獲利與虧損視覺重量相同：同字級、同字重、同版位；方向同時有文字與符號，
 //   顏色只是輔助，不是唯一訊號。
 // - 不用煙火、金幣、皇冠或任何慶祝物件。
-// - 逐字原話加引號並附 artifact id 與 digest 前 8 碼；結構化摘要一律不加引號。
+// - 逐字原話走 `Utterance`（CSS 產生引號、逐字不改寫）並附 artifact id 與 digest 前 8 碼；
+//   結構化摘要一律不加引號。
+// - 每張主卡下面接一組「原本理由｜現在說法｜紙上代價｜關係後果」並排比較，
+//   讓成本、損益、原始理由與退出條件在同一個視線裡。
 
-import type { PaperArchiveProjection, TruthClass } from "../api/generated-v2/types.gen";
+import { useEffect } from "react";
+
+import type {
+  PaperArchiveProjection,
+  PaperPositionPublic,
+  TruthClass,
+} from "../api/generated-v2/types.gen";
+import { ClaimComparison } from "./ClaimComparison";
+import { SignedMoney } from "./EvidenceCardView";
+import { ItemTruthTag } from "./ItemTruthTag";
 import { TruthTag } from "./TruthTag";
-import { DATA_UNAVAILABLE_LABEL } from "./format";
+import { Utterance } from "./Utterance";
+import { DATA_UNAVAILABLE_LABEL, declaredTruthClass, minorUnitsToTwdOrNull, truthClassLabel } from "./format";
 import {
-  EMPTY_POSITION_TEXT,
   minorUnitsToTwdText,
   paperActionRows,
   paperCardSections,
   type PaperCardBody,
   type PaperQuoteView,
 } from "./paperCard";
+import { DATA_REVISION_KIND_LABEL, EmptyStatePanel, PAPER_CORRECTIONS_ANCHOR } from "./statePanels";
 
 const TRUTH_CLASS_EXPLANATION: Readonly<Record<TruthClass, string>> = {
   real_fact: "已封存並可回溯到外部來源的事實。",
@@ -108,7 +121,15 @@ const STYLES = `
 function Quote({ quote }: { quote: PaperQuoteView }) {
   return (
     <>
-      <p className="v5-paper__quote panshi-paper">「{quote.text}」</p>
+      <p className="v5-paper__quote">
+        <Utterance
+          utterance={{
+            utteranceArtifactId: quote.utteranceArtifactId,
+            canonicalTextSha256: quote.canonicalTextSha256,
+            canonicalTextUtf8: quote.text,
+          }}
+        />
+      </p>
       <p className="v5-paper__attr panshi-data">
         {quote.utteranceArtifactId}／sha256 {quote.digestPrefix}
       </p>
@@ -168,7 +189,7 @@ function CardBody({ body }: { body: PaperCardBody }) {
           {/* 結構化理由：不加引號。 */}
           <p className="panshi-paper">{body.summary}</p>
           <p className="panshi-data">
-            失效條件：{body.invalidationLabel}
+            退出條件（失效條件）：{body.invalidationLabel}
             {body.invalidationOccurred ? "（已觸發）" : ""}
           </p>
           {body.concurrentClaim === null ? (
@@ -205,6 +226,103 @@ function CardBody({ body }: { body: PaperCardBody }) {
   }
 }
 
+/** 模擬紀錄的紙上數字與故事投影＝模擬敘事；投影沒宣告就不掛（同 `declaredTruthClass()`）。 */
+function PaperClaimTag({ archive }: { archive: PaperArchiveProjection }) {
+  const truthClass = declaredTruthClass(archive.truthClasses, "simulated_narrative");
+  if (truthClass === null) {
+    return (
+      <p className="v5-paper__attr panshi-paper">
+        {DATA_UNAVAILABLE_LABEL}：投影沒有宣告「{truthClassLabel("simulated_narrative")}」這個資料身分，所以這裡不掛標籤。
+      </p>
+    );
+  }
+  return (
+    <ItemTruthTag
+      truthClass={truthClass}
+      asOfLabel={archive.asOf}
+      versionLabel={`projection v${archive.projectionVersion}`}
+    />
+  );
+}
+
+/** 一個部位的四欄並排比較（欄內說明未經 copy-taste 審稿）。 */
+function PositionComparison({
+  archive,
+  position,
+}: {
+  archive: PaperArchiveProjection;
+  position: PaperPositionPublic;
+}) {
+  const versionLabel = `projection v${archive.projectionVersion}`;
+  const narration = position.currentNarration;
+  let costBasis: number | null = 0;
+  for (const lot of position.lots) {
+    costBasis =
+      costBasis !== null && Number.isSafeInteger(lot.costBasisMinorUnits)
+        ? costBasis + lot.costBasisMinorUnits
+        : null;
+  }
+  const costText = minorUnitsToTwdOrNull(costBasis);
+
+  return (
+    <ClaimComparison
+      title={`${position.instrumentLabel}：當時和現在並排`}
+      columns={{
+        originalReason: (
+          <>
+            {/* 結構化理由：不加引號。 */}
+            <p className="panshi-paper">{position.rationaleSummary}</p>
+            {position.concurrentClaim === undefined ? (
+              <p className="v5-paper__attr panshi-paper">當時沒有可核對的公開原話。</p>
+            ) : (
+              <p>
+                <Utterance utterance={position.concurrentClaim} />
+              </p>
+            )}
+            <PaperClaimTag archive={archive} />
+          </>
+        ),
+        currentClaim: (
+          <>
+            {narration === undefined ? (
+              <p className="v5-paper__attr panshi-paper">他還沒有新的公開說法。</p>
+            ) : narration.kind === "utterance" ? (
+              <p>
+                <Utterance utterance={narration} />
+              </p>
+            ) : (
+              <p className="panshi-paper">{narration.summaryText}</p>
+            )}
+            <PaperClaimTag archive={archive} />
+          </>
+        ),
+        paperCost: (
+          <>
+            <p className="panshi-data">成本 {costText ?? DATA_UNAVAILABLE_LABEL}</p>
+            <SignedMoney label="已實現損益" amountMinorUnits={position.realizedPnlMinorUnits} />
+            <SignedMoney label="未實現損益" amountMinorUnits={position.unrealizedPnlMinorUnits} />
+            <p className="v5-paper__attr panshi-data">資料截至 {position.markAsOf}</p>
+            <PaperClaimTag archive={archive} />
+          </>
+        ),
+        relationship:
+          position.influencedBy.length === 0 ? (
+            <p className="panshi-paper">{position.influencedByEmptyReason ?? DATA_UNAVAILABLE_LABEL}</p>
+          ) : (
+            position.influencedBy.map((influence, index) => (
+              <div key={`${influence.displayName}-${index}`}>
+                <p className="panshi-paper">
+                  {influence.displayName}（{influence.relationLabel}）：{influence.influenceSummary}
+                </p>
+                <ItemTruthTag truthClass={influence.truthClass} asOfLabel={archive.asOf} versionLabel={versionLabel} />
+              </div>
+            ))
+          ),
+      }}
+    />
+  );
+}
+
 export type PaperArchiveScreenProps = {
   archive: PaperArchiveProjection;
   onBackToArchiveIndex: () => void;
@@ -212,6 +330,13 @@ export type PaperArchiveScreenProps = {
 
 export function PaperArchiveScreen({ archive, onBackToArchiveIndex }: PaperArchiveScreenProps) {
   const rows = paperActionRows(archive);
+
+  // 從其他頁的更正橫幅連過來（`#paper-corrections`）時，內容是非同步載入的，
+  // 瀏覽器自己的錨點捲動已經錯過；掛載後補一次焦點。
+  useEffect(() => {
+    if (window.location.hash !== `#${PAPER_CORRECTIONS_ANCHOR}`) return;
+    document.getElementById(PAPER_CORRECTIONS_ANCHOR)?.focus();
+  }, []);
   const initialCapital = minorUnitsToTwdText(archive.account.initialCapitalMinorUnits);
   const cash = minorUnitsToTwdText(archive.account.cashMinorUnits);
 
@@ -247,7 +372,7 @@ export function PaperArchiveScreen({ archive, onBackToArchiveIndex }: PaperArchi
 
       <h3>持股</h3>
       {archive.positions.length === 0 ? (
-        <p className="panshi-paper">{EMPTY_POSITION_TEXT}</p>
+        <EmptyStatePanel reason="paper_no_positions" />
       ) : (
         archive.positions.map((position) => (
           <article
@@ -265,6 +390,7 @@ export function PaperArchiveScreen({ archive, onBackToArchiveIndex }: PaperArchi
               </section>
             ))}
             <p className="panshi-paper">{position.consequenceSummary}</p>
+            <PositionComparison archive={archive} position={position} />
           </article>
         ))
       )}
@@ -297,6 +423,32 @@ export function PaperArchiveScreen({ archive, onBackToArchiveIndex }: PaperArchi
           </li>
         ))}
       </ul>
+
+      {/* 更正紀錄：舊版保留，更正以新增節點出現（experience-spec §17.2 `EVENT_CORRECTED`）。
+          更正前後的並排比較不在本切片。說明句未經 copy-taste 審稿。 */}
+      <section className="v5-paper__corrections" aria-labelledby={PAPER_CORRECTIONS_ANCHOR}>
+        <h3 id={PAPER_CORRECTIONS_ANCHOR} tabIndex={-1}>
+          更正紀錄
+        </h3>
+        {archive.dataRevisions.length === 0 ? (
+          <p className="panshi-paper">這份模擬紀錄沒有附上任何更正紀錄。</p>
+        ) : (
+          <ul className="v5-paper__rows">
+            {archive.dataRevisions.map((revision) => (
+              <li className="v5-paper__row" key={revision.revisionId}>
+                <p className="v5-paper__row-date panshi-data">
+                  {revision.appliedAt}／{DATA_REVISION_KIND_LABEL[revision.kind]}
+                </p>
+                <p className="panshi-paper">{revision.summary}</p>
+                <p className="v5-paper__attr panshi-data">
+                  {revision.revisionId}
+                  {revision.affectedRefs.length === 0 ? "" : `／影響 ${revision.affectedRefs.join("、")}`}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <div className="v5-paper__foot">
         <button type="button" onClick={onBackToArchiveIndex}>

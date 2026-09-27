@@ -65,6 +65,9 @@ function position(overrides: Partial<PaperPositionPublic> = {}): PaperPositionPu
       canonicalTextUtf8: "目前沒有新的公開資訊，先維持原本的觀察。",
     },
     influencedByCharacterRefs: [],
+    // 契約必填（public-v2.yaml `PaperPositionPublic`）：沒有影響來源時附一句原因。
+    influencedBy: [],
+    influencedByEmptyReason: "測試：沒有封存事件顯示別人影響這個部位。",
     consequenceSummary:
       "持有 15 天後減碼 400 股，實現虧損 4,720 元；剩下 600 股仍在。引用的理由換過一次，新增支持事實 0 筆。",
     ...overrides,

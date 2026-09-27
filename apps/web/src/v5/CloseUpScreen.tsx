@@ -6,7 +6,8 @@
 //   3. 一句尚未解決的矛盾
 //   4. 只與當下故事直接相關的一項後果碎片
 //   5. 主動作 `翻開今天的人生誌`
-//   6. 次動作 `回到世界`、`記住這個人`
+//   6. 次動作 `回到世界`、`記住這個人`，以及直接到他模擬紀錄的「持股與理由」
+//      （世界 →（1）近景 →（2）模擬紀錄：成本、損益、原始理由與退出條件在同一頁）
 //
 // 揭露節奏（§7.2）：先看動作（`CLOSEUP_ACTION_LEAD_MS`），再出文字；名字先出、
 // 數值後出（`OUTCOME_REVEAL_MS`）。**每個紙上數字旁都必須有 as_of**，一律用
@@ -136,6 +137,16 @@ const STYLES = `
 }
 .v5-closeup__actions button[data-role="primary"] { border-width: 2px; font-weight: 500; }
 .v5-closeup__actions button:focus-visible { outline: 2px solid var(--signal-420); outline-offset: 2px; }
+.v5-closeup__actions a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: .4em 1.1em;
+  border: 1px solid var(--copper-500);
+  border-radius: 2px;
+  color: inherit;
+}
+.v5-closeup__actions a:focus-visible { outline: 2px solid var(--signal-420); outline-offset: 2px; }
 .v5-closeup__note { margin: .8rem 0 0; font-size: .8rem; color: var(--copper-500); }
 @keyframes v5-closeup-glance {
   0%, 78%, 100% { transform: translate(0, 0); }
@@ -392,9 +403,18 @@ export type CloseUpScreenProps = {
   closeUp: CharacterCloseUp;
   onOpenJournal: () => void;
   onBackToWorld: () => void;
+  /** 這個人的模擬紀錄路徑（`/people/{id}/archive/paper`）；不給就不顯示入口。 */
+  paperHref?: string;
+  onOpenPaper?: () => void;
 };
 
-export function CloseUpScreen({ closeUp, onOpenJournal, onBackToWorld }: CloseUpScreenProps) {
+export function CloseUpScreen({
+  closeUp,
+  onOpenJournal,
+  onBackToWorld,
+  paperHref,
+  onOpenPaper,
+}: CloseUpScreenProps) {
   const reducedMotion = useSyncExternalStore(subscribeReducedMotion, readReducedMotion, () => true);
   const [revealText, setRevealText] = useState(false);
   const [revealValues, setRevealValues] = useState(false);
@@ -477,6 +497,23 @@ export function CloseUpScreen({ closeUp, onOpenJournal, onBackToWorld }: CloseUp
         <button type="button" data-role="primary" onClick={onOpenJournal}>
           翻開今天的人生誌
         </button>
+        {paperHref === undefined ? null : (
+          // 「持股與理由」：他自己的模擬紀錄，成本、損益、原始理由與退出條件同頁（未經 copy-taste 審稿）。
+          <a
+            href={paperHref}
+            data-nav="ledger"
+            onClick={(event) => {
+              if (onOpenPaper === undefined) return;
+              if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+                return;
+              }
+              event.preventDefault();
+              onOpenPaper();
+            }}
+          >
+            持股與理由
+          </a>
+        )}
         <button type="button" onClick={onBackToWorld}>
           回到世界
         </button>

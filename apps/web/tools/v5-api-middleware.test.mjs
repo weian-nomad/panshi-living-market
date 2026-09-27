@@ -25,6 +25,11 @@ describe("resolveShellEntry", () => {
       `/people/${CHARACTER_ID}/journal`,
       `/people/${CHARACTER_ID}/archive`,
       `/people/${CHARACTER_ID}/archive/paper`,
+      `/people/${CHARACTER_ID}/archive/relations`,
+      `/people/${CHARACTER_ID}/archive/chart`,
+      `/people/${CHARACTER_ID}/archive/traits`,
+      `/people/${CHARACTER_ID}/archive/memories`,
+      `/people/${CHARACTER_ID}/archive/life`,
     ];
     for (const pathname of worldPaths) {
       expect(resolveShellEntry(pathname)).toBe(WORLD_SHELL);

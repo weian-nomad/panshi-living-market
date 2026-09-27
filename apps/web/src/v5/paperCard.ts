@@ -197,7 +197,8 @@ function quoteOrNull(utterance: CharacterUtterance | undefined): PaperQuoteView 
   // 無法核對的原話寧可不顯示，也不顯示一句追溯不到 artifact 的第一人稱台詞。
   if (text.length === 0 || artifactId.length === 0 || !SHA256_HEX.test(digest)) return null;
   return {
-    text,
+    // 逐字：canonical bytes 原封不動；上面的 trim 只用來判斷「是不是空的」。
+    text: utterance.canonicalTextUtf8,
     utteranceArtifactId: artifactId,
     canonicalTextSha256: digest,
     digestPrefix: digest.slice(0, DIGEST_PREFIX_LENGTH),

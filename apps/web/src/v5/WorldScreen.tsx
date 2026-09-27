@@ -41,6 +41,7 @@ import {
   type FollowMenuChoice,
 } from "./followGesture";
 import { WORLD_BREATH_MS } from "./motion";
+import { EmptyStatePanel } from "./statePanels";
 import {
   BACKDROP_SHAPES,
   COPPER_RULES,
@@ -395,10 +396,8 @@ export function WorldScreen({ snapshot, onOpenCloseUp }: WorldScreenProps) {
     [stagePoint, targets],
   );
 
-  return (
-    <section className="v5-world" aria-label="公共世界">
-      <style>{STYLES}</style>
-
+  const header = (
+    <>
       <div className="v5-world__banner">
         <p className="panshi-paper">
           一名角色垂直切片：這個世界目前只封存了一個人的完整人生，其餘是無資料的背景。
@@ -425,6 +424,26 @@ export function WorldScreen({ snapshot, onOpenCloseUp }: WorldScreenProps) {
           <dd>{asOfText(snapshot.marketClock.asOfTradingDate)}</dd>
         </div>
       </dl>
+    </>
+  );
+
+  // 空世界：專門的面板，不是一塊沒有人的白舞台（experience-spec §17.1 `SCENE_EMPTY`）。
+  // 所有 hook 都已在上面呼叫完，這裡提早回傳不違反 hook 順序。
+  if (snapshot.characterPositions.length === 0) {
+    return (
+      <section className="v5-world" aria-label="公共世界">
+        <style>{STYLES}</style>
+        {header}
+        <EmptyStatePanel reason="world_no_residents" />
+      </section>
+    );
+  }
+
+  return (
+    <section className="v5-world" aria-label="公共世界">
+      <style>{STYLES}</style>
+
+      {header}
 
       <div
         className="v5-stage"

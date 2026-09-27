@@ -10,10 +10,16 @@
 // The client never substitutes a default, a zero, or a placeholder string.
 
 import type {
+  ArchiveSectionKey,
   CharacterArchiveIndexResponse,
+  CharacterChartArchiveResponse,
   CharacterCloseUpResponse,
+  CharacterLifeArchiveResponse,
   CharacterLifeJournalResponse,
+  CharacterMemoriesArchiveResponse,
   CharacterPaperArchiveResponse,
+  CharacterRelationsArchiveResponse,
+  CharacterTraitsArchiveResponse,
   TruthClass,
   V2ReasonCode,
   WorldSnapshot,
@@ -144,6 +150,7 @@ function isLifeJournalPage(value: unknown): boolean {
     (record) =>
       hasString(record, "appliedAudienceScope") &&
       hasArray(record, "entries") &&
+      hasArray(record, "heldEntries") &&
       "nextCursor" in record &&
       (record["nextCursor"] === null || typeof record["nextCursor"] === "string"),
   );
@@ -173,6 +180,290 @@ function isPaperArchive(value: unknown): boolean {
       hasArray(record, "historicalActionFills") &&
       hasArray(record, "dataRevisions"),
   );
+}
+
+// ---------------------------------------------------------------------------
+// The five other deep-archive sections (relations / chart / traits / memories /
+// life). Every item on these pages is a visible claim, so every item must carry
+// a known `truthClass` and a non-empty `sourceRefs` (public-v2.yaml
+// `ArchiveSourceRefs`: "an item with no source is not rendered"). A list and
+// its `*EmptyReason` must agree: an empty list needs a reason, a non-empty
+// list must not carry one. Anything else is an incomplete projection.
+// ---------------------------------------------------------------------------
+
+function isStringOrNull(value: unknown): boolean {
+  return value === null || (typeof value === "string" && value.length > 0);
+}
+
+function isSourceRef(value: unknown): boolean {
+  if (!isRecord(value) || !hasString(value, "refId")) return false;
+  if (value["kind"] === "canonical_event") {
+    return hasString(value, "eventType") && hasNumber(value, "globalPosition");
+  }
+  if (value["kind"] === "character_seed") {
+    return value["eventType"] === null && value["globalPosition"] === null;
+  }
+  return false;
+}
+
+/** One visible archive claim: a known truth class and at least one source. */
+function isArchiveItem(value: unknown): value is JsonObject {
+  if (!isRecord(value)) return false;
+  const truthClass = value["truthClass"];
+  if (typeof truthClass !== "string" || !TRUTH_CLASSES.includes(truthClass)) return false;
+  const sourceRefs = value["sourceRefs"];
+  return Array.isArray(sourceRefs) && sourceRefs.length > 0 && sourceRefs.every(isSourceRef);
+}
+
+function hasStrings(value: JsonObject, keys: readonly string[]): boolean {
+  return keys.every((key) => hasString(value, key));
+}
+
+function isArchiveItemWith(value: unknown, strings: readonly string[]): value is JsonObject {
+  return isArchiveItem(value) && hasStrings(value, strings);
+}
+
+function everyItem(value: unknown, check: (item: unknown) => boolean): boolean {
+  return Array.isArray(value) && value.every(check);
+}
+
+/** `list` empty ⇔ `reason` is a non-empty label. */
+function listAgreesWithReason(record: JsonObject, listKey: string, reasonKey: string): boolean {
+  const list = record[listKey];
+  if (!Array.isArray(list) || !(reasonKey in record)) return false;
+  const reason = record[reasonKey];
+  return list.length === 0 ? typeof reason === "string" && reason.length > 0 : reason === null;
+}
+
+function isSessionPointer(value: unknown): boolean {
+  return (
+    isRecord(value) && hasString(value, "sessionDate") && isStringOrNull(value["journalEntryRef"])
+  );
+}
+
+function isUtterance(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    hasStrings(value, ["utteranceArtifactId", "canonicalTextSha256", "canonicalTextUtf8"])
+  );
+}
+
+function isArchiveSection(
+  value: unknown,
+  sectionKey: Exclude<ArchiveSectionKey, "paper">,
+  liveFields: (record: JsonObject) => boolean,
+): boolean {
+  return isCharacterResponse(
+    value,
+    (record) =>
+      record["sectionKey"] === sectionKey &&
+      hasString(record, "appliedAudienceScope") &&
+      hasString(record, "asOf") &&
+      liveFields(record),
+  );
+}
+
+function isRelationshipSignal(value: unknown): boolean {
+  return (
+    isArchiveItemWith(value, ["displayName", "relationLabel", "summary", "sessionDate"]) &&
+    isUtterance(value["utterance"]) &&
+    isStringOrNull(value["journalEntryRef"])
+  );
+}
+
+function isAcquaintance(value: unknown): boolean {
+  if (!isArchiveItemWith(value, ["displayName", "relationLabel", "relationNote"])) return false;
+  const counterpart = value["counterpartAccount"];
+  return (
+    everyItem(
+      value["observedInteractions"],
+      (item) =>
+        isArchiveItemWith(item, ["sessionDate", "observableAction"]) &&
+        isStringOrNull(item["journalEntryRef"]),
+    ) &&
+    listAgreesWithReason(value, "observedInteractions", "observedInteractionsEmptyReason") &&
+    everyItem(value["relationshipSignals"], isRelationshipSignal) &&
+    listAgreesWithReason(value, "relationshipSignals", "relationshipSignalsEmptyReason") &&
+    isArchiveItemWith(counterpart, ["reasonLabel"]) &&
+    counterpart["state"] === "unknown"
+  );
+}
+
+function isRelationsArchive(value: unknown): boolean {
+  return isArchiveSection(
+    value,
+    "relations",
+    (record) =>
+      everyItem(record["acquaintances"], isAcquaintance) &&
+      listAgreesWithReason(record, "acquaintances", "acquaintancesEmptyReason"),
+  );
+}
+
+function isChartMotif(value: unknown): boolean {
+  if (!isArchiveItemWith(value, ["motifLabel", "effectScopeLabel"])) return false;
+  const window = value["activeWindow"];
+  return (
+    isRecord(window) &&
+    hasStrings(window, ["activeFrom", "activeUntil"]) &&
+    everyItem(value["activeSessions"], isSessionPointer) &&
+    everyItem(
+      value["invocations"],
+      (item) =>
+        isArchiveItemWith(item, ["readingText", "sessionDate"]) &&
+        isStringOrNull(item["journalEntryRef"]),
+    ) &&
+    listAgreesWithReason(value, "invocations", "invocationsEmptyReason")
+  );
+}
+
+function isChartArchive(value: unknown): boolean {
+  return isArchiveSection(
+    value,
+    "chart",
+    (record) =>
+      isArchiveItemWith(record["birthIdentity"], ["birthDate", "birthRegionLabel"]) &&
+      everyItem(record["placements"], (item) =>
+        isArchiveItemWith(item, ["placementLabel", "signLabel"]),
+      ) &&
+      listAgreesWithReason(record, "placements", "placementsEmptyReason") &&
+      everyItem(record["motifs"], isChartMotif),
+  );
+}
+
+function isTraitsArchive(value: unknown): boolean {
+  return isArchiveSection(value, "traits", (record) => {
+    const fourAxis = record["fourAxis"];
+    return (
+      Array.isArray(fourAxis) &&
+      fourAxis.length === 4 &&
+      fourAxis.every(
+        (axis) =>
+          isArchiveItemWith(axis, ["axisKey", "lowPoleLabel", "highPoleLabel", "leaningLabel"]) &&
+          hasNumber(axis, "orientationBp"),
+      ) &&
+      isArchiveItemWith(record["coreNeed"], ["label"]) &&
+      isArchiveItemWith(record["coreFear"], ["label"]) &&
+      isArchiveItemWith(record["bloodType"], ["bloodType", "effectScopeLabel"]) &&
+      isArchiveItemWith(record["selfDescription"], ["label"]) &&
+      everyItem(
+        record["habits"],
+        (item) =>
+          isArchiveItemWith(item, ["label"]) && everyItem(item["evidenceSessions"], isSessionPointer),
+      ) &&
+      everyItem(
+        record["biasOccurrences"],
+        (item) =>
+          isArchiveItemWith(item, ["biasKind", "biasLabel", "sessionDate"]) &&
+          isStringOrNull(item["journalEntryRef"]) &&
+          everyItem(item["evidenceSessions"], isSessionPointer),
+      ) &&
+      listAgreesWithReason(record, "biasOccurrences", "biasOccurrencesEmptyReason") &&
+      everyItem(
+        record["counterExamples"],
+        (item) =>
+          isArchiveItemWith(item, ["biasKind", "observedLabel", "sessionDate"]) &&
+          isStringOrNull(item["journalEntryRef"]),
+      ) &&
+      listAgreesWithReason(record, "counterExamples", "counterExamplesEmptyReason")
+    );
+  });
+}
+
+const MEMORY_VALENCES: readonly string[] = ["negative", "neutral", "positive"];
+const MEMORY_VISIBILITIES: readonly string[] = ["subscriber_archive", "public_edition"];
+
+function isArchiveMemory(value: unknown): boolean {
+  return (
+    isArchiveItemWith(value, ["memoryRef", "kindLabel", "note", "formedAt"]) &&
+    typeof value["formedBeforeFirstSession"] === "boolean" &&
+    isStringOrNull(value["sessionDate"]) &&
+    isStringOrNull(value["journalEntryRef"]) &&
+    everyItem(
+      value["involvedPeople"],
+      (person) => isRecord(person) && hasStrings(person, ["displayName", "relationLabel"]),
+    ) &&
+    MEMORY_VALENCES.includes(value["emotionalValence"] as string) &&
+    hasNumber(value, "confidenceBp") &&
+    MEMORY_VISIBILITIES.includes(value["visibility"] as string) &&
+    everyItem(value["reinterpretations"], (item) =>
+      isArchiveItemWith(item, ["reinterpretedAt", "note"]),
+    ) &&
+    listAgreesWithReason(value, "reinterpretations", "reinterpretationsEmptyReason")
+  );
+}
+
+function isMemoriesArchive(value: unknown): boolean {
+  return isArchiveSection(
+    value,
+    "memories",
+    (record) =>
+      everyItem(record["memories"], isArchiveMemory) &&
+      listAgreesWithReason(record, "memories", "memoriesEmptyReason"),
+  );
+}
+
+function isLifeArchive(value: unknown): boolean {
+  return isArchiveSection(value, "life", (record) => {
+    const identity = record["identity"];
+    return (
+      isArchiveItemWith(identity, ["displayName", "occupationLabel", "birthDate", "birthRegionLabel"]) &&
+      hasNumber(identity, "ageYears") &&
+      // 只有虛構成年居民可以有生平頁；這個欄位不是 `true` 就不渲染。
+      identity["adultFictionalResident"] === true &&
+      everyItem(
+        record["milestones"],
+        (item) => isArchiveItemWith(item, ["label"]) && hasNumber(item, "ageYears"),
+      ) &&
+      everyItem(record["originMemories"], (item) => isArchiveItemWith(item, ["note", "formedAt"])) &&
+      everyItem(record["unrecordedFacets"], (item) =>
+        isArchiveItemWith(item, ["facetKey", "reasonLabel"]),
+      ) &&
+      hasString(record, "joinedWorldOn") &&
+      everyItem(
+        record["chapterTimeline"],
+        (item) =>
+          isArchiveItemWith(item, ["sessionDate"]) &&
+          (item["chapterState"] === "published" || item["chapterState"] === "in_session") &&
+          isStringOrNull(item["journalEntryRef"]),
+      )
+    );
+  });
+}
+
+/** The public read surfaces, keyed the same way as the slice routes. */
+export type ProjectionKind =
+  | "world"
+  | "closeUp"
+  | "journal"
+  | "archive"
+  | "archivePaper"
+  | "archiveRelations"
+  | "archiveChart"
+  | "archiveTraits"
+  | "archiveMemories"
+  | "archiveLife";
+
+const PROJECTION_VALIDATORS: Readonly<Record<ProjectionKind, (value: unknown) => boolean>> = {
+  world: isWorldSnapshot,
+  closeUp: isCloseUp,
+  journal: isLifeJournalPage,
+  archive: isArchiveIndex,
+  archivePaper: isPaperArchive,
+  archiveRelations: isRelationsArchive,
+  archiveChart: isChartArchive,
+  archiveTraits: isTraitsArchive,
+  archiveMemories: isMemoriesArchive,
+  archiveLife: isLifeArchive,
+};
+
+/**
+ * Re-runs the same contract check a live response goes through. Used for a
+ * projection read back from the last-known cache: stored bytes are untrusted
+ * (tampered, or written by an older build), so anything that no longer
+ * satisfies the contract is treated as "no cache", never patched.
+ */
+export function isValidProjection(kind: ProjectionKind, value: unknown): boolean {
+  return PROJECTION_VALIDATORS[kind](value);
 }
 
 function problemReasonCode(body: unknown): V2ReasonCode | null {
@@ -281,6 +572,61 @@ export function fetchPaperArchive(
   return requestJson<CharacterPaperArchiveResponse>(
     characterPath(characterId, "/archive/paper"),
     isPaperArchive,
+    signal,
+  );
+}
+
+export function fetchRelationsArchive(
+  characterId: string,
+  signal?: AbortSignal,
+): Promise<ApiResult<CharacterRelationsArchiveResponse>> {
+  return requestJson<CharacterRelationsArchiveResponse>(
+    characterPath(characterId, "/archive/relations"),
+    isRelationsArchive,
+    signal,
+  );
+}
+
+export function fetchChartArchive(
+  characterId: string,
+  signal?: AbortSignal,
+): Promise<ApiResult<CharacterChartArchiveResponse>> {
+  return requestJson<CharacterChartArchiveResponse>(
+    characterPath(characterId, "/archive/chart"),
+    isChartArchive,
+    signal,
+  );
+}
+
+export function fetchTraitsArchive(
+  characterId: string,
+  signal?: AbortSignal,
+): Promise<ApiResult<CharacterTraitsArchiveResponse>> {
+  return requestJson<CharacterTraitsArchiveResponse>(
+    characterPath(characterId, "/archive/traits"),
+    isTraitsArchive,
+    signal,
+  );
+}
+
+export function fetchMemoriesArchive(
+  characterId: string,
+  signal?: AbortSignal,
+): Promise<ApiResult<CharacterMemoriesArchiveResponse>> {
+  return requestJson<CharacterMemoriesArchiveResponse>(
+    characterPath(characterId, "/archive/memories"),
+    isMemoriesArchive,
+    signal,
+  );
+}
+
+export function fetchLifeArchive(
+  characterId: string,
+  signal?: AbortSignal,
+): Promise<ApiResult<CharacterLifeArchiveResponse>> {
+  return requestJson<CharacterLifeArchiveResponse>(
+    characterPath(characterId, "/archive/life"),
+    isLifeArchive,
     signal,
   );
 }
