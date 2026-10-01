@@ -32,6 +32,8 @@ const TRUTH_CLASSES: TruthClass[] = ["fictional_setting", "simulated_narrative"]
 
 const SOURCE_REVISIONS: SourceRevisionRef[] = [
   { refId: "wfm_test_s5", refKind: "world_fact_manifest", revision: 5 },
+  // public-v2 3.0.0：每份投影都記它套用的 kill-switch 集合。
+  { refId: "projection-kill-switch/v1", refKind: "projection_kill_switch", revision: 1 },
 ];
 
 type Envelope = {

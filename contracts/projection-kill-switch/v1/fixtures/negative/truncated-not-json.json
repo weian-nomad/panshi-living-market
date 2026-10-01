@@ -1,0 +1,7 @@
+{
+  "contractVersion": "projection-kill-switch/v1",
+  "revision": 7,
+  "issuedAt": "2026-04-14T14:05:00+08:00",
+  "currentMarketProjection": "closed",
+  "tickerSpecificShareAndShortVideo": "closed",
+  "closedFactRevisionIds": ["fact-hist-001-s07-correction

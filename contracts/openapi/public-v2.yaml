@@ -1,10 +1,60 @@
 openapi: 3.1.0
 info:
   title: Panshi Living Market Public API (V5)
-  version: 2.3.0
+  version: 3.0.0
   description: |
     Changelog:
 
+    - 3.0.0 (major): projection kill switches (`docs/v5/market-safety.md`
+      "Kill switch"; `contracts/projection-kill-switch/v1`). Major under
+      this file's own rule (2.2.0: a field that becomes optional, or a
+      response that gains a shape, breaks typed clients). The path stays
+      `/api/v2`: the only client lives in this repository and is updated in
+      the same change, and a `/api/v3` beside an identical surface would
+      only split the deep links the public origin already serves.
+      **Rule.** An object a switch withdraws must not be recoverable from
+      anything still public -- not its quantity, direction, date or
+      existence. The producer reduces every switch to one world-level
+      horizon (the earliest session in the whole world in which the closed
+      object appears; the same for every character, so no closure label
+      marks who touched a closed company), and from the horizon on withholds
+      every **market-derived** object, decided by causal provenance -- the
+      canonical events and chassis anchors it was derived from, never its
+      wording; unknown provenance counts as market-derived. Non-market
+      objects (the one-way observable actions, the natal motif's readings,
+      the memories he arrived with, identity and the rest of the chassis)
+      keep projecting on every page. A sealed sentence is visible exactly
+      when its own session is before the horizon, on every surface. Closing
+      a day's paper-action reveal sets the horizon to that day whether or
+      not anything traded on it. A missing or invalid set withdraws every
+      market-derived object from the first session on.
+      **Client changes.** (1) Optional now, and absent only when the
+      response carries `marketClosureReasonLabel`:
+      `CharacterCloseUp.currentVerbPhrase`, `currentVerbPhraseTruthClass`,
+      `unresolvedTensionSummary`, `unresolvedTensionSummaryTruthClass`;
+      `CharacterArchiveIndex.longTermTensionSummary`,
+      `longTermTensionSummaryTruthClass`; `PaperArchiveProjection.account`,
+      `paperVersionSet`. (2) An archive index section may be a
+      `HeldArchiveSectionIndexEntry` (summary withheld, entrance kept). (3)
+      `marketClosureReasonLabel` may appear on the world snapshot,
+      close-up, archive index, paper archive and the five archive section
+      pages; a list emptied by a switch carries the fixed closure sentence in
+      its `*EmptyReason`; a chapter held by a switch carries the second
+      `heldReasonLabel` sentence and, when it has any, its verbatim
+      non-market segments in `HeldLifeJournalEntry.nonMarketSegments`. (4)
+      Under a horizon, `projectionVersion` and `sourceGlobalPosition` report
+      the last log position before it, and no visible object cites a later
+      event. (5) `sourceRevisionSet` always carries one `refKind:
+      projection_kill_switch` ref: `refId` `projection-kill-switch/v1`
+      (published set, `revision` >= 1), `...#fail-closed` (`revision` 0) or
+      `...#release-gate-default` (`revision` 0). `visibilityEpoch` stays the
+      canonical epoch; a cache must treat the pair (`visibilityEpoch`,
+      kill-switch `refId` + `revision`) as its key and drop every entry
+      whose pair differs from the newest response it has seen -- any change,
+      not only an increase (a fail-closed set has revision 0 after a higher
+      published one). A client that does not know these shapes must fail
+      closed and never render a substitute such as "no holdings". The new
+      sentences are listed in `contracts/openapi/public-v2-system-labels.json`.
     - 2.3.0 (additive, minor): registers the public copy surfaces for the
       copy lint in `docs/v5/market-safety.md` ("文案 lint"). No response
       field is added, removed, renamed or retyped, and no producer output
@@ -1130,9 +1180,23 @@ components:
           type: array
           minItems: 0
           maxItems: 5
-          description: Mirrors the "今日五幕" 0–5 cap (experience-spec §5.4).
+          description: >-
+            Mirrors the "今日五幕" 0–5 cap (experience-spec §5.4). An act a
+            kill switch closes is absent, and so is every act while any
+            session is withdrawn (its label is a statement about today's
+            scene) (3.0.0).
           items:
             $ref: '#/components/schemas/WorldStoryHookRef'
+        marketClosureReasonLabel:
+          x-panshi-system-label: true
+          type: string
+          description: >-
+            Present exactly when a kill switch withheld at least one object
+            of this response -- a story hook, or the resident's focus hint
+            (then `null`) and today's episode ref (3.0.0). A fixed system
+            sentence that names nothing that was withheld.
+          minLength: 1
+          maxLength: 160
     CharacterCloseUp:
       type: object
       additionalProperties: false
@@ -1150,15 +1214,16 @@ components:
         - occupationLabel
         - sceneRef
         - poseState
-        - currentVerbPhrase
-        - unresolvedTensionSummary
         - unresolvedCommitments
         - displayNameTruthClass
         - ageYearsTruthClass
         - occupationLabelTruthClass
         - poseStateTruthClass
-        - currentVerbPhraseTruthClass
-        - unresolvedTensionSummaryTruthClass
+      dependentRequired:
+        currentVerbPhrase: [currentVerbPhraseTruthClass]
+        currentVerbPhraseTruthClass: [currentVerbPhrase]
+        unresolvedTensionSummary: [unresolvedTensionSummaryTruthClass]
+        unresolvedTensionSummaryTruthClass: [unresolvedTensionSummary]
       properties:
         projectionVersion:
           $ref: '#/components/schemas/Version'
@@ -1247,6 +1312,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/UnresolvedCommitment'
+        marketClosureReasonLabel:
+          x-panshi-system-label: true
+          type: string
+          description: >-
+            Present exactly when a kill switch withheld this response's
+            current layer (3.0.0): the verb phrase, attention, tension, the
+            latest sentences, the paper highlight and the commitments are
+            then all absent (`unresolvedCommitments` empty); identity, scene
+            and pose stay. A withheld latest sentence is never replaced by an
+            older one.
+          minLength: 1
+          maxLength: 160
     CharacterCloseUpResponse:
       oneOf:
         - $ref: '#/components/schemas/CharacterCloseUp'
@@ -1583,11 +1660,12 @@ components:
         - sourceRevisionSet
         - characterId
         - archiveSchemaRevision
-        - longTermTensionSummary
-        - longTermTensionSummaryTruthClass
         - recentHighlights
         - recentHighlightTruthClasses
         - sections
+      dependentRequired:
+        longTermTensionSummary: [longTermTensionSummaryTruthClass]
+        longTermTensionSummaryTruthClass: [longTermTensionSummary]
       properties:
         projectionVersion:
           $ref: '#/components/schemas/Version'
@@ -1648,9 +1726,65 @@ components:
           type: array
           minItems: 6
           maxItems: 6
-          description: One entry per `ArchiveSectionKey` value.
+          description: >-
+            One entry per `ArchiveSectionKey` value. An entry whose one-line
+            summary a kill switch withheld is a
+            `HeldArchiveSectionIndexEntry` (3.0.0); its entrance and path
+            stay.
           items:
-            $ref: '#/components/schemas/ArchiveSectionIndexEntry'
+            oneOf:
+              - $ref: '#/components/schemas/ArchiveSectionIndexEntry'
+              - $ref: '#/components/schemas/HeldArchiveSectionIndexEntry'
+        marketClosureReasonLabel:
+          x-panshi-system-label: true
+          type: string
+          description: >-
+            Present exactly when a kill switch withheld this response's
+            history-folded layer (3.0.0): the long-term tension is absent,
+            `recentHighlights` is empty, and every section summary folded
+            from his sessions is a `HeldArchiveSectionIndexEntry`.
+          minLength: 1
+          maxLength: 160
+    HeldArchiveSectionIndexEntry:
+      type: object
+      description: >-
+        An archive index entry whose one-line summary a kill switch withheld
+        (3.0.0). It keeps the section's key, applied scope, as-of, epoch and
+        path, and carries one fixed reason label -- no summary or truth class
+        exists on this shape, so nothing about the withheld summary can leak
+        through it.
+      additionalProperties: false
+      required:
+        - sectionKey
+        - viewerAudienceScope
+        - entryVisibility
+        - summaryHeldReasonLabel
+        - asOf
+        - visibilityEpoch
+        - sectionPath
+      properties:
+        sectionKey:
+          $ref: '#/components/schemas/ArchiveSectionKey'
+        viewerAudienceScope:
+          $ref: '#/components/schemas/AudienceScope'
+        entryVisibility:
+          type: string
+          const: HELD
+        summaryHeldReasonLabel:
+          x-panshi-system-label: true
+          type: string
+          minLength: 1
+          maxLength: 160
+        asOf:
+          type: string
+          format: date-time
+        visibilityEpoch:
+          $ref: '#/components/schemas/Version'
+        sectionPath:
+          oneOf:
+            - type: string
+              pattern: '^/api/v2/characters/[0-9a-f-]{36}/archive/[a-z]+$'
+            - type: 'null'
     CharacterArchiveIndexResponse:
       oneOf:
         - $ref: '#/components/schemas/CharacterArchiveIndex'
@@ -1924,7 +2058,8 @@ components:
         `dailyActionDisclosure` is an optional key that is only ever
         serialized once `marketSessionFinalityState` is `accepted` for
         this record's `tradingDate`; pre-finality responses omit the key
-        entirely rather than sending it nulled out.
+        entirely rather than sending it nulled out. Since 3.0.0 a session at
+        or after the kill-switch horizon has no record at all.
       additionalProperties: false
       required:
         - recordId
@@ -1988,8 +2123,6 @@ components:
         - characterId
         - appliedAudienceScope
         - asOf
-        - paperVersionSet
-        - account
         - positions
         - historicalActionFills
         - dataRevisions
@@ -2041,6 +2174,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DataRevisionNote'
+        marketClosureReasonLabel:
+          x-panshi-system-label: true
+          type: string
+          description: >-
+            Present exactly when a kill switch withheld today's paper view
+            (3.0.0): `positions` is empty and `account` and `paperVersionSet`
+            are absent (cash and stream versions accumulate every paper
+            action), and there is no action record or revision note for any
+            session at or after the kill-switch horizon -- not even a shell.
+          minLength: 1
+          maxLength: 160
     CharacterPaperArchiveResponse:
       oneOf:
         - $ref: '#/components/schemas/PaperArchiveProjection'
@@ -2418,8 +2562,10 @@ components:
       type: object
       description: >-
         A settled chapter withheld from the public journal. It carries its
-        identity, its date and one reason label — no content field exists
-        on this shape, so nothing about the day can leak through it.
+        identity, its date and one reason label, and (3.0.0, kill switch
+        only) the chapter's verbatim non-market segments -- no
+        market-derived content field exists on this shape, so nothing about
+        the day's market content can leak through it.
       additionalProperties: false
       required: [entryId, chapterDate, entryVisibility, heldReasonLabel]
       properties:
@@ -2434,8 +2580,21 @@ components:
         heldReasonLabel:
           x-panshi-system-label: true
           type: string
+          description: >-
+            Why the chapter is held: a visibility review, or (3.0.0) a kill
+            switch covering its market content. One of the listed sentences.
           minLength: 1
           maxLength: 160
+        nonMarketSegments:
+          type: array
+          minItems: 1
+          description: >-
+            Present only on a chapter held by a kill switch, and only when the
+            chapter sealed segments whose own provenance is not market-derived
+            (3.0.0): those segments, verbatim, each citing its own chassis
+            source. No market-derived segment is ever listed here.
+          items:
+            $ref: '#/components/schemas/NarrativeSegment'
     InfluenceRef:
       type: object
       description: >-
@@ -2628,6 +2787,18 @@ components:
               minLength: 1
               maxLength: 200
             - type: 'null'
+        marketClosureReasonLabel:
+          x-panshi-system-label: true
+          type: string
+          description: >-
+            Present exactly when a kill switch withheld at least one item of
+            this section (3.0.0): an observed interaction or relationship signal whose provenance is market-derived and that
+            points at a session at or after the kill-switch horizon is withheld
+            whole; items whose provenance is the chassis stay. A list emptied that way
+            carries the fixed closure sentence in its `*EmptyReason`, never
+            its "there is none" sentence.
+          minLength: 1
+          maxLength: 160
     CharacterRelationsArchiveResponse:
       oneOf:
         - $ref: '#/components/schemas/RelationsArchiveProjection'
@@ -2813,6 +2984,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ChartMotif'
+        marketClosureReasonLabel:
+          x-panshi-system-label: true
+          type: string
+          description: >-
+            Present exactly when a kill switch withheld at least one item of
+            this section (3.0.0): an active-session pointer or motif invocation whose provenance is market-derived and that
+            points at a session at or after the kill-switch horizon is withheld
+            whole; items whose provenance is the chassis stay. A list emptied that way
+            carries the fixed closure sentence in its `*EmptyReason`, never
+            its "there is none" sentence.
+          minLength: 1
+          maxLength: 160
     CharacterChartArchiveResponse:
       oneOf:
         - $ref: '#/components/schemas/ChartArchiveProjection'
@@ -3091,6 +3274,18 @@ components:
               minLength: 1
               maxLength: 200
             - type: 'null'
+        marketClosureReasonLabel:
+          x-panshi-system-label: true
+          type: string
+          description: >-
+            Present exactly when a kill switch withheld at least one item of
+            this section (3.0.0): a habit, pattern occurrence or counter-example whose provenance is market-derived and that
+            points at a session at or after the kill-switch horizon is withheld
+            whole; items whose provenance is the chassis stay. A list emptied that way
+            carries the fixed closure sentence in its `*EmptyReason`, never
+            its "there is none" sentence.
+          minLength: 1
+          maxLength: 160
     CharacterTraitsArchiveResponse:
       oneOf:
         - $ref: '#/components/schemas/TraitsArchiveProjection'
@@ -3250,6 +3445,18 @@ components:
               minLength: 1
               maxLength: 200
             - type: 'null'
+        marketClosureReasonLabel:
+          x-panshi-system-label: true
+          type: string
+          description: >-
+            Present exactly when a kill switch withheld at least one item of
+            this section (3.0.0): a memory formed in a session whose provenance is market-derived and that
+            points at a session at or after the kill-switch horizon is withheld
+            whole; items whose provenance is the chassis stay. A list emptied that way
+            carries the fixed closure sentence in its `*EmptyReason`, never
+            its "there is none" sentence.
+          minLength: 1
+          maxLength: 160
     CharacterMemoriesArchiveResponse:
       oneOf:
         - $ref: '#/components/schemas/MemoriesArchiveProjection'
@@ -3443,6 +3650,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/LifeChapterPointer'
+        marketClosureReasonLabel:
+          x-panshi-system-label: true
+          type: string
+          description: >-
+            Present exactly when a kill switch withheld at least one item of
+            this section (3.0.0): a chapter-timeline pointer whose provenance is market-derived and that
+            points at a session at or after the kill-switch horizon is withheld
+            whole; items whose provenance is the chassis stay. A list emptied that way
+            carries the fixed closure sentence in its `*EmptyReason`, never
+            its "there is none" sentence.
+          minLength: 1
+          maxLength: 160
     CharacterLifeArchiveResponse:
       oneOf:
         - $ref: '#/components/schemas/LifeArchiveProjection'

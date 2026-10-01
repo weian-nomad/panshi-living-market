@@ -492,6 +492,11 @@
       "refId": "a243c129-0297-7b54-e16f-256452eab596",
       "refKind": "paper_position",
       "revision": 30
+    },
+    {
+      "refId": "projection-kill-switch/v1",
+      "refKind": "projection_kill_switch",
+      "revision": 1
     }
   ],
   "truthClasses": [

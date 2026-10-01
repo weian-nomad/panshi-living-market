@@ -1,0 +1,12 @@
+{
+  "contractVersion": "projection-kill-switch/v1",
+  "revision": 2,
+  "issuedAt": "2026-10-01T09:00:00+08:00",
+  "currentMarketProjection": "open",
+  "tickerSpecificShareAndShortVideo": "open",
+  "closedFactRevisionIds": [],
+  "closedInstruments": [],
+  "closedMarketSessionIds": [],
+  "closedPaperActionRevealDates": [],
+  "closedStoryActIds": []
+}

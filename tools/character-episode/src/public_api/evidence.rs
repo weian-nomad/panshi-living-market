@@ -29,7 +29,7 @@ use crate::slice::seed;
 pub(super) const NARRATIVE_UNAVAILABLE_SCENE_LABEL: &str =
     "這一章的敘事沒有產生；下面是這一天的正式紀錄。";
 
-/// The only label a held chapter carries.
+/// The label a chapter held for visibility review carries.
 pub(super) const HELD_REASON_LABEL: &str = "這一章暫時不公開，可見性確認之後才會出現。";
 
 /// Why `influencedBy` is empty on this slice's position.
@@ -170,8 +170,9 @@ pub(super) fn session_memories<'a>(
 // -- held entry -----------------------------------------------------------
 
 /// A chapter withheld from the public journal: identity, date, and one
-/// reason label. No content field exists on this shape at all.
-pub(super) fn held_entry(session: &FoldedSession) -> Value {
+/// fixed reason label (a visibility hold, or a kill switch). No content
+/// field exists on this shape at all.
+pub(super) fn held_entry(session: &FoldedSession, reason_label: &'static str) -> Value {
     json!({
         "entryId": uuid(
             session
@@ -181,8 +182,41 @@ pub(super) fn held_entry(session: &FoldedSession) -> Value {
         ),
         "chapterDate": session.market_date_taipei,
         "entryVisibility": "HELD",
-        "heldReasonLabel": HELD_REASON_LABEL,
+        "heldReasonLabel": reason_label,
     })
+}
+
+/// The sealed segments of a held chapter whose own provenance is not
+/// market-derived (`Gate::segment_is_non_market`), verbatim, each citing its
+/// own chassis source rather than the chapter event: the chapter event's log
+/// position would count the withheld session's events.
+pub(super) fn non_market_segments(session: &FoldedSession, gate: &super::Gate) -> Vec<Value> {
+    session
+        .segments
+        .iter()
+        .filter(|segment| gate.segment_is_non_market(segment))
+        .filter_map(|segment| match &segment.body {
+            FoldedSegmentBody::Narrator { truth_class, text } => Some(json!({
+                "kind": "narrator",
+                "segmentId": segment.segment_id,
+                "text": text,
+                "truthClass": truth_class,
+                "sourceRefs": segment
+                    .source_refs
+                    .iter()
+                    .map(|reference| {
+                        assert_eq!(
+                            reference,
+                            seed::MOTIF_CONTROL_AND_RECOGNITION.motif_id,
+                            "a non-market segment cites only the chassis motif"
+                        );
+                        seed_source("natal-motif")
+                    })
+                    .collect::<Vec<Value>>(),
+            })),
+            FoldedSegmentBody::Claim { .. } => None,
+        })
+        .collect()
 }
 
 // -- narrative segments ---------------------------------------------------

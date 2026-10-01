@@ -28,12 +28,6 @@
               "globalPosition": null,
               "kind": "character_seed",
               "refId": "character-seed/v1#acquaintance-1/observable-actions/1"
-            },
-            {
-              "eventType": "StoryChapterComposed",
-              "globalPosition": 39,
-              "kind": "canonical_event",
-              "refId": "0cc0a7c7-0c49-028a-8218-50ba629437e4"
             }
           ],
           "truthClass": "fictional_setting"
@@ -49,12 +43,6 @@
               "globalPosition": null,
               "kind": "character_seed",
               "refId": "character-seed/v1#acquaintance-1/observable-actions/2"
-            },
-            {
-              "eventType": "StoryChapterComposed",
-              "globalPosition": 103,
-              "kind": "canonical_event",
-              "refId": "54608a5e-3a1c-6e2f-0365-3fba97e670fb"
             }
           ],
           "truthClass": "fictional_setting"
@@ -70,12 +58,6 @@
               "globalPosition": null,
               "kind": "character_seed",
               "refId": "character-seed/v1#acquaintance-1/observable-actions/3"
-            },
-            {
-              "eventType": "StoryChapterComposed",
-              "globalPosition": 171,
-              "kind": "canonical_event",
-              "refId": "8836dbab-cca9-a653-9e18-96a51cafdf1a"
             }
           ],
           "truthClass": "fictional_setting"
@@ -93,10 +75,10 @@
               "refId": "character-seed/v1#acquaintance-1/observable-actions/4"
             },
             {
-              "eventType": "StoryChapterComposed",
-              "globalPosition": 232,
+              "eventType": "PaperPositionOpened",
+              "globalPosition": 34,
               "kind": "canonical_event",
-              "refId": "d5b6a025-8874-4db8-e04b-73e771df8ffd"
+              "refId": "a243c129-0297-7b54-e16f-256452eab596"
             }
           ],
           "truthClass": "fictional_setting"
@@ -114,10 +96,10 @@
               "refId": "character-seed/v1#acquaintance-1/observable-actions/5"
             },
             {
-              "eventType": "StoryChapterComposed",
-              "globalPosition": 272,
+              "eventType": "PaperPositionOpened",
+              "globalPosition": 34,
               "kind": "canonical_event",
-              "refId": "c66659ee-1557-8675-fe86-9cb3123facea"
+              "refId": "a243c129-0297-7b54-e16f-256452eab596"
             }
           ],
           "truthClass": "fictional_setting"
@@ -352,6 +334,11 @@
       "refId": "a243c129-0297-7b54-e16f-256452eab596",
       "refKind": "paper_position",
       "revision": 30
+    },
+    {
+      "refId": "projection-kill-switch/v1",
+      "refKind": "projection_kill_switch",
+      "revision": 1
     }
   ],
   "truthClasses": [

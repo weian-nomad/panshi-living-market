@@ -1,0 +1,91 @@
+{
+  "contractVersion": "character-population-lifecycle/v1",
+  "manifestId": "v5-one-character-slice",
+  "policyApprovalState": "draft_unapproved",
+  "policyApprovalRef": null,
+  "policy": {
+    "revision": "character-lifecycle-policy/v1",
+    "coarseTickCadences": [
+      {
+        "activityTier": "Visible",
+        "cadencePolicyKey": "cadence-visible-scene-step/v1"
+      },
+      {
+        "activityTier": "Active",
+        "cadencePolicyKey": "cadence-active-event-driven/v1"
+      },
+      {
+        "activityTier": "Background",
+        "cadencePolicyKey": "cadence-background-coarse-daily/v1"
+      }
+    ],
+    "mandatoryFactClasses": [
+      "corporate_action",
+      "fact_correction",
+      "sealed_close_price"
+    ],
+    "mandatoryPaperProcesses": [
+      "holding_corporate_action_application",
+      "holding_correction_application",
+      "holding_mark"
+    ],
+    "relationshipAndMemoryEligibilityRules": [
+      "important_memory_event_eligibility",
+      "important_relationship_event_eligibility"
+    ],
+    "maxBackgroundCognitionCallsPerPeriod": 1,
+    "sharedExtractionPolicyRevision": "shared-fact-extraction-policy/v1",
+    "visibilityHoldReasons": [
+      "age_investigation",
+      "data_integrity_investigation",
+      "privacy_investigation",
+      "real_person_similarity_investigation",
+      "rights_investigation",
+      "safety_investigation"
+    ],
+    "withdrawalReasons": [
+      "confirmed_age_violation",
+      "confirmed_data_integrity_violation",
+      "confirmed_legal_takedown",
+      "confirmed_privacy_violation",
+      "confirmed_real_person_similarity",
+      "confirmed_rights_revocation",
+      "confirmed_safety_violation"
+    ],
+    "retentionAndTombstonePolicyRevision": "retention-tombstone-policy/v1",
+    "capacityCostModelRevision": "capacity-cost-model/v1"
+  },
+  "policyDigest": "sha256:XYZ",
+  "capacityCostModel": {
+    "revision": "capacity-cost-model/v1",
+    "measurementState": "unmeasured",
+    "measurementEvidenceRef": null
+  },
+  "capacityBudget": null,
+  "residents": [
+    {
+      "characterId": "96450815-0db8-f735-a139-5ba222da86b2",
+      "residentKind": "seed",
+      "continuityClass": "PUBLIC",
+      "continuityHistory": [],
+      "lifecyclePolicyRevision": "character-lifecycle-policy/v1",
+      "lifecyclePolicyDigest": "sha256:2484d58400a65135067b5fed15c92f42ae000acfddab26f944368ff244d555a0",
+      "capacityReservation": {
+        "capacityReservationId": "a7d42aa8-15a7-fa61-f252-0aaf3cec769b",
+        "introductionId": null,
+        "capacityCostModelRevision": "capacity-cost-model/v1",
+        "reservationState": "pending_measured_cost_model",
+        "obligationMinorUnits": null
+      }
+    }
+  ],
+  "populationQualification": {
+    "state": "not_run",
+    "requiredPopulation": 1850,
+    "seedResidents": 50,
+    "testerCount": 60,
+    "introductionsPerTesterPerWindow": 5,
+    "quotaWindows": 6,
+    "evidence": null
+  }
+}

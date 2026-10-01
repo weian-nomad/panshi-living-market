@@ -1,32 +1,41 @@
 {
   "contract": "contracts/openapi/public-v2.yaml",
-  "contractVersion": "2.3.0",
-  "description": "The complete set of fixed system sentences a public-v2 projection may emit in a field marked `x-panshi-system-label: true`, keyed by field name. A system label describes the system (why a list is empty, why a value is null, why a chapter is held); it is not a claim about the character or the market and carries no truth class. A value outside its field's list is a contract violation: consumers and audits reject it rather than render it. `nonClaimNumberKeys` names the numeric keys that are provenance, versioning or scene layout rather than claims, and so carry no truth class either; every other number in a projection is covered by its own `truthClass` or a sibling `<field>TruthClass`.",
+  "contractVersion": "3.0.0",
+  "description": "The complete set of fixed system sentences a public-v2 projection may emit in a field marked `x-panshi-system-label: true`, keyed by field name. A system label describes the system (why a list is empty, why a value is null, why a chapter is held, why part of a page's market content is paused by a kill switch); it is not a claim about the character or the market and carries no truth class. A value outside its field's list is a contract violation: consumers and audits reject it rather than render it. `nonClaimNumberKeys` names the numeric keys that are provenance, versioning or scene layout rather than claims, and so carry no truth class either; every other number in a projection is covered by its own `truthClass` or a sibling `<field>TruthClass`.",
   "copyReview": "The sentences below are engineering placeholder copy, 未經 copy-taste 審稿.",
   "systemLabels": {
     "acquaintancesEmptyReason": [
       "人物底盤沒有任何熟人節點。"
     ],
     "biasOccurrencesEmptyReason": [
-      "這段期間沒有任何有事件證據的偏誤。"
+      "這段期間沒有任何有事件證據的偏誤。",
+      "這份清單的市場內容依發布規則暫停顯示。"
     ],
     "counterExamplesEmptyReason": [
-      "這段期間沒有可回看的反例。"
+      "這段期間沒有可回看的反例。",
+      "這份清單的市場內容依發布規則暫停顯示。"
     ],
     "heldReasonLabel": [
-      "這一章暫時不公開，可見性確認之後才會出現。"
+      "這一章暫時不公開，可見性確認之後才會出現。",
+      "這一章的市場內容依發布規則暫停公開；人物的生活、關係與記憶照常。"
     ],
     "influencedByEmptyReason": [
       "沒有任何封存事件記錄別人影響過這個部位的決定；他在組會上的歸因是他自己的說法，記在關係頁。"
     ],
     "invocationsEmptyReason": [
-      "沒有任何章節封存過這個主題的象徵解讀。"
+      "沒有任何章節封存過這個主題的象徵解讀。",
+      "這份清單的市場內容依發布規則暫停顯示。"
+    ],
+    "marketClosureReasonLabel": [
+      "這一頁有部分市場內容依發布規則暫停顯示；人物的生活、關係與記憶照常。"
     ],
     "memoriesEmptyReason": [
-      "沒有任何可公開到這個檔案的已封存記憶。"
+      "沒有任何可公開到這個檔案的已封存記憶。",
+      "這份清單的市場內容依發布規則暫停顯示。"
     ],
     "observedInteractionsEmptyReason": [
-      "沒有封存任何他和她之間的可觀察互動。"
+      "沒有封存任何他和她之間的可觀察互動。",
+      "這份清單的市場內容依發布規則暫停顯示。"
     ],
     "paperOutcomeNullReason": [
       "這一天他沒有部位，也沒有成交，所以沒有紙上後果。"
@@ -41,7 +50,11 @@
       "這一天沒有留下關係訊號。"
     ],
     "relationshipSignalsEmptyReason": [
-      "他沒有在公開場合留下任何指向她的關係訊號。"
+      "他沒有在公開場合留下任何指向她的關係訊號。",
+      "這份清單的市場內容依發布規則暫停顯示。"
+    ],
+    "summaryHeldReasonLabel": [
+      "這一節的摘要含有依發布規則暫停顯示的市場內容。"
     ],
     "tombstoneReasonLabel": []
   },

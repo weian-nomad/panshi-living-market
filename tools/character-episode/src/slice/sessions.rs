@@ -97,6 +97,10 @@ pub struct SealedFact {
     /// corrects. This is the only place the slice learns that a fact was
     /// later shown to be wrong -- it is never inferred from a price move.
     pub supersedes_fact_revision_id: Option<&'static str>,
+    /// Upstream `payload.instrumentLabel`: the instrument (company) the fact
+    /// is about. The projection kill switch closes a company's character
+    /// projection by this label, including the facts about it.
+    pub instrument_label: &'static str,
 }
 
 // -- Midnight (00:00 UTC+8) for each market date -----------------------------
@@ -176,198 +180,231 @@ pub const FACTS: [SealedFact; FACT_COUNT] = [
         manifest_id: "wfm_hist_001_s01",
         available_at_unix_micros: taipei(MIDNIGHT[0], 8, 47),
         supersedes_fact_revision_id: None,
+        instrument_label: SECURITY_ID,
     },
     SealedFact {
         fact_revision_id: FACT_COUNTER_INVENTORY,
         manifest_id: "wfm_hist_001_s01",
         available_at_unix_micros: taipei(MIDNIGHT[0], 10, 20),
         supersedes_fact_revision_id: None,
+        instrument_label: SECURITY_ID,
     },
     SealedFact {
         fact_revision_id: FACT_PRICE[0],
         manifest_id: "wfm_hist_001_s01",
         available_at_unix_micros: taipei(MIDNIGHT[0], 13, 30),
         supersedes_fact_revision_id: None,
+        instrument_label: SECURITY_ID,
     },
     SealedFact {
         fact_revision_id: FACT_PRICE[1],
         manifest_id: "wfm_hist_001_s02",
         available_at_unix_micros: taipei(MIDNIGHT[1], 13, 30),
         supersedes_fact_revision_id: None,
+        instrument_label: SECURITY_ID,
     },
     SealedFact {
         fact_revision_id: FACT_PRICE[2],
         manifest_id: "wfm_hist_001_s03",
         available_at_unix_micros: taipei(MIDNIGHT[2], 13, 30),
         supersedes_fact_revision_id: None,
+        instrument_label: SECURITY_ID,
     },
     SealedFact {
         fact_revision_id: FACT_PRICE[3],
         manifest_id: "wfm_hist_001_s04",
         available_at_unix_micros: taipei(MIDNIGHT[3], 13, 30),
         supersedes_fact_revision_id: None,
+        instrument_label: SECURITY_ID,
     },
     SealedFact {
         fact_revision_id: FACT_PRICE[4],
         manifest_id: "wfm_hist_001_s05",
         available_at_unix_micros: taipei(MIDNIGHT[4], 13, 30),
         supersedes_fact_revision_id: None,
+        instrument_label: SECURITY_ID,
     },
     SealedFact {
         fact_revision_id: FACT_PRICE[5],
         manifest_id: "wfm_hist_001_s06",
         available_at_unix_micros: taipei(MIDNIGHT[5], 13, 30),
         supersedes_fact_revision_id: None,
+        instrument_label: SECURITY_ID,
     },
     SealedFact {
         fact_revision_id: FACT_ISSUER_CORRECTION,
         manifest_id: "wfm_hist_001_s07",
         available_at_unix_micros: taipei(MIDNIGHT[6], 11, 25),
         supersedes_fact_revision_id: Some(FACT_MOMENTUM_S1),
+        instrument_label: SECURITY_ID,
     },
     SealedFact {
         fact_revision_id: FACT_PRICE[6],
         manifest_id: "wfm_hist_001_s07",
         available_at_unix_micros: taipei(MIDNIGHT[6], 13, 30),
         supersedes_fact_revision_id: None,
+        instrument_label: SECURITY_ID,
     },
     SealedFact {
         fact_revision_id: FACT_PRICE[7],
         manifest_id: "wfm_hist_001_s08",
         available_at_unix_micros: taipei(MIDNIGHT[7], 13, 30),
         supersedes_fact_revision_id: None,
+        instrument_label: SECURITY_ID,
     },
     SealedFact {
         fact_revision_id: FACT_PRICE[8],
         manifest_id: "wfm_hist_001_s09",
         available_at_unix_micros: taipei(MIDNIGHT[8], 13, 30),
         supersedes_fact_revision_id: None,
+        instrument_label: SECURITY_ID,
     },
     SealedFact {
         fact_revision_id: FACT_PRICE[9],
         manifest_id: "wfm_hist_001_s10",
         available_at_unix_micros: taipei(MIDNIGHT[9], 13, 30),
         supersedes_fact_revision_id: None,
+        instrument_label: SECURITY_ID,
     },
     SealedFact {
         fact_revision_id: FACT_PRICE[10],
         manifest_id: "wfm_hist_001_s11",
         available_at_unix_micros: taipei(MIDNIGHT[10], 13, 30),
         supersedes_fact_revision_id: None,
+        instrument_label: SECURITY_ID,
     },
     SealedFact {
         fact_revision_id: FACT_PRICE[11],
         manifest_id: "wfm_hist_001_s12",
         available_at_unix_micros: taipei(MIDNIGHT[11], 13, 30),
         supersedes_fact_revision_id: None,
+        instrument_label: SECURITY_ID,
     },
     SealedFact {
         fact_revision_id: FACT_PRICE[12],
         manifest_id: "wfm_hist_001_s13",
         available_at_unix_micros: taipei(MIDNIGHT[12], 13, 30),
         supersedes_fact_revision_id: None,
+        instrument_label: SECURITY_ID,
     },
     SealedFact {
         fact_revision_id: FACT_PRICE[13],
         manifest_id: "wfm_hist_001_s14",
         available_at_unix_micros: taipei(MIDNIGHT[13], 13, 30),
         supersedes_fact_revision_id: None,
+        instrument_label: SECURITY_ID,
     },
     SealedFact {
         fact_revision_id: FACT_PRICE[14],
         manifest_id: "wfm_hist_001_s15",
         available_at_unix_micros: taipei(MIDNIGHT[14], 13, 30),
         supersedes_fact_revision_id: None,
+        instrument_label: SECURITY_ID,
     },
     SealedFact {
         fact_revision_id: FACT_PRICE[15],
         manifest_id: "wfm_hist_001_s16",
         available_at_unix_micros: taipei(MIDNIGHT[15], 13, 30),
         supersedes_fact_revision_id: None,
+        instrument_label: SECURITY_ID,
     },
     SealedFact {
         fact_revision_id: FACT_PRICE[16],
         manifest_id: "wfm_hist_001_s17",
         available_at_unix_micros: taipei(MIDNIGHT[16], 13, 30),
         supersedes_fact_revision_id: None,
+        instrument_label: SECURITY_ID,
     },
     SealedFact {
         fact_revision_id: FACT_PRICE[17],
         manifest_id: "wfm_hist_001_s18",
         available_at_unix_micros: taipei(MIDNIGHT[17], 13, 30),
         supersedes_fact_revision_id: None,
+        instrument_label: SECURITY_ID,
     },
     SealedFact {
         fact_revision_id: FACT_PRICE[18],
         manifest_id: "wfm_hist_001_s19",
         available_at_unix_micros: taipei(MIDNIGHT[18], 13, 30),
         supersedes_fact_revision_id: None,
+        instrument_label: SECURITY_ID,
     },
     SealedFact {
         fact_revision_id: FACT_PRICE[19],
         manifest_id: "wfm_hist_001_s20",
         available_at_unix_micros: taipei(MIDNIGHT[19], 13, 30),
         supersedes_fact_revision_id: None,
+        instrument_label: SECURITY_ID,
     },
     SealedFact {
         fact_revision_id: FACT_PRICE[20],
         manifest_id: "wfm_hist_001_s21",
         available_at_unix_micros: taipei(MIDNIGHT[20], 13, 30),
         supersedes_fact_revision_id: None,
+        instrument_label: SECURITY_ID,
     },
     SealedFact {
         fact_revision_id: FACT_PRICE[21],
         manifest_id: "wfm_hist_001_s22",
         available_at_unix_micros: taipei(MIDNIGHT[21], 13, 30),
         supersedes_fact_revision_id: None,
+        instrument_label: SECURITY_ID,
     },
     SealedFact {
         fact_revision_id: FACT_PRICE[22],
         manifest_id: "wfm_hist_001_s23",
         available_at_unix_micros: taipei(MIDNIGHT[22], 13, 30),
         supersedes_fact_revision_id: None,
+        instrument_label: SECURITY_ID,
     },
     SealedFact {
         fact_revision_id: FACT_PRICE[23],
         manifest_id: "wfm_hist_001_s24",
         available_at_unix_micros: taipei(MIDNIGHT[23], 13, 30),
         supersedes_fact_revision_id: None,
+        instrument_label: SECURITY_ID,
     },
     SealedFact {
         fact_revision_id: FACT_PRICE[24],
         manifest_id: "wfm_hist_001_s25",
         available_at_unix_micros: taipei(MIDNIGHT[24], 13, 30),
         supersedes_fact_revision_id: None,
+        instrument_label: SECURITY_ID,
     },
     SealedFact {
         fact_revision_id: FACT_PRICE[25],
         manifest_id: "wfm_hist_001_s26",
         available_at_unix_micros: taipei(MIDNIGHT[25], 13, 30),
         supersedes_fact_revision_id: None,
+        instrument_label: SECURITY_ID,
     },
     SealedFact {
         fact_revision_id: FACT_PRICE[26],
         manifest_id: "wfm_hist_001_s27",
         available_at_unix_micros: taipei(MIDNIGHT[26], 13, 30),
         supersedes_fact_revision_id: None,
+        instrument_label: SECURITY_ID,
     },
     SealedFact {
         fact_revision_id: FACT_PRICE[27],
         manifest_id: "wfm_hist_001_s28",
         available_at_unix_micros: taipei(MIDNIGHT[27], 13, 30),
         supersedes_fact_revision_id: None,
+        instrument_label: SECURITY_ID,
     },
     SealedFact {
         fact_revision_id: FACT_PRICE[28],
         manifest_id: "wfm_hist_001_s29",
         available_at_unix_micros: taipei(MIDNIGHT[28], 13, 30),
         supersedes_fact_revision_id: None,
+        instrument_label: SECURITY_ID,
     },
     SealedFact {
         fact_revision_id: FACT_PRICE[29],
         manifest_id: "wfm_hist_001_s30",
         available_at_unix_micros: taipei(MIDNIGHT[29], 8, 32),
         supersedes_fact_revision_id: None,
+        instrument_label: SECURITY_ID,
     },
 ];
 
@@ -389,6 +426,7 @@ pub const SESSIONS: [MarketSession; SESSION_COUNT] = [
         sealed_close: twd(96, 0),
         close_price_fact_revision_id: FACT_PRICE[0],
         finality_accepted: true,
+        mode_domain: ManifestModeDomain::Historical,
     },
     MarketSession {
         session_index: 2,
@@ -405,6 +443,7 @@ pub const SESSIONS: [MarketSession; SESSION_COUNT] = [
         sealed_close: twd(100, 0),
         close_price_fact_revision_id: FACT_PRICE[1],
         finality_accepted: true,
+        mode_domain: ManifestModeDomain::Historical,
     },
     MarketSession {
         session_index: 3,
@@ -421,6 +460,7 @@ pub const SESSIONS: [MarketSession; SESSION_COUNT] = [
         sealed_close: twd(96, 400_000),
         close_price_fact_revision_id: FACT_PRICE[2],
         finality_accepted: true,
+        mode_domain: ManifestModeDomain::Historical,
     },
     MarketSession {
         session_index: 4,
@@ -437,6 +477,7 @@ pub const SESSIONS: [MarketSession; SESSION_COUNT] = [
         sealed_close: twd(93, 500_000),
         close_price_fact_revision_id: FACT_PRICE[3],
         finality_accepted: true,
+        mode_domain: ManifestModeDomain::Historical,
     },
     MarketSession {
         session_index: 5,
@@ -453,6 +494,7 @@ pub const SESSIONS: [MarketSession; SESSION_COUNT] = [
         sealed_close: twd(94, 100_000),
         close_price_fact_revision_id: FACT_PRICE[4],
         finality_accepted: true,
+        mode_domain: ManifestModeDomain::Historical,
     },
     MarketSession {
         session_index: 6,
@@ -469,6 +511,7 @@ pub const SESSIONS: [MarketSession; SESSION_COUNT] = [
         sealed_close: twd(92, 800_000),
         close_price_fact_revision_id: FACT_PRICE[5],
         finality_accepted: true,
+        mode_domain: ManifestModeDomain::Historical,
     },
     MarketSession {
         session_index: 7,
@@ -485,6 +528,7 @@ pub const SESSIONS: [MarketSession; SESSION_COUNT] = [
         sealed_close: twd(91, 600_000),
         close_price_fact_revision_id: FACT_PRICE[6],
         finality_accepted: true,
+        mode_domain: ManifestModeDomain::Historical,
     },
     MarketSession {
         session_index: 8,
@@ -501,6 +545,7 @@ pub const SESSIONS: [MarketSession; SESSION_COUNT] = [
         sealed_close: twd(90, 900_000),
         close_price_fact_revision_id: FACT_PRICE[7],
         finality_accepted: true,
+        mode_domain: ManifestModeDomain::Historical,
     },
     MarketSession {
         session_index: 9,
@@ -517,6 +562,7 @@ pub const SESSIONS: [MarketSession; SESSION_COUNT] = [
         sealed_close: twd(91, 300_000),
         close_price_fact_revision_id: FACT_PRICE[8],
         finality_accepted: true,
+        mode_domain: ManifestModeDomain::Historical,
     },
     MarketSession {
         session_index: 10,
@@ -533,6 +579,7 @@ pub const SESSIONS: [MarketSession; SESSION_COUNT] = [
         sealed_close: twd(90, 200_000),
         close_price_fact_revision_id: FACT_PRICE[9],
         finality_accepted: true,
+        mode_domain: ManifestModeDomain::Historical,
     },
     MarketSession {
         session_index: 11,
@@ -549,6 +596,7 @@ pub const SESSIONS: [MarketSession; SESSION_COUNT] = [
         sealed_close: twd(89, 400_000),
         close_price_fact_revision_id: FACT_PRICE[10],
         finality_accepted: true,
+        mode_domain: ManifestModeDomain::Historical,
     },
     MarketSession {
         session_index: 12,
@@ -565,6 +613,7 @@ pub const SESSIONS: [MarketSession; SESSION_COUNT] = [
         sealed_close: twd(88, 200_000),
         close_price_fact_revision_id: FACT_PRICE[11],
         finality_accepted: true,
+        mode_domain: ManifestModeDomain::Historical,
     },
     MarketSession {
         session_index: 13,
@@ -581,6 +630,7 @@ pub const SESSIONS: [MarketSession; SESSION_COUNT] = [
         sealed_close: twd(88, 600_000),
         close_price_fact_revision_id: FACT_PRICE[12],
         finality_accepted: true,
+        mode_domain: ManifestModeDomain::Historical,
     },
     MarketSession {
         session_index: 14,
@@ -597,6 +647,7 @@ pub const SESSIONS: [MarketSession; SESSION_COUNT] = [
         sealed_close: twd(89, 100_000),
         close_price_fact_revision_id: FACT_PRICE[13],
         finality_accepted: true,
+        mode_domain: ManifestModeDomain::Historical,
     },
     MarketSession {
         session_index: 15,
@@ -613,6 +664,7 @@ pub const SESSIONS: [MarketSession; SESSION_COUNT] = [
         sealed_close: twd(88, 900_000),
         close_price_fact_revision_id: FACT_PRICE[14],
         finality_accepted: true,
+        mode_domain: ManifestModeDomain::Historical,
     },
     MarketSession {
         session_index: 16,
@@ -629,6 +681,7 @@ pub const SESSIONS: [MarketSession; SESSION_COUNT] = [
         sealed_close: twd(88, 300_000),
         close_price_fact_revision_id: FACT_PRICE[15],
         finality_accepted: true,
+        mode_domain: ManifestModeDomain::Historical,
     },
     MarketSession {
         session_index: 17,
@@ -645,6 +698,7 @@ pub const SESSIONS: [MarketSession; SESSION_COUNT] = [
         sealed_close: twd(87, 600_000),
         close_price_fact_revision_id: FACT_PRICE[16],
         finality_accepted: true,
+        mode_domain: ManifestModeDomain::Historical,
     },
     MarketSession {
         session_index: 18,
@@ -661,6 +715,7 @@ pub const SESSIONS: [MarketSession; SESSION_COUNT] = [
         sealed_close: twd(86, 900_000),
         close_price_fact_revision_id: FACT_PRICE[17],
         finality_accepted: true,
+        mode_domain: ManifestModeDomain::Historical,
     },
     MarketSession {
         session_index: 19,
@@ -677,6 +732,7 @@ pub const SESSIONS: [MarketSession; SESSION_COUNT] = [
         sealed_close: twd(86, 100_000),
         close_price_fact_revision_id: FACT_PRICE[18],
         finality_accepted: true,
+        mode_domain: ManifestModeDomain::Historical,
     },
     MarketSession {
         session_index: 20,
@@ -693,6 +749,7 @@ pub const SESSIONS: [MarketSession; SESSION_COUNT] = [
         sealed_close: twd(85, 700_000),
         close_price_fact_revision_id: FACT_PRICE[19],
         finality_accepted: true,
+        mode_domain: ManifestModeDomain::Historical,
     },
     MarketSession {
         session_index: 21,
@@ -709,6 +766,7 @@ pub const SESSIONS: [MarketSession; SESSION_COUNT] = [
         sealed_close: twd(86, 200_000),
         close_price_fact_revision_id: FACT_PRICE[20],
         finality_accepted: true,
+        mode_domain: ManifestModeDomain::Historical,
     },
     MarketSession {
         session_index: 22,
@@ -725,6 +783,7 @@ pub const SESSIONS: [MarketSession; SESSION_COUNT] = [
         sealed_close: twd(86, 800_000),
         close_price_fact_revision_id: FACT_PRICE[21],
         finality_accepted: true,
+        mode_domain: ManifestModeDomain::Historical,
     },
     MarketSession {
         session_index: 23,
@@ -741,6 +800,7 @@ pub const SESSIONS: [MarketSession; SESSION_COUNT] = [
         sealed_close: twd(87, 100_000),
         close_price_fact_revision_id: FACT_PRICE[22],
         finality_accepted: true,
+        mode_domain: ManifestModeDomain::Historical,
     },
     MarketSession {
         session_index: 24,
@@ -757,6 +817,7 @@ pub const SESSIONS: [MarketSession; SESSION_COUNT] = [
         sealed_close: twd(87, 500_000),
         close_price_fact_revision_id: FACT_PRICE[23],
         finality_accepted: true,
+        mode_domain: ManifestModeDomain::Historical,
     },
     MarketSession {
         session_index: 25,
@@ -773,6 +834,7 @@ pub const SESSIONS: [MarketSession; SESSION_COUNT] = [
         sealed_close: twd(86, 800_000),
         close_price_fact_revision_id: FACT_PRICE[24],
         finality_accepted: true,
+        mode_domain: ManifestModeDomain::Historical,
     },
     MarketSession {
         session_index: 26,
@@ -789,6 +851,7 @@ pub const SESSIONS: [MarketSession; SESSION_COUNT] = [
         sealed_close: twd(86, 400_000),
         close_price_fact_revision_id: FACT_PRICE[25],
         finality_accepted: true,
+        mode_domain: ManifestModeDomain::Historical,
     },
     MarketSession {
         session_index: 27,
@@ -805,6 +868,7 @@ pub const SESSIONS: [MarketSession; SESSION_COUNT] = [
         sealed_close: twd(86, 900_000),
         close_price_fact_revision_id: FACT_PRICE[26],
         finality_accepted: true,
+        mode_domain: ManifestModeDomain::Historical,
     },
     MarketSession {
         session_index: 28,
@@ -821,6 +885,7 @@ pub const SESSIONS: [MarketSession; SESSION_COUNT] = [
         sealed_close: twd(87, 400_000),
         close_price_fact_revision_id: FACT_PRICE[27],
         finality_accepted: true,
+        mode_domain: ManifestModeDomain::Historical,
     },
     MarketSession {
         session_index: 29,
@@ -837,6 +902,7 @@ pub const SESSIONS: [MarketSession; SESSION_COUNT] = [
         sealed_close: twd(87, 200_000),
         close_price_fact_revision_id: FACT_PRICE[28],
         finality_accepted: true,
+        mode_domain: ManifestModeDomain::Historical,
     },
     // "Today". The price revision exists, but its
     // `marketSessionFinalityState` is `pending`, so it may not be used as a
@@ -858,6 +924,7 @@ pub const SESSIONS: [MarketSession; SESSION_COUNT] = [
         sealed_close: twd(87, 200_000),
         close_price_fact_revision_id: FACT_PRICE[29],
         finality_accepted: false,
+        mode_domain: ManifestModeDomain::Historical,
     },
 ];
 
@@ -920,6 +987,37 @@ pub struct MarketSession {
     /// Mirrors `price.payload.marketSessionFinalityState == "accepted"`.
     /// `false` only for S30, whose price revision is still `pending`.
     pub finality_accepted: bool,
+    /// Upstream `modeDomain`. Every session of this fixture is
+    /// `Historical`; only `Current` is "current-market" for the projection
+    /// kill switch.
+    pub mode_domain: ManifestModeDomain,
+}
+
+/// The `modeDomain` of the world fact manifest a session was sealed under.
+///
+/// `Historical` is this repository's synthetic historical fixture
+/// (`contracts/world-fact-manifest/historical-v1`, `modeDomain:
+/// "historical"`); `Current` is a live current-mode manifest from the
+/// separate market-research repository (`contracts/world-fact-manifest/v1`,
+/// `modeDomain: "current"`). Only `Current` content is the "current-market
+/// projection" that `docs/v5/market-safety.md` keeps closed until every
+/// release gate passes; the synthetic historical fixture keeps projecting
+/// while it is closed ("關閉市場投影後，公共世界仍可運行……合成歷史 fixture").
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ManifestModeDomain {
+    Historical,
+    Current,
+}
+
+impl ManifestModeDomain {
+    /// The manifest contract's own `modeDomain` string.
+    #[must_use]
+    pub const fn contract_label(self) -> &'static str {
+        match self {
+            Self::Historical => "historical",
+            Self::Current => "current",
+        }
+    }
 }
 
 impl MarketSession {
@@ -1116,11 +1214,21 @@ mod tests {
             );
             assert_eq!(text(fact, "truthClass"), "fictional_setting", "{id}: truthClass");
             assert_eq!(text(fact, "provenanceClass"), "synthetic_fixture", "{id}: provenance");
+            assert_eq!(
+                fact["payload"]["instrumentLabel"].as_str(),
+                Some(mirrored.instrument_label),
+                "{id}: payload.instrumentLabel"
+            );
         }
 
         for (manifest, session) in manifests.iter().zip(SESSIONS.iter()) {
             let manifest_id = text(manifest, "manifestId");
             assert_eq!(manifest_id, session.manifest_id);
+            assert_eq!(
+                text(manifest, "modeDomain"),
+                session.mode_domain.contract_label(),
+                "{manifest_id}: modeDomain"
+            );
             assert_eq!(text(manifest, "marketSessionId"), session.market_session_id);
             assert_eq!(text(manifest, "marketDateTaipei"), session.market_date_taipei);
             assert_eq!(

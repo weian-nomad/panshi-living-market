@@ -29,7 +29,7 @@ import { FollowLayer, offscreenDimStyle } from "./FollowLayer";
 import { ITEM_TRUTH_CLASS_EXPLANATION } from "./ItemTruthTag";
 import { TruthTag } from "./TruthTag";
 import { MISSING_CLAIM_TRUTH_CLASS_TEXT } from "./claimTruth";
-import { DATA_UNAVAILABLE_LABEL, formatAsOfIntraday, truthClassLabel } from "./format";
+import { DATA_UNAVAILABLE_LABEL, formatAsOfIntraday, truthClassLabel, projectionVersionLabel } from "./format";
 import {
   INITIAL_FOLLOW_STATE,
   classifyPointerGesture,
@@ -44,6 +44,7 @@ import {
 } from "./followGesture";
 import { WORLD_BREATH_MS } from "./motion";
 import { EmptyStatePanel } from "./statePanels";
+import { SystemLabel } from "./SystemLabel";
 import {
   BACKDROP_SHAPES,
   COPPER_RULES,
@@ -412,10 +413,15 @@ export function WorldScreen({ snapshot, onOpenCloseUp }: WorldScreenProps) {
             truthClass={truthClass}
             explanation={ITEM_TRUTH_CLASS_EXPLANATION[truthClass]}
             asOfLabel={asOfText(snapshot.marketClock.asOfTradingDate)}
-            versionLabel={`projection v${snapshot.projectionVersion}`}
+            versionLabel={projectionVersionLabel(snapshot)}
           />
         ))}
       </div>
+
+      {/* public-v2 3.0.0：kill switch 暫停今日五幕或居民今天的焦點時，只畫投影給的固定系統說明。 */}
+      {typeof snapshot.marketClosureReasonLabel === "string" ? (
+        <SystemLabel field="marketClosureReasonLabel" text={snapshot.marketClosureReasonLabel} />
+      ) : null}
 
       <dl className="v5-world__clock panshi-data">
         <div>

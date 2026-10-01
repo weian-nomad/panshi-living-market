@@ -24,11 +24,13 @@ import type {
   ArchiveSectionIndexEntry,
   ArchiveSectionKey,
   CharacterArchiveIndex,
+  HeldArchiveSectionIndexEntry,
   TruthClass,
 } from "../api/generated-v2/types.gen";
 import { ClaimWithTruth } from "./ItemTruthTag";
 import { TruthTag } from "./TruthTag";
-import { DATA_UNAVAILABLE_LABEL } from "./format";
+import { DATA_UNAVAILABLE_LABEL, projectionVersionLabel } from "./format";
+import { SystemLabel } from "./SystemLabel";
 
 /** experience-spec §9.1 的固定索引順序與段名。 */
 export const ARCHIVE_SECTION_ORDER: readonly { key: ArchiveSectionKey; title: string }[] = [
@@ -128,11 +130,29 @@ function SectionEntry({
   declaredTruthClasses,
   onOpen,
 }: {
-  entry: ArchiveSectionIndexEntry | null;
+  entry: ArchiveSectionIndexEntry | HeldArchiveSectionIndexEntry | null;
   title: string;
   declaredTruthClasses: readonly TruthClass[];
   onOpen: (() => void) | null;
 }) {
+  // public-v2 3.0.0：摘要被 kill switch 暫停的節只有固定的系統說明；入口照常。
+  if (entry !== null && "summaryHeldReasonLabel" in entry) {
+    return (
+      <section className="v5-archive__section">
+        <h3>{title}</h3>
+        <SystemLabel field="summaryHeldReasonLabel" text={entry.summaryHeldReasonLabel} />
+        {onOpen === null ? (
+          <p className="v5-archive__entry-only panshi-paper">{NO_SECTION_PATH_TEXT}</p>
+        ) : (
+          <p>
+            <button type="button" className="v5-archive__open" onClick={onOpen}>
+              打開{title}
+            </button>
+          </p>
+        )}
+      </section>
+    );
+  }
   if (entry === null) {
     return (
       <section className="v5-archive__section">
@@ -187,11 +207,14 @@ export function ArchiveIndexScreen({
   onOpenSection,
   onBackToJournal,
 }: ArchiveIndexScreenProps) {
-  const highlightVersion = `${index.archiveSchemaRevision}／projection v${index.projectionVersion}`;
-  const bySectionKey = new Map<ArchiveSectionKey, ArchiveSectionIndexEntry>();
+  const highlightVersion = `${index.archiveSchemaRevision}／${projectionVersionLabel(index)}`;
+  const bySectionKey = new Map<ArchiveSectionKey, ArchiveSectionIndexEntry | HeldArchiveSectionIndexEntry>();
   for (const entry of index.sections) {
     if (!bySectionKey.has(entry.sectionKey)) bySectionKey.set(entry.sectionKey, entry);
   }
+  // public-v2 3.0.0：kill switch 暫停「累計自整段歷史」的那一層時，長期矛盾與最近三件事
+  // 不在投影裡；畫投影給的固定系統說明，不寫成「資料未到」或「沒有留下近期事項」。
+  const closure = typeof index.marketClosureReasonLabel === "string" ? index.marketClosureReasonLabel : null;
 
   return (
     <section className="v5-archive" aria-label="深層人生檔案索引">
@@ -200,6 +223,9 @@ export function ArchiveIndexScreen({
       <div className="v5-archive__head">
         <Portrait />
         <div className="v5-archive__tension">
+          {closure !== null && index.longTermTensionSummary === undefined ? (
+            <SystemLabel field="marketClosureReasonLabel" text={closure} />
+          ) : (
           <ClaimWithTruth
             truthClass={index.longTermTensionSummaryTruthClass}
             declared={index.truthClasses}
@@ -209,6 +235,7 @@ export function ArchiveIndexScreen({
           >
             <p className="panshi-paper">{index.longTermTensionSummary}</p>
           </ClaimWithTruth>
+          )}
         </div>
       </div>
 
@@ -219,13 +246,15 @@ export function ArchiveIndexScreen({
             truthClass={truthClass}
             explanation={TRUTH_CLASS_EXPLANATION[truthClass]}
             asOfLabel={index.serverNow}
-            versionLabel={`${index.archiveSchemaRevision}／projection v${index.projectionVersion}`}
+            versionLabel={`${index.archiveSchemaRevision}／${projectionVersionLabel(index)}`}
           />
         ))}
       </div>
 
       <h3>最近留下的三件事</h3>
-      {index.recentHighlights.length === 0 ? (
+      {index.recentHighlights.length === 0 && closure !== null ? (
+        <SystemLabel field="marketClosureReasonLabel" text={closure} />
+      ) : index.recentHighlights.length === 0 ? (
         <p className="v5-archive__entry-only panshi-paper">
           {DATA_UNAVAILABLE_LABEL}：這份投影沒有留下近期事項。
         </p>
@@ -265,8 +294,8 @@ export function ArchiveIndexScreen({
       <section className="v5-archive__section">
         <h3>資料身分與版本</h3>
         <p className="v5-archive__meta panshi-data">
-          檔案結構 {index.archiveSchemaRevision}／投影版本 {index.projectionVersion}／來源位置{" "}
-          {index.sourceGlobalPosition}／可見性紀元 {index.visibilityEpoch}
+          {/* public-v2 3.0.0：不顯示投影版本與來源位置——那是事件數，前後差值可推出某天的事件多寡。 */}
+          檔案結構 {index.archiveSchemaRevision}／可見性紀元 {index.visibilityEpoch}
         </p>
         <p className="v5-archive__meta panshi-data">
           來源修訂 {index.sourceRevisionSet.length} 筆：

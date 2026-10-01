@@ -420,7 +420,9 @@ function holdingBody(
   });
 
   const exposure =
-    marketValue === null ? null : exposurePercentFixed2(marketValue, projection.account.cashMinorUnits);
+    marketValue === null || projection.account === undefined
+      ? null
+      : exposurePercentFixed2(marketValue, projection.account.cashMinorUnits);
   figures.push({
     label: "曝險",
     text: exposure === null ? DATA_UNAVAILABLE_LABEL : percentFixed2ToString(exposure),
@@ -536,9 +538,13 @@ function archiveNodesBody(
   });
 
   items.push({ label: "部位識別碼", text: position.positionId });
+  // public-v2 3.0.0：被 kill switch 暫停時沒有版本集，這一列寫「資料未到」，不補摘要。
   items.push({
     label: "紙上版本集",
-    text: projection.paperVersionSet.paperVersionSetDigest.slice(0, DIGEST_PREFIX_LENGTH),
+    text:
+      projection.paperVersionSet === undefined
+        ? DATA_UNAVAILABLE_LABEL
+        : projection.paperVersionSet.paperVersionSetDigest.slice(0, DIGEST_PREFIX_LENGTH),
   });
 
   for (const ref of projection.sourceRevisionSet) {

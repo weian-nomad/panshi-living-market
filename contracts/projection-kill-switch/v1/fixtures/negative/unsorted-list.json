@@ -1,0 +1,24 @@
+{
+  "contractVersion": "projection-kill-switch/v1",
+  "revision": 7,
+  "issuedAt": "2026-04-14T14:05:00+08:00",
+  "currentMarketProjection": "closed",
+  "tickerSpecificShareAndShortVideo": "closed",
+  "closedFactRevisionIds": [
+    "fact-hist-001-s07-correction",
+    "sf_2026_0414_000123"
+  ],
+  "closedInstruments": [
+    "PSZS-DEMO"
+  ],
+  "closedMarketSessionIds": [
+    "session-hist-001-s20",
+    "mkts_20260414_twse"
+  ],
+  "closedPaperActionRevealDates": [
+    "2026-04-13"
+  ],
+  "closedStoryActIds": [
+    "78771f77-daa5-0065-ddbf-4223f69c881f"
+  ]
+}

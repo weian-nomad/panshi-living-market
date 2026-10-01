@@ -31,7 +31,7 @@ import { TruthTag } from "./TruthTag";
 import { Utterance } from "./Utterance";
 import { SystemLabel } from "./SystemLabel";
 import { claimTruthClassOf, nestedFiguresUsable } from "./claimTruth";
-import { DATA_UNAVAILABLE_LABEL, minorUnitsToTwdOrNull } from "./format";
+import { DATA_UNAVAILABLE_LABEL, minorUnitsToTwdOrNull, projectionVersionLabel } from "./format";
 import {
   minorUnitsToTwdText,
   paperActionRows,
@@ -267,7 +267,7 @@ function PositionComparison({
   archive: PaperArchiveProjection;
   position: PaperPositionPublic;
 }) {
-  const versionLabel = `projection v${archive.projectionVersion}`;
+  const versionLabel = projectionVersionLabel(archive);
   const narration = position.currentNarration;
   const declared = archive.truthClasses;
   // 成本是各 lot 成本相加、掛部位的標籤：每一筆 lot 自己的身分都要過閘門且與部位相同
@@ -380,10 +380,17 @@ export function PaperArchiveScreen({ archive, onBackToArchiveIndex }: PaperArchi
     if (window.location.hash !== `#${PAPER_CORRECTIONS_ANCHOR}`) return;
     document.getElementById(PAPER_CORRECTIONS_ANCHOR)?.focus();
   }, []);
-  const initialCapital = minorUnitsToTwdText(archive.account.initialCapitalMinorUnits);
-  const cash = minorUnitsToTwdText(archive.account.cashMinorUnits);
+  // public-v2 3.0.0：kill switch 暫停今天的紙上視圖時，`account`、`paperVersionSet`
+  // 不在投影裡、`positions` 是空的，投影帶固定的 `marketClosureReasonLabel`。這時每一段
+  // 都只畫那句系統說明：不畫「目前沒有持股」「沒有附上任何更正紀錄」這類 client 自己
+  // 生出的中性版本，也不補 0。
+  const closure =
+    typeof archive.marketClosureReasonLabel === "string" ? archive.marketClosureReasonLabel : null;
+  const account = archive.account;
+  const initialCapital = account === undefined ? null : minorUnitsToTwdText(account.initialCapitalMinorUnits);
+  const cash = account === undefined ? null : minorUnitsToTwdText(account.cashMinorUnits);
   const declared = archive.truthClasses;
-  const versionLabel = `projection v${archive.projectionVersion}`;
+  const versionLabel = projectionVersionLabel(archive);
 
   return (
     <section className="v5-paper" aria-label="模擬紀錄">
@@ -396,34 +403,42 @@ export function PaperArchiveScreen({ archive, onBackToArchiveIndex }: PaperArchi
             truthClass={truthClass}
             explanation={TRUTH_CLASS_EXPLANATION[truthClass]}
             asOfLabel={archive.asOf}
-            versionLabel={`projection v${archive.projectionVersion}`}
+            versionLabel={projectionVersionLabel(archive)}
           />
         ))}
       </div>
 
+      {closure === null ? null : <SystemLabel field="marketClosureReasonLabel" text={closure} />}
+
       <section className="v5-paper__account" aria-label="模擬帳戶">
         <h3>模擬帳戶</h3>
-        <ClaimWithTruth
-          truthClass={archive.account.truthClass}
-          declared={declared}
-          asOfLabel={archive.account.asOf}
-          versionLabel={versionLabel}
-        >
-          <dl className="panshi-data">
-            <dt>幣別</dt>
-            <dd>{archive.account.currency}</dd>
-            <dt>起始本金</dt>
-            <dd>{initialCapital ?? DATA_UNAVAILABLE_LABEL}</dd>
-            <dt>現金</dt>
-            <dd>{cash ?? DATA_UNAVAILABLE_LABEL}</dd>
-            <dt>資料截至</dt>
-            <dd>{archive.account.asOf}</dd>
-          </dl>
-        </ClaimWithTruth>
+        {account === undefined ? (
+          <SystemLabel field="marketClosureReasonLabel" text={closure} />
+        ) : (
+          <ClaimWithTruth
+            truthClass={account.truthClass}
+            declared={declared}
+            asOfLabel={account.asOf}
+            versionLabel={versionLabel}
+          >
+            <dl className="panshi-data">
+              <dt>幣別</dt>
+              <dd>{account.currency}</dd>
+              <dt>起始本金</dt>
+              <dd>{initialCapital ?? DATA_UNAVAILABLE_LABEL}</dd>
+              <dt>現金</dt>
+              <dd>{cash ?? DATA_UNAVAILABLE_LABEL}</dd>
+              <dt>資料截至</dt>
+              <dd>{account.asOf}</dd>
+            </dl>
+          </ClaimWithTruth>
+        )}
       </section>
 
       <h3>持股</h3>
-      {archive.positions.length === 0 ? (
+      {archive.positions.length === 0 && closure !== null ? (
+        <SystemLabel field="marketClosureReasonLabel" text={closure} />
+      ) : archive.positions.length === 0 ? (
         <EmptyStatePanel reason="paper_no_positions" />
       ) : (
         archive.positions.map((position) => {
@@ -517,7 +532,9 @@ export function PaperArchiveScreen({ archive, onBackToArchiveIndex }: PaperArchi
         <h3 id={PAPER_CORRECTIONS_ANCHOR} tabIndex={-1}>
           更正紀錄
         </h3>
-        {archive.dataRevisions.length === 0 ? (
+        {archive.dataRevisions.length === 0 && closure !== null ? (
+          <SystemLabel field="marketClosureReasonLabel" text={closure} />
+        ) : archive.dataRevisions.length === 0 ? (
           <p className="panshi-paper">這份模擬紀錄沒有附上任何更正紀錄。</p>
         ) : (
           <ul className="v5-paper__rows">

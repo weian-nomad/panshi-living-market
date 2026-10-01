@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { createLastKnownCache } from "./lastKnownCache";
+import { createLastKnownCache, visibilityKeyOf } from "./lastKnownCache";
 import { lifeJournal } from "./testing/fixtureFactory";
 
 function memoryStorage(): Pick<Storage, "getItem" | "setItem"> {
@@ -17,6 +17,15 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+/** 一份帶 3.0.0 可見性座標（正史 epoch ＋ kill-switch ref）的最小投影。 */
+function projected(payload: Record<string, unknown>, epoch = 1, refId = "projection-kill-switch/v1", revision = 1) {
+  return {
+    ...payload,
+    visibilityEpoch: epoch,
+    sourceRevisionSet: [{ refId, refKind: "projection_kill_switch", revision }],
+  };
+}
+
 describe("[state:offline] last-known 公開投影快取", () => {
   it("[state:offline] 以 route path 為 key，讀回的是當時那一份投影", () => {
     const cache = createLastKnownCache(memoryStorage);
@@ -28,8 +37,8 @@ describe("[state:offline] last-known 公開投影快取", () => {
 
   it("[state:offline] sessionStorage 層：同一個 storage 的新實例（重新整理後）仍讀得到", () => {
     const storage = memoryStorage();
-    createLastKnownCache(() => storage).remember("/world", { a: 1 });
-    expect(createLastKnownCache(() => storage).recall("/world")).toEqual({ a: 1 });
+    createLastKnownCache(() => storage).remember("/world", projected({ a: 1 }));
+    expect(createLastKnownCache(() => storage).recall("/world")).toEqual(projected({ a: 1 }));
   });
 
   it("[state:offline] 存的是 JSON 快照：之後改動原物件不會改到快取", () => {
@@ -55,9 +64,9 @@ describe("[state:offline] last-known 公開投影快取", () => {
         throw new DOMException("quota", "QuotaExceededError");
       },
     }));
-    expect(() => cache.remember("/world", { a: 1 })).not.toThrow();
+    expect(() => cache.remember("/world", projected({ a: 1 }))).not.toThrow();
     // 記憶體層仍有。
-    expect(cache.recall("/world")).toEqual({ a: 1 });
+    expect(cache.recall("/world")).toEqual(projected({ a: 1 }));
     expect(cache.recall("/elsewhere")).toBeNull();
   });
 
@@ -71,9 +80,37 @@ describe("[state:offline] last-known 公開投影快取", () => {
     });
     vi.resetModules();
     const { lastKnownCache } = await import("./lastKnownCache");
-    expect(() => lastKnownCache.remember("/world", { a: 1 })).not.toThrow();
-    expect(lastKnownCache.recall("/world")).toEqual({ a: 1 });
+    expect(() => lastKnownCache.remember("/world", projected({ a: 1 }))).not.toThrow();
+    expect(lastKnownCache.recall("/world")).toEqual(projected({ a: 1 }));
     expect(lastKnownCache.recall("/other")).toBeNull();
     Reflect.deleteProperty(globalThis, "sessionStorage");
+  });
+
+  it("[state:offline] kill switch 換版：別的座標下快取的頁面離線時不再交出（記憶體與 storage 都一樣）", () => {
+    const storage = memoryStorage();
+    const cache = createLastKnownCache(() => storage);
+    cache.remember("/people/a/archive/paper", projected({ page: "paper" }, 1, "projection-kill-switch/v1", 1));
+    cache.remember("/world", projected({ page: "world" }, 1, "projection-kill-switch/v1", 2));
+    expect(cache.recall("/people/a/archive/paper")).toBeNull();
+    expect(createLastKnownCache(() => storage).recall("/people/a/archive/paper")).toBeNull();
+    expect(cache.recall("/world")).toEqual(projected({ page: "world" }, 1, "projection-kill-switch/v1", 2));
+  });
+
+  it("[state:offline] 不只比大小：設定壞掉的 fail-closed（revision 0）在較高 revision 之後也讓舊快取失效", () => {
+    const cache = createLastKnownCache(memoryStorage);
+    cache.remember("/people/a/journal", projected({ page: "journal" }, 1, "projection-kill-switch/v1", 3));
+    cache.remember("/world", projected({ page: "world" }, 1, "projection-kill-switch/v1#fail-closed", 0));
+    expect(cache.recall("/people/a/journal")).toBeNull();
+  });
+
+  it("[state:offline] 正史 epoch 換了也一樣失效；沒有座標的投影一律不交出", () => {
+    const cache = createLastKnownCache(memoryStorage);
+    cache.remember("/people/a/journal", projected({ page: "journal" }, 1));
+    cache.remember("/world", projected({ page: "world" }, 2));
+    expect(cache.recall("/people/a/journal")).toBeNull();
+    cache.remember("/legacy", { page: "legacy" });
+    expect(cache.recall("/legacy")).toBeNull();
+    expect(visibilityKeyOf({ page: "legacy" })).toBeNull();
+    expect(visibilityKeyOf(projected({}, 4, "projection-kill-switch/v1", 7))).toBe("4|projection-kill-switch/v1|7");
   });
 });

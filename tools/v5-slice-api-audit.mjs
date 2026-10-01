@@ -316,7 +316,10 @@ const REQUIRED = {
   ],
   // components.schemas.WorldStoryHookRef.required
   WorldStoryHookRef: ["hookId", "characterId", "sceneRef", "label"],
-  // components.schemas.CharacterCloseUp.required
+  // components.schemas.CharacterCloseUp.required, plus `currentVerbPhrase` and
+  // `unresolvedTensionSummary`: optional since public-v2 3.0.0 (absent only
+  // under a kill switch's `marketClosureReasonLabel`), but required of this
+  // fixture, whose kill-switch set withholds nothing.
   CharacterCloseUp: [
     "projectionVersion",
     "sourceGlobalPosition",
@@ -445,6 +448,7 @@ const REQUIRED = {
     "sourceRevisionSet",
     "characterId",
     "archiveSchemaRevision",
+    // Optional since 3.0.0 (kill switch); required of this fixture.
     "longTermTensionSummary",
     "recentHighlights",
     "sections",
@@ -470,6 +474,8 @@ const REQUIRED = {
     "characterId",
     "appliedAudienceScope",
     "asOf",
+    // `paperVersionSet` and `account`: optional since 3.0.0 (kill switch);
+    // required of this fixture, whose kill-switch set withholds nothing.
     "paperVersionSet",
     "account",
     "positions",
@@ -1345,13 +1351,11 @@ const CLAIM_KEYS = new Set([
   "label",
 ]);
 
+// `*EmptyReason`, `*NullReason` and `*ReasonLabel` (`heldReasonLabel`,
+// `tombstoneReasonLabel`, and since public-v2 3.0.0 the kill-switch
+// `marketClosureReasonLabel` and `summaryHeldReasonLabel`).
 function isSystemLabelKey(key) {
-  return (
-    key.endsWith("EmptyReason") ||
-    key.endsWith("NullReason") ||
-    key === "heldReasonLabel" ||
-    key === "tombstoneReasonLabel"
-  );
+  return key.endsWith("EmptyReason") || key.endsWith("NullReason") || key.endsWith("ReasonLabel");
 }
 
 function hasCjk(text) {

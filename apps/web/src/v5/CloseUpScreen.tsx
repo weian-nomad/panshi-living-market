@@ -34,9 +34,10 @@ import type {
 } from "../api/generated-v2/types.gen";
 import { ClaimWithTruth, ItemTruthTag, WithheldClaim } from "./ItemTruthTag";
 import { claimTruthClassOf, distinctTruthClasses } from "./claimTruth";
-import { DATA_UNAVAILABLE_LABEL, formatAsOfIntraday, percentFixed2ToString } from "./format";
+import { DATA_UNAVAILABLE_LABEL, formatAsOfIntraday, percentFixed2ToString, projectionVersionLabel } from "./format";
 import { CLOSEUP_ACTION_LEAD_MS, OUTCOME_REVEAL_MS, WORLD_BREATH_MS } from "./motion";
 import { figureGeometry } from "./scene";
+import { SystemLabel } from "./SystemLabel";
 
 /** 中性的可觀察姿態用語（public-v2.yaml：這組枚舉刻意不帶市場訊號）。 */
 const POSE_LABEL: Readonly<Record<CharacterPoseState, string>> = {
@@ -404,7 +405,12 @@ export function CloseUpScreen({
   }, [reducedMotion, closeUp.characterId]);
 
   const fallbackCommitment = closeUp.unresolvedCommitments[0] ?? null;
-  const versionLabel = `projection v${closeUp.projectionVersion}`;
+  // public-v2 3.0.0：kill switch 暫停這一頁的「今天」層時，動作句、矛盾、後果碎片與
+  // 承諾都不在投影裡。這裡只畫投影給的固定系統說明，不畫「他目前沒有模擬持倉」之類
+  // 的中性句，也不把缺席的宣稱畫成「缺少資料身分」。
+  const closure =
+    typeof closeUp.marketClosureReasonLabel === "string" ? closeUp.marketClosureReasonLabel : null;
+  const versionLabel = projectionVersionLabel(closeUp);
   const declared = closeUp.truthClasses;
   const nowLabel = safeAsOf(closeUp.serverNow);
 
@@ -430,6 +436,8 @@ export function CloseUpScreen({
       </ClaimWithTruth>
 
       <IdentityLine closeUp={closeUp} asOfLabel={nowLabel} versionLabel={versionLabel} />
+      {closure === null ? null : <SystemLabel field="marketClosureReasonLabel" text={closure} />}
+      {closure !== null ? null : (
       <ClaimWithTruth
         truthClass={closeUp.currentVerbPhraseTruthClass}
         declared={declared}
@@ -439,8 +447,9 @@ export function CloseUpScreen({
       >
         <p className="v5-closeup__verb panshi-paper">{closeUp.currentVerbPhrase}</p>
       </ClaimWithTruth>
+      )}
 
-      {revealText ? (
+      {closure !== null ? null : revealText ? (
         <>
           {/* 每一項宣稱掛它自己在投影裡的身分，不共用一顆整塊標籤。 */}
           <ClaimWithTruth

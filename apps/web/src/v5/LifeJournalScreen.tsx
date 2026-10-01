@@ -15,7 +15,8 @@
 // - `composed`：九段 ＋（有改口時）「回到原話」連結與四欄並排比較。
 // - `evidence_card_only`：**只**渲染證據卡（動作、紙上後果數字、原話逐字），
 //   不渲染任何 narrative segment，也不渲染九段。
-// - `HELD`：只渲染 `heldReasonLabel`，這個形狀本來就沒有內容欄位。
+// - `HELD`：渲染 `heldReasonLabel`；被 kill switch 暫停的章另渲染它來源不是市場的封存段落
+//   （`nonMarketSegments`，public-v2 3.0.0），沒有任何市場內容欄位。
 //
 // `heldReasonLabel`、`paperOutcomeNullReason`、`relationshipConsequenceNullReason` 是系統說明
 // （public-v2.yaml 2.2.0 `x-panshi-system-label`），不是宣稱：以 `SystemLabel` 呈現、不掛身分。
@@ -45,7 +46,7 @@ import { SystemLabel } from "./SystemLabel";
 import { TruthTag } from "./TruthTag";
 import { Utterance } from "./Utterance";
 import { MISSING_CLAIM_TRUTH_CLASS_TEXT, claimTruthClassOf, distinctTruthClasses } from "./claimTruth";
-import { DATA_UNAVAILABLE_LABEL } from "./format";
+import { DATA_UNAVAILABLE_LABEL, projectionVersionLabel } from "./format";
 import { chapterAnchorId, claimRevisions, type ClaimRevision } from "./journalRevisions";
 import { journalSections, type JournalSectionBody } from "./journalSections";
 import { EmptyStatePanel } from "./statePanels";
@@ -417,8 +418,20 @@ function Chapter({
   );
 }
 
-/** 被 HELD 的一章：只有日期與原因標籤，這個形狀沒有任何內容欄位。 */
-function HeldChapter({ held }: { held: HeldLifeJournalEntry }) {
+/**
+ * 被 HELD 的一章：日期與原因標籤。public-v2 3.0.0：被 kill switch 暫停的一章另帶
+ * `nonMarketSegments`——那一章來源不是市場的封存段落（例如本命盤主題的解讀），逐字顯示、
+ * 各掛自己的資料身分；市場衍生的段落不會出現在這裡。
+ */
+function HeldChapter({
+  held,
+  declared,
+  versionLabel,
+}: {
+  held: HeldLifeJournalEntry;
+  declared: readonly TruthClass[];
+  versionLabel: string;
+}) {
   return (
     <article
       className="v5-journal__chapter"
@@ -429,6 +442,24 @@ function HeldChapter({ held }: { held: HeldLifeJournalEntry }) {
     >
       <h3 className="v5-journal__date panshi-data">{held.chapterDate}</h3>
       <SystemLabel field="heldReasonLabel" text={held.heldReasonLabel} className="v5-journal__held" />
+      {(held.nonMarketSegments ?? []).map((segment) =>
+        segment.kind === "narrator" ? (
+          <ClaimWithTruth
+            key={segment.segmentId}
+            truthClass={segment.truthClass}
+            declared={declared}
+            asOfLabel={held.chapterDate}
+            versionLabel={versionLabel}
+            withheldClassName="v5-journal__absent"
+          >
+            <p className="panshi-paper" data-non-market-segment={segment.segmentId}>
+              {segment.text}
+            </p>
+          </ClaimWithTruth>
+        ) : (
+          <WithheldClaim key={segment.segmentId} className="v5-journal__absent" />
+        ),
+      )}
     </article>
   );
 }
@@ -452,7 +483,7 @@ export function LifeJournalScreen({ page, onBackToCloseUp, onOpenArchive }: Life
     ...heldEntries.map((held): JournalItem => ({ kind: "held", chapterDate: held.chapterDate, held })),
   ].sort((left, right) => left.chapterDate.localeCompare(right.chapterDate));
   const revisions = claimRevisions(page.entries, heldEntries);
-  const versionLabel = `projection v${page.projectionVersion}`;
+  const versionLabel = projectionVersionLabel(page);
 
   // 從深層檔案連過來（`#chapter-YYYY-MM-DD`）時內容是非同步載入的，瀏覽器自己的
   // 錨點捲動已經錯過；掛載後補一次捲動與焦點。
@@ -476,7 +507,7 @@ export function LifeJournalScreen({ page, onBackToCloseUp, onOpenArchive }: Life
             truthClass={truthClass}
             explanation={TRUTH_CLASS_EXPLANATION[truthClass]}
             asOfLabel={page.serverNow}
-            versionLabel={`projection v${page.projectionVersion}`}
+            versionLabel={projectionVersionLabel(page)}
           />
         ))}
       </div>
@@ -487,7 +518,12 @@ export function LifeJournalScreen({ page, onBackToCloseUp, onOpenArchive }: Life
       ) : (
         chapters.map((item) =>
           item.kind === "held" ? (
-            <HeldChapter held={item.held} key={item.held.entryId} />
+            <HeldChapter
+              held={item.held}
+              key={item.held.entryId}
+              declared={page.truthClasses}
+              versionLabel={versionLabel}
+            />
           ) : (
             <Chapter
               entry={item.entry}

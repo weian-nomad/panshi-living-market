@@ -3,7 +3,13 @@
 use std::{env, fs, io::Write as _, path::PathBuf};
 
 use panshi_character_episode::{
-    golden_episode, public_api::public_api_documents, slice::one_character_slice,
+    golden_episode,
+    public_api::{
+        ProjectionFaults,
+        kill_switch::{KillSwitchSource, ProjectionKillSwitch, SLICE_KILL_SWITCH_PATH},
+        public_api_documents_gated,
+    },
+    slice::one_character_slice,
 };
 
 fn main() {
@@ -15,12 +21,48 @@ fn main() {
     // written out at the relative path each one's route maps to, plus a
     // route index the dev middleware reads. Writes only; it never touches
     // the event fixtures above.
+    //
+    // The projection runs under the kill-switch set read here, at emission
+    // time (`docs/v5/market-safety.md` "Kill switch"): the third argument,
+    // or the slice's own set. A missing or invalid set is never partially
+    // applied; the projection runs fail-closed (every market-derived object
+    // withdrawn, ticker-specific share/short video closed) and says so on
+    // stderr.
     if args.get(1).map(String::as_str) == Some("--write-public-api") {
         let slice = one_character_slice();
         let directory = args
             .get(2)
             .map_or_else(|| PathBuf::from("fixtures/v5/one-character-slice/api"), PathBuf::from);
-        let documents = public_api_documents(&slice);
+        let switch_path = args
+            .get(3)
+            .map_or_else(|| PathBuf::from(SLICE_KILL_SWITCH_PATH), PathBuf::from);
+        let (switches, source) = ProjectionKillSwitch::load(&switch_path);
+        match &source {
+            KillSwitchSource::Published { revision } => println!(
+                "kill switch: revision {revision} from {}",
+                switch_path.display()
+            ),
+            // Exit status stays 0 on purpose: the documents below are
+            // written under the fail-closed set, which withdraws every
+            // market-derived object and is recorded in every response
+            // (`sourceRevisionSet`: `projection-kill-switch/v1#fail-closed`
+            // revision 0), so they are safe to serve and detectable
+            // downstream. Exiting
+            // non-zero would typically abort the publish step and leave the
+            // previous projection -- possibly projected under a more open
+            // set -- in place.
+            KillSwitchSource::FailClosed { reason } => {
+                eprintln!("WARNING: kill switch FAIL-CLOSED: {reason}");
+                eprintln!(
+                    "WARNING: projecting under the fail-closed set (revision 0): every market-derived \
+                     object is withdrawn from the first session on and ticker-specific share/short \
+                     video is closed; every response records projection-kill-switch/v1#fail-closed \
+                     revision 0. Fix the set and re-run."
+                );
+            }
+        }
+        let documents =
+            public_api_documents_gated(&slice, &ProjectionFaults::default(), &switches);
         for (relative_path, json) in &documents {
             let path = directory.join(relative_path);
             if let Some(parent) = path.parent() {

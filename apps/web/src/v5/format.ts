@@ -216,3 +216,17 @@ export const TRUTH_CLASSES: readonly TruthClass[] = [
   "symbolic_interpretation",
   "simulated_narrative",
 ];
+
+/**
+ * 一份投影在畫面上的版本標示（public-v2 3.0.0）。只用可見性座標：正史 `visibilityEpoch`
+ * 加上 kill-switch 集合的 revision。**不用** `projectionVersion`／`sourceGlobalPosition`：
+ * 那兩個是事件數，前後兩天的差值就能看出某天事件多寡（例如有沒有成交）。
+ */
+export function projectionVersionLabel(projection: {
+  visibilityEpoch: number;
+  sourceRevisionSet: ReadonlyArray<{ refKind: string; refId: string; revision: number }>;
+}): string {
+  const killSwitch = projection.sourceRevisionSet.find((ref) => ref.refKind === "projection_kill_switch");
+  const suffix = killSwitch === undefined ? "" : `／kill switch r${killSwitch.revision}`;
+  return `visibility epoch ${projection.visibilityEpoch}${suffix}`;
+}

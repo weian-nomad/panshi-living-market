@@ -1,0 +1,586 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "panshi.character-population-lifecycle/v1",
+  "title": "CharacterPopulationLifecycleManifestV1",
+  "description": "The machine-verifiable form of delivery-plan lock 8 (人口延續鎖, docs/v5/delivery-plan.md): every public resident has a CharacterLifecyclePolicy and a capacity reservation, and the 1,850-resident qualification, the all-unsubscribed tail and the long-tail cost have passed. The policy shape is docs/v5/system-design.md section 7.2.1 field for field; the capacity reservation is section 7.2.2 (a long-tail obligation budget, not a VM slot); the qualification block is delivery-plan M4. This schema asserts shape only. tools/character-lifecycle-policy-audit.mjs asserts everything JSON Schema cannot: tier order, UTF-8 byte order of every repeated field, the continuity transition graph, policy digest and revision binding, cost-model binding, capacity sums, qualification completeness, and that every resident of the public world projection is bound here. `format` is never used; every constraint is a real assertion. A manifest may be valid and still report lock 8 as NOT passed: an honest not-yet-qualified state is valid, a placeholder dressed as qualification is not.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "manifestId",
+    "policyApprovalState",
+    "policyApprovalRef",
+    "policy",
+    "policyDigest",
+    "capacityCostModel",
+    "capacityBudget",
+    "residents",
+    "populationQualification"
+  ],
+  "properties": {
+    "contractVersion": {
+      "const": "character-population-lifecycle/v1"
+    },
+    "manifestId": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 96,
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "policyApprovalState": {
+      "description": "Whether the policy values are an approved product/capacity decision or an engineering draft. Lock 8 cannot pass on a draft.",
+      "enum": [
+        "draft_unapproved",
+        "approved"
+      ]
+    },
+    "policyApprovalRef": {
+      "description": "The approval record for an approved policy; null for a draft (the audit enforces both directions).",
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 3,
+      "maxLength": 128,
+      "pattern": "^[a-z0-9]+([-./_][a-z0-9]+)*$"
+    },
+    "policy": {
+      "$ref": "#/$defs/CharacterLifecyclePolicyV1"
+    },
+    "policyDigest": {
+      "description": "sha256 over the RFC 8785-style canonical JSON of `policy` (keys sorted, arrays in their sealed order), prefixed `sha256:`. Recomputed by the audit; never produced from a language map iteration order.",
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "capacityCostModel": {
+      "$ref": "#/$defs/CapacityCostModel"
+    },
+    "capacityBudget": {
+      "description": "The approved long-tail obligation budget. null while the cost model is unmeasured: capacity can only be approved from a measured cost model (system-design.md 7.2.2).",
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/CapacityBudget"
+        }
+      ]
+    },
+    "residents": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100000,
+      "items": {
+        "$ref": "#/$defs/ResidentLifecycleRecord"
+      }
+    },
+    "populationQualification": {
+      "$ref": "#/$defs/PopulationQualification"
+    }
+  },
+  "$defs": {
+    "Revision": {
+      "type": "string",
+      "minLength": 4,
+      "maxLength": 96,
+      "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*/v[1-9][0-9]*$"
+    },
+    "Uuid": {
+      "type": "string",
+      "minLength": 36,
+      "maxLength": 36,
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "Sha256": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "TaipeiTimestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\\+08:00$"
+    },
+    "MinorUnits": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "ContinuityClass": {
+      "description": "The canonical continuity class (system-design.md 7.2.1). Activity tiers (Visible / Active / Background) are a scheduler projection, never a continuity class, so they are not admissible here.",
+      "enum": [
+        "PUBLIC",
+        "VISIBILITY_HELD",
+        "WITHDRAWN"
+      ]
+    },
+    "CharacterLifecyclePolicyV1": {
+      "description": "system-design.md 7.2.1 `CharacterLifecyclePolicy`, field for field: each PUBLIC character's minimum scheduling obligations. `coarseTickCadences` is sealed in Visible -> Active -> Background domain enum order with no tier missing or repeated; every other repeated field is a set drawn from its enum, written in UTF-8 byte order (both enforced by the audit).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "coarseTickCadences",
+        "mandatoryFactClasses",
+        "mandatoryPaperProcesses",
+        "relationshipAndMemoryEligibilityRules",
+        "maxBackgroundCognitionCallsPerPeriod",
+        "sharedExtractionPolicyRevision",
+        "visibilityHoldReasons",
+        "withdrawalReasons",
+        "retentionAndTombstonePolicyRevision",
+        "capacityCostModelRevision"
+      ],
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "coarseTickCadences": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "activityTier",
+              "cadencePolicyKey"
+            ],
+            "properties": {
+              "activityTier": {
+                "enum": [
+                  "Visible",
+                  "Active",
+                  "Background"
+                ]
+              },
+              "cadencePolicyKey": {
+                "type": "string",
+                "minLength": 12,
+                "maxLength": 96,
+                "pattern": "^cadence-[a-z0-9]+(-[a-z0-9]+)*/v[1-9][0-9]*$"
+              }
+            }
+          }
+        },
+        "mandatoryFactClasses": {
+          "description": "Fact classes a PUBLIC character's holdings must keep receiving (7.2.1: holding-relevant corporate actions, marks, corrections).",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "corporate_action",
+              "fact_correction",
+              "sealed_close_price"
+            ]
+          }
+        },
+        "mandatoryPaperProcesses": {
+          "description": "Paper-ledger processes that must keep running for a PUBLIC character's holdings (7.2.1).",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "holding_corporate_action_application",
+              "holding_correction_application",
+              "holding_mark"
+            ]
+          }
+        },
+        "relationshipAndMemoryEligibilityRules": {
+          "description": "Important relationship and memory event eligibility that must keep being evaluated (7.2.1).",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "important_memory_event_eligibility",
+              "important_relationship_event_eligibility"
+            ]
+          }
+        },
+        "maxBackgroundCognitionCallsPerPeriod": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "sharedExtractionPolicyRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "visibilityHoldReasons": {
+          "description": "VISIBILITY_HELD is only for a repairable rights, real-person-similarity, age, safety, privacy or data-integrity investigation (7.2.1).",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 6,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "age_investigation",
+              "data_integrity_investigation",
+              "privacy_investigation",
+              "real_person_similarity_investigation",
+              "rights_investigation",
+              "safety_investigation"
+            ]
+          }
+        },
+        "withdrawalReasons": {
+          "description": "WITHDRAWN only after a confirmed finding. Low popularity, cost, unsubscription and inactivity are not exits (7.2.1), so no such value is admissible.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 7,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "confirmed_age_violation",
+              "confirmed_data_integrity_violation",
+              "confirmed_legal_takedown",
+              "confirmed_privacy_violation",
+              "confirmed_real_person_similarity",
+              "confirmed_rights_revocation",
+              "confirmed_safety_violation"
+            ]
+          }
+        },
+        "retentionAndTombstonePolicyRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "capacityCostModelRevision": {
+          "$ref": "#/$defs/Revision"
+        }
+      }
+    },
+    "CapacityCostModel": {
+      "description": "The cost model capacity is approved from. Capacity service may only approve from a measured model (7.2.2); while it is unmeasured no obligation figure may appear anywhere in the manifest.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "measurementState",
+        "measurementEvidenceRef"
+      ],
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "measurementState": {
+          "enum": [
+            "unmeasured",
+            "measured"
+          ]
+        },
+        "measurementEvidenceRef": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 3,
+          "maxLength": 128,
+          "pattern": "^[a-z0-9]+([-./_][a-z0-9]+)*$"
+        }
+      }
+    },
+    "CapacityObligation": {
+      "description": "One long-tail obligation, in currency minor units, over every horizon 7.2.2 requires: origin/asset one-time cost, first 30 days active, day 90 and day 365 background, five-year present value, and the steady-state storage / maintenance terminal reserve.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "originAndAssetOneTime",
+        "activeFirst30Days",
+        "backgroundThroughDay90",
+        "backgroundThroughDay365",
+        "fiveYearPresentValue",
+        "terminalMaintenanceReserve"
+      ],
+      "properties": {
+        "originAndAssetOneTime": {
+          "$ref": "#/$defs/MinorUnits"
+        },
+        "activeFirst30Days": {
+          "$ref": "#/$defs/MinorUnits"
+        },
+        "backgroundThroughDay90": {
+          "$ref": "#/$defs/MinorUnits"
+        },
+        "backgroundThroughDay365": {
+          "$ref": "#/$defs/MinorUnits"
+        },
+        "fiveYearPresentValue": {
+          "$ref": "#/$defs/MinorUnits"
+        },
+        "terminalMaintenanceReserve": {
+          "$ref": "#/$defs/MinorUnits"
+        }
+      }
+    },
+    "CapacityReservation": {
+      "description": "The capacity reservation bound to one resident. `introductionId` is null exactly for a seed resident. A reservation is `reserved` only against a measured cost model, with its obligation; until then it is `pending_measured_cost_model` with no figure.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "capacityReservationId",
+        "introductionId",
+        "capacityCostModelRevision",
+        "reservationState",
+        "obligationMinorUnits"
+      ],
+      "properties": {
+        "capacityReservationId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "introductionId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 36,
+          "maxLength": 36,
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "capacityCostModelRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "reservationState": {
+          "enum": [
+            "pending_measured_cost_model",
+            "reserved"
+          ]
+        },
+        "obligationMinorUnits": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/CapacityObligation"
+            }
+          ]
+        }
+      }
+    },
+    "ContinuityTransition": {
+      "description": "One CharacterContinuityClassChanged, as the history records it. Legal edges (7.2.1): PUBLIC <-> VISIBILITY_HELD, VISIBILITY_HELD -> WITHDRAWN, and PUBLIC -> WITHDRAWN only for an immediate safety or legal takedown; WITHDRAWN is terminal.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "from",
+        "to",
+        "at",
+        "reasonCode"
+      ],
+      "properties": {
+        "from": {
+          "$ref": "#/$defs/ContinuityClass"
+        },
+        "to": {
+          "$ref": "#/$defs/ContinuityClass"
+        },
+        "at": {
+          "$ref": "#/$defs/TaipeiTimestamp"
+        },
+        "reasonCode": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 64,
+          "pattern": "^[a-z]+(_[a-z]+)*$"
+        }
+      }
+    },
+    "ResidentLifecycleRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "characterId",
+        "residentKind",
+        "continuityClass",
+        "continuityHistory",
+        "lifecyclePolicyRevision",
+        "lifecyclePolicyDigest",
+        "capacityReservation"
+      ],
+      "properties": {
+        "characterId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "residentKind": {
+          "enum": [
+            "seed",
+            "introduced"
+          ]
+        },
+        "continuityClass": {
+          "$ref": "#/$defs/ContinuityClass"
+        },
+        "continuityHistory": {
+          "description": "Every continuity class change since the resident became PUBLIC, oldest first. Empty means the resident has been PUBLIC throughout.",
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/ContinuityTransition"
+          }
+        },
+        "lifecyclePolicyRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "lifecyclePolicyDigest": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "capacityReservation": {
+          "description": "Required (non-null) for every resident that is not WITHDRAWN.",
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/CapacityReservation"
+            }
+          ]
+        }
+      }
+    },
+    "PopulationQualification": {
+      "description": "Delivery-plan M4 capacity / cost qualification. The population is fixed: 50 seed residents + 60 testers x 5 introductions x 6 quota windows = 1,850. `passed` needs evidence of a real run: every one of the 1,800 origins and asset packs built by the production pipeline or a production-identical shadow, cognition on, no resident rows synthesized by duplication, run to at least the 30th completed trading day, all testers unsubscribed at calendar day 31 and the tail run to days 90 and 365, plus the five-year present value and terminal reserve. Placeholder assets, disabled cognition and row duplication are not representable.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "requiredPopulation",
+        "seedResidents",
+        "testerCount",
+        "introductionsPerTesterPerWindow",
+        "quotaWindows",
+        "evidence"
+      ],
+      "properties": {
+        "state": {
+          "enum": [
+            "not_run",
+            "failed",
+            "passed"
+          ]
+        },
+        "requiredPopulation": {
+          "const": 1850
+        },
+        "seedResidents": {
+          "const": 50
+        },
+        "testerCount": {
+          "const": 60
+        },
+        "introductionsPerTesterPerWindow": {
+          "const": 5
+        },
+        "quotaWindows": {
+          "const": 6
+        },
+        "evidence": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/QualificationEvidence"
+            }
+          ]
+        }
+      }
+    },
+    "CapacityBudget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "capacityBudgetRevision",
+        "approvedObligationMinorUnits"
+      ],
+      "properties": {
+        "capacityBudgetRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "approvedObligationMinorUnits": {
+          "$ref": "#/$defs/CapacityObligation"
+        }
+      }
+    },
+    "QualificationEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runId",
+        "runDigest",
+        "simulatedPopulation",
+        "originsBuilt",
+        "assetPacksQualified",
+        "assetPackMode",
+        "cognitionMode",
+        "residentRowsSynthesizedByDuplication",
+        "continuedThroughCompletedTradingDay",
+        "allUnsubscribedAtCalendarDay",
+        "tailCalendarDays",
+        "fiveYearPresentValueMinorUnits",
+        "terminalMaintenanceReserveMinorUnits"
+      ],
+      "properties": {
+        "runId": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 128,
+          "pattern": "^[a-z0-9]+([-./_][a-z0-9]+)*$"
+        },
+        "runDigest": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "simulatedPopulation": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "originsBuilt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "assetPacksQualified": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "assetPackMode": {
+          "enum": [
+            "production_pipeline",
+            "production_identical_shadow"
+          ]
+        },
+        "cognitionMode": {
+          "const": "enabled"
+        },
+        "residentRowsSynthesizedByDuplication": {
+          "const": false
+        },
+        "continuedThroughCompletedTradingDay": {
+          "type": "integer",
+          "minimum": 30,
+          "maximum": 10000
+        },
+        "allUnsubscribedAtCalendarDay": {
+          "const": 31
+        },
+        "tailCalendarDays": {
+          "const": [
+            90,
+            365
+          ]
+        },
+        "fiveYearPresentValueMinorUnits": {
+          "$ref": "#/$defs/MinorUnits"
+        },
+        "terminalMaintenanceReserveMinorUnits": {
+          "$ref": "#/$defs/MinorUnits"
+        }
+      }
+    }
+  }
+}

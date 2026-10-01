@@ -57,6 +57,7 @@ import {
   type UnavailableReason,
 } from "./apiClient";
 import { lastKnownCache, type LastKnownCache } from "./lastKnownCache";
+import { projectionVersionLabel } from "./format";
 import { chapterAnchorId } from "./journalRevisions";
 import {
   archiveSectionRoute,
@@ -345,6 +346,8 @@ function humanHookOf(value: SliceData): HumanHookClaim | null {
     case "closeUp": {
       const data = value.data;
       if (data.dataState === "WITHDRAWN" || data.dataState === "HELD") return null;
+      // 3.0.0：被 kill switch 暫停時這句不在投影裡，外殼不補別的句子。
+      if (data.currentVerbPhrase === undefined) return null;
       return { text: data.currentVerbPhrase, truthClass: data.currentVerbPhraseTruthClass };
     }
     case "journal": {
@@ -356,6 +359,7 @@ function humanHookOf(value: SliceData): HumanHookClaim | null {
     case "archive": {
       const data = value.data;
       if (data.dataState === "WITHDRAWN" || data.dataState === "HELD") return null;
+      if (data.longTermTensionSummary === undefined) return null;
       return { text: data.longTermTensionSummary, truthClass: data.longTermTensionSummaryTruthClass };
     }
     case "archivePaper": {
@@ -689,15 +693,24 @@ export function dataTimeOf(value: SliceData): string {
   }
 }
 
-/** 本來就是空的狀態；held／withdrawn 沒有內容，不算空。 */
+/**
+ * 本來就是空的狀態；held／withdrawn 沒有內容，不算空。
+ *
+ * public-v2 3.0.0：投影帶 `marketClosureReasonLabel`（被 kill switch 暫停）或章節都在
+ * `heldEntries` 時也**不是**空：那是系統暫停，畫面要顯示固定的系統說明，不能說成
+ *「目前沒有持股」「還沒有任何章節」這類 client 自己生出的中性版本。
+ */
 export function emptyReasonOf(value: SliceData): EmptyReason | null {
   const { data } = value;
   if (data.dataState === "HELD" || data.dataState === "WITHDRAWN") return null;
+  if ("marketClosureReasonLabel" in data && typeof data.marketClosureReasonLabel === "string") return null;
   switch (value.kind) {
     case "world":
       return value.data.characterPositions.length === 0 ? "world_no_residents" : null;
     case "journal":
-      return value.data.dataState !== "WITHDRAWN" && value.data.entries.length === 0
+      return value.data.dataState !== "WITHDRAWN" &&
+        value.data.entries.length === 0 &&
+        value.data.heldEntries.length === 0
         ? "journal_no_chapters"
         : null;
     case "archivePaper":
@@ -829,7 +842,7 @@ function HumanHook({ value }: { value: SliceData }) {
       truthClass={hook.truthClass}
       declared={value.data.truthClasses}
       asOfLabel={value.data.serverNow}
-      versionLabel={`projection v${value.data.projectionVersion}`}
+      versionLabel={projectionVersionLabel(value.data)}
     >
       <p className="v5-hook panshi-paper">{hook.text}</p>
     </ClaimWithTruth>
@@ -857,8 +870,8 @@ function DataStatePanel({ value }: { value: SliceData }) {
         <summary>資料稽核資訊</summary>
         <p className="v5-meta">{DATA_STATE_LABEL[data.dataState]}</p>
         <p className="v5-meta">
-          投影版本 {data.projectionVersion}／可見性紀元 {data.visibilityEpoch}／伺服器時間{" "}
-          {data.serverNow}
+          {/* public-v2 3.0.0：不顯示投影版本（事件數），只留可見性座標。 */}
+          {projectionVersionLabel(data)}／伺服器時間 {data.serverNow}
         </p>
         <p className="v5-meta">
           介面文字（標題、按鈕、狀態說明）是產品外殼，不是對世界的宣稱；世界事實一律由投影的

@@ -356,6 +356,56 @@ cargo test -p panshi-character-episode     # 事件與投影的 Rust 測試
 
 以上段落是工程文件，未經 copy-taste 審稿。
 
+### 7.2 Kill switch 與人口延續鎖
+
+- **Kill switch 設定**：`fixtures/v5/one-character-slice/projection-kill-switch.json`，契約
+  `contracts/projection-kill-switch/v1/schema.json`（`docs/v5/market-safety.md`「Kill switch」）。
+  `--write-public-api` 在產出時讀它（也可用第三個參數指定別的檔），stdout 印出套用的 revision。
+  每份回應的 `sourceRevisionSet` 都有一筆 `projection_kill_switch`：`refId`
+  `projection-kill-switch/v1`（已發布，revision ≥ 1）、`…#fail-closed` 或
+  `…#release-gate-default`（revision 0）。`visibilityEpoch` 維持正史 epoch，不再混入 revision；
+  前端離線快取以（`visibilityEpoch`，kill-switch `refId`＋`revision`）這一對當 key，只要和最新
+  一次取得的投影不同就不交出舊快取——不只比大小，因為設定壞掉時 revision 0 會排在較高的已發布
+  revision 之後。
+- **設定壞掉（fail closed）**：檔案缺失、讀不到或任何一條斷言不過（含清單沒有照 UTF-8 位元組
+  遞增）→ 整份不採用，從第一個 session 起撤下**所有市場衍生內容**（不只 current-market：上一版
+  已發布的集合可能關了更多東西，而它已經讀不到），ticker-specific 分享／短影音也關；stderr 印
+  `WARNING: kill switch FAIL-CLOSED` 與原因。exit code 維持 0：產出本身是最保守的狀態而且自己
+  記著 `#fail-closed`，非 0 反而常讓發布流程停在上一版（可能更開放的）投影。
+- **規則**：被撤的對象不得能從任何仍公開的欄位反推（數量、方向、日期、存在與否都算），同時
+  不是市場衍生的東西照常運行。投影先把每個開關化成**全世界共用的一個 horizon**：被關對象在整個
+  世界第一次出現的 session（fact 變成可見的那個 session、第一則關於該公司的 fact 或第一次紙上
+  行動、被關的 session、被關的揭露日、第一個 current-mode session）。horizon 放在世界層級而不是
+  各角色各自計算：多角色時，若每人從自己第一次碰到被關公司的那天起才帶關閉說明，誰帶說明就標出
+  誰碰過那家公司。horizon 當天與之後，**市場衍生**的東西整筆撤下、換固定系統說明；是否市場衍生
+  依**因果來源**判定（`tools/character-episode/src/public_api/gate.rs` 的 `MarketProvenance`
+  沿正史事件的 id 引用鏈判斷：市場／紙上事件、引用 fact／標的／市場衍生事件的事件都是），不看
+  文字；來源不明一律當市場衍生。人物底盤（含 chassis 自己宣告與部位無關的單向互動）、本命盤
+  主題的解讀、他帶進來的記憶照常顯示；被撤的章節以 `heldEntries` 呈現，章內來源不是市場的封存
+  段落放在 `nonMarketSegments`。一句原話只看它自己那個 session，所有頁面共用同一個決定。
+  有 horizon 時 `projectionVersion`／`sourceGlobalPosition` 報 horizon 之前最後一個事件的位置，
+  也沒有任何仍公開的物件引用 horizon 之後的事件位置；前端不顯示這兩個數字。關某天的揭露時
+  horizon 就是那天，不論有沒有成交。測試在 `tests/projection_kill_switch.rs`。
+- **對前端的改變（public-v2 3.0.0，major；路徑仍是 `/api/v2`，唯一的 client 在本 repo 同步
+  更新）**：近景的動作句與矛盾、檔案索引的長期矛盾、模擬紀錄的 `account` 與 `paperVersionSet`
+  在帶 `marketClosureReasonLabel` 時可以不在；檔案索引的節可以是 held 形狀；held 章可帶
+  `nonMarketSegments`。前端遇到這些只畫固定系統說明，不畫「目前沒有持股」之類的中性句
+  （`apps/web/src/v5/killSwitch.test.tsx`）。
+- **已知邊界**：切片沒有分享卡與短影音，分享／短影音開關目前沒有可關的物件；世界的市場時鐘、
+  各頁 `asOf`、`joinedWorldOn` 與 heldEntries 的日期是日曆，照常顯示；沒有 horizon 時
+  `projectionVersion` 仍是整份 log 的長度，包含今天盤中的事件數——盤中 fence 是否也要
+  遮住這個數字，這一版沒有處理。**這是 current-market 開啟前的阻擋項，不得宣稱發布閘門第 4 條已達成**：2026-10-02 審查實測，盤中（in_session）`projectionVersion`／`sourceGlobalPosition` 已包含當日 intent 事件，沒下單日收盤前 9 筆、買進日與減碼日 17 筆，拿當日第一筆事件位置相減即可推知有無下單；部位 lots、記憶清單、當日未定案紀錄的 positionRef 也沒有 finality 過濾（MemoryFormed 與開倉事件排在 finality 之前）。最小修法：所有公開投影改以「最後一個已 finality 的 session」為截點，計數與部位、帳戶、記憶、紀錄都只算到那一天。目前 current-market 依發布閘門關閉、切片只有合成歷史，所以不會漏出真實市場訊號。
+- **人口延續鎖**：`fixtures/v5/one-character-slice/population-lifecycle.json`，契約
+  `contracts/character-lifecycle-policy/v1/schema.json`（`CharacterLifecyclePolicy` 依
+  `docs/v5/system-design.md` §7.2.1，capacity reservation 依 §7.2.2，qualification 依
+  `docs/v5/delivery-plan.md` M4 與動工前第 8 鎖）。`pnpm check` 的
+  `tools/character-lifecycle-policy-audit.mjs` 驗證它並印出第 8 鎖狀態；目前誠實地是 NOT PASSED
+  （政策是未核准草稿、cost model 未實測、1,850 人 qualification 沒跑、居民的 capacity
+  reservation 停在 `pending_measured_cost_model`）。沒有實測就不能寫任何成本數字（包括任何狀態的
+  qualification evidence）或宣稱 qualification 通過，audit 會擋。
+
+以上段落是工程文件，未經 copy-taste 審稿。
+
 ## 8. 本切片的已知邊界
 
 這些不是 bug，是這一刀切下去時明確留在外面的東西：

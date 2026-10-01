@@ -337,7 +337,7 @@ describe("渲染：畫面掛投影給的身分，缺身分的那一項 fail clos
     if (first === undefined || second === undefined) throw new Error("fixture shape changed");
     data.recentHighlightTruthClasses = data.recentHighlightTruthClasses.slice(1);
     const paperSection = data.sections.find((section) => section.sectionKey === "paper");
-    if (paperSection === undefined) throw new Error("fixture shape changed");
+    if (paperSection === undefined || !("summary" in paperSection)) throw new Error("fixture shape changed");
     drop(paperSection, "summaryTruthClass");
     const text = visibleText(render({ kind: "archive", data }));
 

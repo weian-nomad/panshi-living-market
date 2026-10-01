@@ -55,7 +55,10 @@ use std::{
 };
 
 use panshi_character_episode::{
-    public_api::{ProjectionFaults, public_api_documents_with},
+    public_api::{
+        ProjectionFaults, kill_switch::ProjectionKillSwitch, public_api_documents_gated,
+        public_api_documents_with,
+    },
     slice::one_character_slice,
 };
 use serde_json::{Map, Value};
@@ -186,11 +189,11 @@ fn fixture_files() -> Vec<(String, Value)> {
     out
 }
 
+/// The system-label field names: `*EmptyReason`, `*NullReason`, and
+/// `*ReasonLabel` (`heldReasonLabel`, `tombstoneReasonLabel`, and since 2.4.0
+/// the kill-switch `marketClosureReasonLabel` and `summaryHeldReasonLabel`).
 fn is_system_label(key: &str) -> bool {
-    key.ends_with("EmptyReason")
-        || key.ends_with("NullReason")
-        || key == "heldReasonLabel"
-        || key == "tombstoneReasonLabel"
+    key.ends_with("EmptyReason") || key.ends_with("NullReason") || key.ends_with("ReasonLabel")
 }
 
 fn has_cjk(text: &str) -> bool {
@@ -644,6 +647,59 @@ fn every_visible_claim_is_covered_when_chapters_degrade() {
         "only {} system labels visited",
         walk.system_labels
     );
+}
+
+/// Same, on the shapes the kill switches emit (public-v2 2.4.0): chapters
+/// held by a switch, an archive index section whose summary is held, absent
+/// figures and sentences, and the page-level `marketClosureReasonLabel`.
+/// Every new label is a listed system sentence and nothing readable is left
+/// without a class.
+#[test]
+fn every_visible_claim_is_covered_under_kill_switches() {
+    let slice = one_character_slice();
+    let hook_id = documents(&ProjectionFaults::default())
+        .into_iter()
+        .find(|(path, _)| path.ends_with("v2/world.json"))
+        .map(|(_, world)| world["storyHooks"][0]["hookId"].as_str().expect("hook id").to_owned())
+        .expect("world document");
+    let mut company = ProjectionKillSwitch::release_gate_default();
+    company.revision = 2;
+    company.closed_instruments.insert("PSZS-DEMO".to_owned());
+    company.closed_story_act_ids.insert(hook_id);
+    let mut day_and_fact = ProjectionKillSwitch::release_gate_default();
+    day_and_fact.revision = 3;
+    day_and_fact
+        .closed_paper_action_reveal_dates
+        .insert("2026-03-17".to_owned());
+    day_and_fact
+        .closed_fact_revision_ids
+        .insert("fact-hist-001-s07-correction".to_owned());
+    for set in [company, day_and_fact] {
+        let gated: Vec<(String, Value)> =
+            public_api_documents_gated(&slice, &ProjectionFaults::default(), &set)
+                .into_iter()
+                .filter(|(path, _)| path != "index.json")
+                .map(|(path, text)| {
+                    let value = serde_json::from_str(&text)
+                        .unwrap_or_else(|error| panic!("{path} is not valid JSON: {error}"));
+                    (path, value)
+                })
+                .collect();
+        let text = gated
+            .iter()
+            .map(|(_, value)| value.to_string())
+            .collect::<String>();
+        // Not a vacuous pass: the kill-switch shapes are really present.
+        for key in ["marketClosureReasonLabel", "summaryHeldReasonLabel", "heldReasonLabel"] {
+            assert!(text.contains(key), "revision {}: no {key} emitted", set.revision);
+        }
+        let walk = walk_documents(&gated);
+        assert_nothing_uncovered(&walk);
+        // Closing the company withholds everything from the first session on,
+        // so only the chassis and the labels remain; still not empty.
+        assert!(walk.claims >= 30, "only {} claims visited", walk.claims);
+        assert!(walk.system_labels >= 5, "only {} system labels visited", walk.system_labels);
+    }
 }
 
 fn document<'a>(documents: &'a [(String, Value)], suffix: &str) -> &'a Value {

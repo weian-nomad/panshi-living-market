@@ -305,9 +305,13 @@ export type WorldSnapshot = {
     scene: WorldSceneState;
     characterPositions: Array<CharacterWorldPosition>;
     /**
-     * Mirrors the "今日五幕" 0–5 cap (experience-spec §5.4).
+     * Mirrors the "今日五幕" 0–5 cap (experience-spec §5.4). An act a kill switch closes is absent, and so is every act while any session is withdrawn (its label is a statement about today's scene) (3.0.0).
      */
     storyHooks: Array<WorldStoryHookRef>;
+    /**
+     * Present exactly when a kill switch withheld at least one object of this response -- a story hook, or the resident's focus hint (then `null`) and today's episode ref (3.0.0). A fixed system sentence that names nothing that was withheld.
+     */
+    marketClosureReasonLabel?: string;
 };
 
 export type CharacterCloseUp = {
@@ -343,24 +347,28 @@ export type CharacterCloseUp = {
     /**
      * e.g. "正在偷看他說不在意的價格" (experience-spec §7.1).
      */
-    currentVerbPhrase: string;
+    currentVerbPhrase?: string;
     /**
      * The truth class of `currentVerbPhrase` (2.1.0).
      */
-    currentVerbPhraseTruthClass: TruthClass;
+    currentVerbPhraseTruthClass?: TruthClass;
     currentAttention?: AttentionTarget;
     /**
      * The one unresolved-contradiction main sentence (experience-spec §7.1).
      */
-    unresolvedTensionSummary: string;
+    unresolvedTensionSummary?: string;
     /**
      * The truth class of `unresolvedTensionSummary` (2.1.0).
      */
-    unresolvedTensionSummaryTruthClass: TruthClass;
+    unresolvedTensionSummaryTruthClass?: TruthClass;
     publicClaim?: ClassifiedCharacterUtterance;
     selfAcknowledgement?: ClassifiedCharacterUtterance;
     recentConsequenceHighlight?: RecentConsequenceHighlight;
     unresolvedCommitments: Array<UnresolvedCommitment>;
+    /**
+     * Present exactly when a kill switch withheld this response's current layer (3.0.0): the verb phrase, attention, tension, the latest sentences, the paper highlight and the commitments are then all absent (`unresolvedCommitments` empty); identity, scene and pose stay. A withheld latest sentence is never replaced by an older one.
+     */
+    marketClosureReasonLabel?: string;
 };
 
 export type CharacterCloseUpResponse = CharacterCloseUp | WithdrawnCharacterProjection;
@@ -534,11 +542,11 @@ export type CharacterArchiveIndex = {
     sourceRevisionSet: Array<SourceRevisionRef>;
     characterId: Uuid;
     archiveSchemaRevision: string;
-    longTermTensionSummary: string;
+    longTermTensionSummary?: string;
     /**
      * The truth class of `longTermTensionSummary` (2.1.0).
      */
-    longTermTensionSummaryTruthClass: TruthClass;
+    longTermTensionSummaryTruthClass?: TruthClass;
     /**
      * 最近留下的三件事 (experience-spec §9.1).
      */
@@ -548,16 +556,33 @@ export type CharacterArchiveIndex = {
      */
     recentHighlightTruthClasses: Array<TruthClass>;
     /**
-     * One entry per `ArchiveSectionKey` value.
+     * One entry per `ArchiveSectionKey` value. An entry whose one-line summary a kill switch withheld is a `HeldArchiveSectionIndexEntry` (3.0.0); its entrance and path stay.
      */
     sections: [
-        ArchiveSectionIndexEntry,
-        ArchiveSectionIndexEntry,
-        ArchiveSectionIndexEntry,
-        ArchiveSectionIndexEntry,
-        ArchiveSectionIndexEntry,
-        ArchiveSectionIndexEntry
+        ArchiveSectionIndexEntry | HeldArchiveSectionIndexEntry,
+        ArchiveSectionIndexEntry | HeldArchiveSectionIndexEntry,
+        ArchiveSectionIndexEntry | HeldArchiveSectionIndexEntry,
+        ArchiveSectionIndexEntry | HeldArchiveSectionIndexEntry,
+        ArchiveSectionIndexEntry | HeldArchiveSectionIndexEntry,
+        ArchiveSectionIndexEntry | HeldArchiveSectionIndexEntry
     ];
+    /**
+     * Present exactly when a kill switch withheld this response's history-folded layer (3.0.0): the long-term tension is absent, `recentHighlights` is empty, and every section summary folded from his sessions is a `HeldArchiveSectionIndexEntry`.
+     */
+    marketClosureReasonLabel?: string;
+};
+
+/**
+ * An archive index entry whose one-line summary a kill switch withheld (3.0.0). It keeps the section's key, applied scope, as-of, epoch and path, and carries one fixed reason label -- no summary or truth class exists on this shape, so nothing about the withheld summary can leak through it.
+ */
+export type HeldArchiveSectionIndexEntry = {
+    sectionKey: ArchiveSectionKey;
+    viewerAudienceScope: AudienceScope;
+    entryVisibility: 'HELD';
+    summaryHeldReasonLabel: string;
+    asOf: string;
+    visibilityEpoch: Version;
+    sectionPath: string | null;
 };
 
 export type CharacterArchiveIndexResponse = CharacterArchiveIndex | WithdrawnCharacterProjection;
@@ -702,7 +727,7 @@ export type PaperDailyActionDisclosure = {
 };
 
 /**
- * `dailyActionDisclosure` is an optional key that is only ever serialized once `marketSessionFinalityState` is `accepted` for this record's `tradingDate`; pre-finality responses omit the key entirely rather than sending it nulled out.
+ * `dailyActionDisclosure` is an optional key that is only ever serialized once `marketSessionFinalityState` is `accepted` for this record's `tradingDate`; pre-finality responses omit the key entirely rather than sending it nulled out. Since 3.0.0 a session at or after the kill-switch horizon has no record at all.
  */
 export type PaperActionFillRecord = {
     recordId: Uuid;
@@ -742,11 +767,15 @@ export type PaperArchiveProjection = {
      * Explicit as-of for the whole projection; intraday this is always the previous trading session's close (experience-spec §7.2, §9.4).
      */
     asOf: string;
-    paperVersionSet: PaperVersionSet;
-    account: PaperAccountPublicSummary;
+    paperVersionSet?: PaperVersionSet;
+    account?: PaperAccountPublicSummary;
     positions: Array<PaperPositionPublic>;
     historicalActionFills: Array<PaperActionFillRecord>;
     dataRevisions: Array<DataRevisionNote>;
+    /**
+     * Present exactly when a kill switch withheld today's paper view (3.0.0): `positions` is empty and `account` and `paperVersionSet` are absent (cash and stream versions accumulate every paper action), and there is no action record or revision note for any session at or after the kill-switch horizon -- not even a shell.
+     */
+    marketClosureReasonLabel?: string;
 };
 
 export type CharacterPaperArchiveResponse = PaperArchiveProjection | WithdrawnCharacterProjection;
@@ -904,13 +933,20 @@ export type RelationshipSignalView = {
 };
 
 /**
- * A settled chapter withheld from the public journal. It carries its identity, its date and one reason label — no content field exists on this shape, so nothing about the day can leak through it.
+ * A settled chapter withheld from the public journal. It carries its identity, its date and one reason label, and (3.0.0, kill switch only) the chapter's verbatim non-market segments -- no market-derived content field exists on this shape, so nothing about the day's market content can leak through it.
  */
 export type HeldLifeJournalEntry = {
     entryId: Uuid;
     chapterDate: string;
     entryVisibility: 'HELD';
+    /**
+     * Why the chapter is held: a visibility review, or (3.0.0) a kill switch covering its market content. One of the listed sentences.
+     */
     heldReasonLabel: string;
+    /**
+     * Present only on a chapter held by a kill switch, and only when the chapter sealed segments whose own provenance is not market-derived (3.0.0): those segments, verbatim, each citing its own chassis source. No market-derived segment is ever listed here.
+     */
+    nonMarketSegments?: Array<NarrativeSegment>;
 };
 
 /**
@@ -974,6 +1010,10 @@ export type RelationsArchiveProjection = {
     asOf: string;
     acquaintances: Array<ArchiveAcquaintance>;
     acquaintancesEmptyReason: string | null;
+    /**
+     * Present exactly when a kill switch withheld at least one item of this section (3.0.0): an observed interaction or relationship signal whose provenance is market-derived and that points at a session at or after the kill-switch horizon is withheld whole; items whose provenance is the chassis stay. A list emptied that way carries the fixed closure sentence in its `*EmptyReason`, never its "there is none" sentence.
+     */
+    marketClosureReasonLabel?: string;
 };
 
 export type CharacterRelationsArchiveResponse = RelationsArchiveProjection | WithdrawnCharacterProjection;
@@ -1042,6 +1082,10 @@ export type ChartArchiveProjection = {
     placements: Array<ChartPlacement>;
     placementsEmptyReason: string | null;
     motifs: Array<ChartMotif>;
+    /**
+     * Present exactly when a kill switch withheld at least one item of this section (3.0.0): an active-session pointer or motif invocation whose provenance is market-derived and that points at a session at or after the kill-switch horizon is withheld whole; items whose provenance is the chassis stay. A list emptied that way carries the fixed closure sentence in its `*EmptyReason`, never its "there is none" sentence.
+     */
+    marketClosureReasonLabel?: string;
 };
 
 export type CharacterChartArchiveResponse = ChartArchiveProjection | WithdrawnCharacterProjection;
@@ -1149,6 +1193,10 @@ export type TraitsArchiveProjection = {
     biasOccurrencesEmptyReason: string | null;
     counterExamples: Array<BiasCounterExample>;
     counterExamplesEmptyReason: string | null;
+    /**
+     * Present exactly when a kill switch withheld at least one item of this section (3.0.0): a habit, pattern occurrence or counter-example whose provenance is market-derived and that points at a session at or after the kill-switch horizon is withheld whole; items whose provenance is the chassis stay. A list emptied that way carries the fixed closure sentence in its `*EmptyReason`, never its "there is none" sentence.
+     */
+    marketClosureReasonLabel?: string;
 };
 
 export type CharacterTraitsArchiveResponse = TraitsArchiveProjection | WithdrawnCharacterProjection;
@@ -1202,6 +1250,10 @@ export type MemoriesArchiveProjection = {
     asOf: string;
     memories: Array<ArchiveMemory>;
     memoriesEmptyReason: string | null;
+    /**
+     * Present exactly when a kill switch withheld at least one item of this section (3.0.0): a memory formed in a session whose provenance is market-derived and that points at a session at or after the kill-switch horizon is withheld whole; items whose provenance is the chassis stay. A list emptied that way carries the fixed closure sentence in its `*EmptyReason`, never its "there is none" sentence.
+     */
+    marketClosureReasonLabel?: string;
 };
 
 export type CharacterMemoriesArchiveResponse = MemoriesArchiveProjection | WithdrawnCharacterProjection;
@@ -1275,6 +1327,10 @@ export type LifeArchiveProjection = {
     unrecordedFacets: Array<LifeUnrecordedFacet>;
     joinedWorldOn: string;
     chapterTimeline: Array<LifeChapterPointer>;
+    /**
+     * Present exactly when a kill switch withheld at least one item of this section (3.0.0): a chapter-timeline pointer whose provenance is market-derived and that points at a session at or after the kill-switch horizon is withheld whole; items whose provenance is the chassis stay. A list emptied that way carries the fixed closure sentence in its `*EmptyReason`, never its "there is none" sentence.
+     */
+    marketClosureReasonLabel?: string;
 };
 
 export type CharacterLifeArchiveResponse = LifeArchiveProjection | WithdrawnCharacterProjection;

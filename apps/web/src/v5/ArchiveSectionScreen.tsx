@@ -39,7 +39,7 @@ import type {
 import { ClaimWithTruth, ItemTruthTag } from "./ItemTruthTag";
 import { SystemLabel } from "./SystemLabel";
 import { Utterance } from "./Utterance";
-import { DATA_UNAVAILABLE_LABEL } from "./format";
+import { DATA_UNAVAILABLE_LABEL, projectionVersionLabel } from "./format";
 import { chapterAnchorId } from "./journalRevisions";
 
 export type ArchiveSectionProjection =
@@ -694,7 +694,7 @@ export function ArchiveSectionScreen({
   const context: SectionContext = {
     asOf: section.asOf,
     declared: section.truthClasses,
-    versionLabel: `projection v${section.projectionVersion}`,
+    versionLabel: projectionVersionLabel(section),
     journalPath,
     onOpenChapter,
   };
@@ -714,6 +714,11 @@ export function ArchiveSectionScreen({
       ) : null}
 
       <p className="v5-section__note panshi-data">資料截至 {section.asOf}</p>
+
+      {/* public-v2 3.0.0：kill switch 撤下了這一節的部分項目；被撤的清單另由 `*EmptyReason` 的固定句說明。 */}
+      {"marketClosureReasonLabel" in section && typeof section.marketClosureReasonLabel === "string" ? (
+        <SystemLabel field="marketClosureReasonLabel" text={section.marketClosureReasonLabel} />
+      ) : null}
 
       <SectionBody section={section} context={context} />
 

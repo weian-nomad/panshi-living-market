@@ -31,8 +31,8 @@ use panshi_character_domain::bias::BiasKind;
 use panshi_protocol::character;
 
 use super::{
-    ARCHIVE_SCOPE, Fold, FoldedMemory, FoldedSegmentBody, FoldedSession, OCCUPATION_LABEL,
-    envelope, evidence, evidence::is_visible, taipei_datetime, uuid,
+    ARCHIVE_SCOPE, Fold, FoldedMemory, FoldedSegmentBody, FoldedSession, Gate, OCCUPATION_LABEL,
+    envelope, evidence, evidence::is_visible, mark_market_closure, taipei_datetime, uuid,
 };
 use crate::slice::{CharacterSlice, seed, sessions::FACT_COUNTER_INVENTORY};
 
@@ -42,25 +42,113 @@ use crate::slice::{CharacterSlice, seed, sessions::FACT_COUNTER_INVENTORY};
 ///
 /// Panics on a key outside the five detail sections, or when the log does
 /// not have the one-character shape this projection is written against.
-pub(super) fn section_document(key: &str, slice: &CharacterSlice, fold: &Fold) -> Value {
-    match key {
-        "relations" => relations(slice, fold),
-        "chart" => chart(slice, fold),
-        "traits" => traits(slice, fold),
-        "memories" => memories(slice, fold),
-        "life" => life(slice, fold),
+pub(super) fn section_document(key: &str, slice: &CharacterSlice, fold: &Fold, gate: &Gate) -> Value {
+    let document = match key {
+        "relations" => relations(slice, fold, gate),
+        "chart" => chart(slice, fold, gate),
+        "traits" => traits(slice, fold, gate),
+        "memories" => memories(slice, fold, gate),
+        "life" => life(slice, fold, gate),
         other => unreachable!("unknown archive detail section {other}"),
+    };
+    let Value::Object(mut document) = document else {
+        unreachable!("a section document is an object")
+    };
+    let withheld = withhold_items(&mut document, fold, gate);
+    mark_market_closure(&mut document, withheld);
+    Value::Object(document)
+}
+
+// -- kill switch -------------------------------------------------------------
+
+/// The fixed sentence a list's `*EmptyReason` carries when the list is
+/// empty only because a kill switch withheld its market-derived items. The
+/// section's own "there is none" sentence would then be a false neutral
+/// statement. Engineering placeholder copy, 未經 copy-taste 審稿.
+const LIST_CLOSED_REASON: &str = "這份清單的市場內容依發布規則暫停顯示。";
+
+/// The lists whose elements are containers of items rather than items.
+const CONTAINER_LISTS: [&str; 2] = ["acquaintances", "motifs"];
+
+/// The sessions an emitted item points at: every `sessionDate` anywhere in
+/// it (its own, and those of the sessions it cites as evidence).
+fn item_sessions(item: &Value, fold: &Fold, out: &mut Vec<usize>) {
+    match item {
+        Value::Object(object) => {
+            for (key, child) in object {
+                if key == "sessionDate"
+                    && let Some(date) = child.as_str()
+                {
+                    out.push(
+                        fold.sessions
+                            .iter()
+                            .find(|session| session.market_date_taipei == date)
+                            .map_or(usize::MAX, |session| session.session_index),
+                    );
+                }
+                item_sessions(child, fold, out);
+            }
+        }
+        Value::Array(items) => items.iter().for_each(|child| item_sessions(child, fold, out)),
+        _ => {}
     }
+}
+
+/// Withholds every item of every list in a section that the kill switch
+/// covers (`Gate::item_visible`: from the horizon on, only items whose own
+/// provenance is not market-derived stay). A list emptied that way carries
+/// `LIST_CLOSED_REASON`. Returns whether anything was withheld.
+fn withhold_items(document: &mut Map<String, Value>, fold: &Fold, gate: &Gate) -> bool {
+    let mut any = false;
+    let keys: Vec<String> = document.keys().cloned().collect();
+    for key in keys {
+        if key == "sourceRevisionSet" || key == "truthClasses" {
+            continue;
+        }
+        match document.get_mut(&key) {
+            Some(Value::Array(elements)) if CONTAINER_LISTS.contains(&key.as_str()) => {
+                for element in elements.iter_mut() {
+                    if let Value::Object(container) = element {
+                        any |= withhold_items(container, fold, gate);
+                    }
+                }
+            }
+            Some(Value::Array(elements)) => {
+                let before = elements.len();
+                elements.retain(|item| {
+                    let mut sessions = Vec::new();
+                    item_sessions(item, fold, &mut sessions);
+                    gate.item_visible(&sessions, item)
+                });
+                if elements.len() < before {
+                    any = true;
+                    let emptied = elements.is_empty();
+                    let reason_key = format!("{key}EmptyReason");
+                    if emptied && document.contains_key(&reason_key) {
+                        document.insert(reason_key, json!(LIST_CLOSED_REASON));
+                    }
+                }
+            }
+            Some(Value::Object(child)) => {
+                // A nested single object (identity, birth data, ...) is
+                // chassis; its own lists are filtered like any other.
+                any |= withhold_items(child, fold, gate);
+            }
+            _ => {}
+        }
+    }
+    any
 }
 
 /// The envelope plus the fields every section page shares.
 fn section_header(
     slice: &CharacterSlice,
     fold: &Fold,
+    gate: &Gate,
     key: &str,
     truth_classes: &[&str],
 ) -> Map<String, Value> {
-    let mut document = envelope(slice, fold, truth_classes);
+    let mut document = envelope(slice, fold, gate, truth_classes);
     document.insert("characterId".to_owned(), json!(uuid(&fold.character_id)));
     document.insert("appliedAudienceScope".to_owned(), json!(ARCHIVE_SCOPE));
     document.insert("sectionKey".to_owned(), json!(key));
@@ -98,10 +186,11 @@ fn empty_reason(items: &[Value], reason: &str) -> Value {
 
 // -- relations ------------------------------------------------------------
 
-fn relations(slice: &CharacterSlice, fold: &Fold) -> Value {
+fn relations(slice: &CharacterSlice, fold: &Fold, gate: &Gate) -> Value {
     let mut document = section_header(
         slice,
         fold,
+        gate,
         "relations",
         &["fictional_setting", "simulated_narrative"],
     );
@@ -118,12 +207,25 @@ fn relations(slice: &CharacterSlice, fold: &Fold) -> Value {
                 .observable_actions
                 .iter()
                 .enumerate()
-                .map(|(position, (session_index, action))| {
+                .map(|(position, (session_index, action, subject))| {
                     let session = session_at(fold, *session_index);
+                    // Authored chassis, dated to the session it belongs to.
+                    // The day's chapter does not seal this sentence (its
+                    // observable segment is a different, composed line), so
+                    // it is not the action's provenance and is not cited;
+                    // `journalEntryRef` still links the day. An action the
+                    // chassis declares to be about his paper position also
+                    // cites the event that opened that position.
                     let mut source_refs =
                         vec![evidence::seed_source(&format!("{anchor}/observable-actions/{}", position + 1))];
-                    if let Some(chapter_ref) = &session.chapter_ref {
-                        source_refs.push(evidence::event_source(chapter_ref));
+                    if *subject == seed::ObservableSubject::PaperPosition {
+                        source_refs.push(evidence::event_source(
+                            &fold
+                                .position
+                                .as_ref()
+                                .expect("an action about the position follows its opening")
+                                .opened_ref,
+                        ));
                     }
                     json!({
                         "sessionDate": session.market_date_taipei,
@@ -177,10 +279,11 @@ fn relations(slice: &CharacterSlice, fold: &Fold) -> Value {
 
 // -- chart ----------------------------------------------------------------
 
-fn chart(slice: &CharacterSlice, fold: &Fold) -> Value {
+fn chart(slice: &CharacterSlice, fold: &Fold, gate: &Gate) -> Value {
     let mut document = section_header(
         slice,
         fold,
+        gate,
         "chart",
         &["fictional_setting", "symbolic_interpretation"],
     );
@@ -224,14 +327,20 @@ fn chart(slice: &CharacterSlice, fold: &Fold) -> Value {
                 FoldedSegmentBody::Narrator { truth_class, text }
                     if *truth_class == "symbolic_interpretation" =>
                 {
+                    assert_eq!(
+                        segment.source_refs,
+                        [seed::MOTIF_CONTROL_AND_RECOGNITION.motif_id],
+                        "a symbolic reading is sealed from the natal motif alone"
+                    );
                     Some(json!({
                         "sessionDate": session.market_date_taipei,
                         "journalEntryRef": evidence::journal_entry_ref(session),
                         "readingText": text,
                         "truthClass": "symbolic_interpretation",
-                        "sourceRefs": [evidence::event_source(
-                            session.chapter_ref.as_ref().expect("a segment belongs to a composed chapter"),
-                        )],
+                        // The sealed segment's own `source_refs`: the natal
+                        // motif. The composed chapter is its container, not
+                        // its source.
+                        "sourceRefs": [evidence::seed_source("natal-motif")],
                     }))
                 }
                 _ => None,
@@ -297,10 +406,11 @@ fn bias_kind_label(kind: BiasKind) -> &'static str {
     }
 }
 
-fn traits(slice: &CharacterSlice, fold: &Fold) -> Value {
+fn traits(slice: &CharacterSlice, fold: &Fold, gate: &Gate) -> Value {
     let mut document = section_header(
         slice,
         fold,
+        gate,
         "traits",
         &["fictional_setting", "simulated_narrative"],
     );
@@ -598,10 +708,11 @@ fn memory_source_refs(slice: &CharacterSlice, fold: &Fold, memory: &FoldedMemory
     refs
 }
 
-fn memories(slice: &CharacterSlice, fold: &Fold) -> Value {
+fn memories(slice: &CharacterSlice, fold: &Fold, gate: &Gate) -> Value {
     let mut document = section_header(
         slice,
         fold,
+        gate,
         "memories",
         &["fictional_setting", "simulated_narrative"],
     );
@@ -664,10 +775,11 @@ fn memories(slice: &CharacterSlice, fold: &Fold) -> Value {
 
 // -- life -----------------------------------------------------------------
 
-fn life(slice: &CharacterSlice, fold: &Fold) -> Value {
+fn life(slice: &CharacterSlice, fold: &Fold, gate: &Gate) -> Value {
     let mut document = section_header(
         slice,
         fold,
+        gate,
         "life",
         &["fictional_setting", "simulated_narrative"],
     );

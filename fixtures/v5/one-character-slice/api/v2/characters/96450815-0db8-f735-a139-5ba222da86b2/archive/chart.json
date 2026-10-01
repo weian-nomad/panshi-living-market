@@ -48,10 +48,10 @@
           "sessionDate": "2026-03-02",
           "sourceRefs": [
             {
-              "eventType": "StoryChapterComposed",
-              "globalPosition": 19,
-              "kind": "canonical_event",
-              "refId": "25bc76d5-0b74-aad4-a091-c41c67b93237"
+              "eventType": null,
+              "globalPosition": null,
+              "kind": "character_seed",
+              "refId": "character-seed/v1#natal-motif"
             }
           ],
           "truthClass": "symbolic_interpretation"
@@ -62,10 +62,10 @@
           "sessionDate": "2026-03-03",
           "sourceRefs": [
             {
-              "eventType": "StoryChapterComposed",
-              "globalPosition": 39,
-              "kind": "canonical_event",
-              "refId": "0cc0a7c7-0c49-028a-8218-50ba629437e4"
+              "eventType": null,
+              "globalPosition": null,
+              "kind": "character_seed",
+              "refId": "character-seed/v1#natal-motif"
             }
           ],
           "truthClass": "symbolic_interpretation"
@@ -76,10 +76,10 @@
           "sessionDate": "2026-03-04",
           "sourceRefs": [
             {
-              "eventType": "StoryChapterComposed",
-              "globalPosition": 51,
-              "kind": "canonical_event",
-              "refId": "b9728167-f578-a33f-fe98-15463ec0ace0"
+              "eventType": null,
+              "globalPosition": null,
+              "kind": "character_seed",
+              "refId": "character-seed/v1#natal-motif"
             }
           ],
           "truthClass": "symbolic_interpretation"
@@ -90,10 +90,10 @@
           "sessionDate": "2026-03-05",
           "sourceRefs": [
             {
-              "eventType": "StoryChapterComposed",
-              "globalPosition": 63,
-              "kind": "canonical_event",
-              "refId": "606986fd-38db-c5f2-f506-b8ad08008576"
+              "eventType": null,
+              "globalPosition": null,
+              "kind": "character_seed",
+              "refId": "character-seed/v1#natal-motif"
             }
           ],
           "truthClass": "symbolic_interpretation"
@@ -278,6 +278,11 @@
       "refId": "a243c129-0297-7b54-e16f-256452eab596",
       "refKind": "paper_position",
       "revision": 30
+    },
+    {
+      "refId": "projection-kill-switch/v1",
+      "refKind": "projection_kill_switch",
+      "revision": 1
     }
   ],
   "truthClasses": [

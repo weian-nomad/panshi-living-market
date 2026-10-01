@@ -102,6 +102,26 @@ function hasProjectionEnvelope(value: unknown): value is JsonObject {
   );
 }
 
+/**
+ * public-v2 3.0.0: a projection a kill switch partly withheld carries the
+ * fixed `marketClosureReasonLabel`. Only then may the fields the contract
+ * lists as withholdable be absent; anywhere else their absence is still an
+ * incomplete projection.
+ */
+function hasMarketClosure(value: JsonObject): boolean {
+  return hasString(value, "marketClosureReasonLabel");
+}
+
+/** A withholdable string field: present, or absent under a closure label. */
+function hasStringOrClosed(value: JsonObject, key: string): boolean {
+  return hasString(value, key) || (!(key in value) && hasMarketClosure(value));
+}
+
+/** A withholdable object field: present, or absent under a closure label. */
+function hasObjectOrClosed(value: JsonObject, key: string): boolean {
+  return hasObject(value, key) || (!(key in value) && hasMarketClosure(value));
+}
+
 function isWithdrawnTombstone(value: JsonObject): boolean {
   return value["dataState"] === "WITHDRAWN" && hasString(value, "tombstoneReasonLabel");
 }
@@ -138,8 +158,8 @@ function isCloseUp(value: unknown): boolean {
       hasString(record, "occupationLabel") &&
       hasString(record, "sceneRef") &&
       hasString(record, "poseState") &&
-      hasString(record, "currentVerbPhrase") &&
-      hasString(record, "unresolvedTensionSummary") &&
+      hasStringOrClosed(record, "currentVerbPhrase") &&
+      hasStringOrClosed(record, "unresolvedTensionSummary") &&
       hasArray(record, "unresolvedCommitments"),
   );
 }
@@ -161,7 +181,7 @@ function isArchiveIndex(value: unknown): boolean {
     value,
     (record) =>
       hasString(record, "archiveSchemaRevision") &&
-      hasString(record, "longTermTensionSummary") &&
+      hasStringOrClosed(record, "longTermTensionSummary") &&
       hasArray(record, "recentHighlights") &&
       Array.isArray(record["sections"]) &&
       (record["sections"] as unknown[]).length === 6,
@@ -174,8 +194,8 @@ function isPaperArchive(value: unknown): boolean {
     (record) =>
       hasString(record, "appliedAudienceScope") &&
       hasString(record, "asOf") &&
-      hasObject(record, "paperVersionSet") &&
-      hasObject(record, "account") &&
+      hasObjectOrClosed(record, "paperVersionSet") &&
+      hasObjectOrClosed(record, "account") &&
       hasArray(record, "positions") &&
       hasArray(record, "historicalActionFills") &&
       hasArray(record, "dataRevisions"),

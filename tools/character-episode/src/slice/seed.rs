@@ -274,8 +274,22 @@ pub struct AcquaintanceNode {
     pub acquaintance_id: &'static str,
     pub display_name: &'static str,
     pub relation_note: &'static str,
-    /// Observable, one-way, quote-free. Indexed by the session it belongs to.
-    pub observable_actions: [(usize, &'static str); 5],
+    /// Observable, one-way, quote-free. Indexed by the session it belongs to,
+    /// with what the action is about declared by the author.
+    pub observable_actions: [(usize, &'static str, ObservableSubject); 5],
+}
+
+/// What an authored observable action is about, declared in the chassis so
+/// that the read side never has to infer it from the wording. An action
+/// about his paper position is a consequence of the market arc: the
+/// projection cites the position's opening event as part of its provenance,
+/// which makes it market-derived for the kill switch.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ObservableSubject {
+    /// Everyday behaviour around her; no market content.
+    Everyday,
+    /// Behaviour about his paper position ("那個部位").
+    PaperPosition,
 }
 
 pub const ACQUAINTANCE_XIAOYU: AcquaintanceNode = AcquaintanceNode {
@@ -283,11 +297,11 @@ pub const ACQUAINTANCE_XIAOYU: AcquaintanceNode = AcquaintanceNode {
     display_name: "陳小雨",
     relation_note: "同組同事。他信任她的判斷，也怕被她看穿。",
     observable_actions: [
-        (2, "他把她的提醒滑掉，沒有回。"),
-        (7, "他繞開她的座位。"),
-        (12, "他主動走回她的座位旁。"),
-        (17, "他在茶水間遇到她，先開口提起那個部位。"),
-        (20, "組會上被問到那個部位時，他先看了她一眼才開口。"),
+        (2, "他把她的提醒滑掉，沒有回。", ObservableSubject::Everyday),
+        (7, "他繞開她的座位。", ObservableSubject::Everyday),
+        (12, "他主動走回她的座位旁。", ObservableSubject::Everyday),
+        (17, "他在茶水間遇到她，先開口提起那個部位。", ObservableSubject::PaperPosition),
+        (20, "組會上被問到那個部位時，他先看了她一眼才開口。", ObservableSubject::PaperPosition),
     ],
 };
 
@@ -462,14 +476,14 @@ mod tests {
     /// look like speech attributed to her.
     #[test]
     fn the_acquaintance_node_never_carries_quoted_speech() {
-        for (_, action) in ACQUAINTANCE_XIAOYU.observable_actions {
+        for (_, action, _) in ACQUAINTANCE_XIAOYU.observable_actions {
             assert!(!action.contains('「'), "observable actions must be quote-free");
             assert!(!action.contains('」'), "observable actions must be quote-free");
         }
         assert_eq!(
             ACQUAINTANCE_XIAOYU
                 .observable_actions
-                .map(|(session_index, _)| session_index),
+                .map(|(session_index, _, _)| session_index),
             [2, 7, 12, 17, 20]
         );
     }

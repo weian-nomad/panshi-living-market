@@ -83,14 +83,46 @@ use panshi_protocol::{character, decode_canonical, portfolio, story, world};
 
 mod archive_sections;
 mod evidence;
+mod gate;
+pub mod kill_switch;
 
 use crate::{
     derive_id, payload_digest,
     slice::{
         CharacterSlice, INTENDED_HORIZON_DAYS, seed,
-        sessions::{FACT_COUNTER_INVENTORY, FACT_ISSUER_CORRECTION, FACT_MOMENTUM_S1},
+        sessions::{
+            FACT_COUNTER_INVENTORY, FACT_ISSUER_CORRECTION, FACT_MOMENTUM_S1, ManifestModeDomain,
+        },
     },
 };
+use gate::Gate;
+use kill_switch::ProjectionKillSwitch;
+
+// -- kill-switch system labels ---------------------------------------------
+//
+// Fixed system sentences (`x-panshi-system-label`), listed per field in
+// `contracts/openapi/public-v2-system-labels.json`. They describe the system,
+// name nothing that was withheld (naming the closed company or day would
+// itself be the signal the switch exists to stop), and carry no truth class.
+// "人物的生活、關係與記憶照常" is true wherever these are emitted: a switch only
+// ever withholds market-derived objects (`gate.rs`), and every non-market
+// item stays -- `tests/projection_kill_switch.rs` holds that on every page
+// that carries the sentence.
+// Engineering placeholder copy, 未經 copy-taste 審稿.
+
+/// `heldReasonLabel` of a chapter withheld by a kill switch.
+const KILL_SWITCH_HELD_REASON_LABEL: &str =
+    "這一章的市場內容依發布規則暫停公開；人物的生活、關係與記憶照常。";
+
+/// `marketClosureReasonLabel`: present on a world, close-up, archive index,
+/// paper archive or archive section document exactly when a kill switch
+/// withheld at least one of its objects.
+const MARKET_CLOSURE_REASON_LABEL: &str =
+    "這一頁有部分市場內容依發布規則暫停顯示；人物的生活、關係與記憶照常。";
+
+/// `summaryHeldReasonLabel` of an archive index section whose one-line
+/// summary a kill switch withheld.
+const SUMMARY_HELD_REASON_LABEL: &str = "這一節的摘要含有依發布規則暫停顯示的市場內容。";
 
 /// The audience scope this slice resolves each public route at. The world
 /// snapshot and the life journal are the anonymous public surface; the deep
@@ -265,6 +297,8 @@ struct FoldedUtterance {
     surface_kind: i32,
     replies_to: Option<Vec<u8>>,
     event_ref: EventRef,
+    /// The 1-based session the artifact was sealed in, if any.
+    session_index: Option<usize>,
 }
 
 impl FoldedUtterance {
@@ -294,6 +328,8 @@ struct FoldedPosition {
     unrealized_pnl_fixed: i64,
     stream_version: u64,
     opened_at_unix_micros: i64,
+    /// The `PaperPositionOpened` event.
+    opened_ref: EventRef,
 }
 
 #[derive(Clone, Debug)]
@@ -311,6 +347,8 @@ struct FoldedFill {
     fee_fixed: i64,
     tax_fixed: i64,
     event_ref: EventRef,
+    /// The session whose manifest sealed that price, when mirrored.
+    price_session_index: Option<usize>,
 }
 
 #[derive(Clone, Debug)]
@@ -326,6 +364,8 @@ struct FoldedMark {
     /// The mirrored hash of the manifest whose sealed close the mark cited.
     price_manifest_hash_hex: String,
     event_ref: EventRef,
+    /// The session whose manifest sealed that price, when mirrored.
+    price_session_index: Option<usize>,
 }
 
 #[derive(Clone, Debug)]
@@ -333,6 +373,8 @@ struct FoldedFact {
     fact_revision_id: String,
     market_date_taipei: String,
     available_at_unix_micros: i64,
+    /// The session whose manifest made the fact visible.
+    session_index: usize,
 }
 
 /// One segment of a sealed `StoryChapterComposed`, restated as decoded.
@@ -352,6 +394,8 @@ enum FoldedSegmentBody {
 struct FoldedSegment {
     segment_id: String,
     body: FoldedSegmentBody,
+    /// The segment's own sealed `source_refs`: what it was composed from.
+    source_refs: Vec<String>,
 }
 
 /// `CharacterOriginSealedV1`, the fields the archive restates.
@@ -400,6 +444,17 @@ struct FoldedSession {
     session_index: usize,
     manifest_id: String,
     manifest_hash_hex: String,
+    /// `FactManifestAcceptedV1.market_session_id`.
+    market_session_id: String,
+    /// The manifest's `modeDomain`, from the mirrored fixture; a manifest
+    /// the mirror does not know is treated as `Current` (fail closed: its
+    /// provenance as synthetic history is not established).
+    mode_domain: ManifestModeDomain,
+    /// `AutonomousActionIntentCommittedV1.security_id`; empty for a
+    /// non-paper action.
+    intent_security_id: String,
+    /// `AutonomousActionIntentCommittedV1.perceived_fact_revision_ids`.
+    intent_perceived_fact_revision_ids: Vec<String>,
     market_date_taipei: String,
     interaction_cutoff_unix_micros: i64,
     evidence_cutoff_unix_micros: i64,
@@ -532,6 +587,20 @@ impl Fold {
             .iter()
             .find(|fact| fact.fact_revision_id == fact_revision_id)
     }
+
+    /// The 1-based index of the session whose manifest is `manifest_id`.
+    fn session_index_of(&self, manifest_id: &str) -> Option<usize> {
+        self.sessions
+            .iter()
+            .find(|session| session.manifest_id == manifest_id)
+            .map(|session| session.session_index)
+    }
+
+    fn session(&self, session_index: usize) -> Option<&FoldedSession> {
+        session_index
+            .checked_sub(1)
+            .and_then(|position| self.sessions.get(position))
+    }
 }
 
 /// Replays the whole ordered canonical log into the folded read model.
@@ -589,10 +658,19 @@ fn fold(slice: &CharacterSlice) -> Fold {
             "FactManifestAccepted" => {
                 let decoded = decode_canonical::<world::v1::FactManifestAcceptedV1>(bytes)
                     .expect("canonical FactManifestAcceptedV1");
+                let mode_domain = slice
+                    .sessions
+                    .iter()
+                    .find(|mirrored| mirrored.manifest_id == decoded.manifest_id)
+                    .map_or(ManifestModeDomain::Current, |mirrored| mirrored.mode_domain);
                 fold.sessions.push(FoldedSession {
                     session_index: fold.sessions.len() + 1,
                     manifest_id: decoded.manifest_id,
                     manifest_hash_hex: hex(&decoded.manifest_hash),
+                    market_session_id: decoded.market_session_id,
+                    mode_domain,
+                    intent_security_id: String::new(),
+                    intent_perceived_fact_revision_ids: Vec::new(),
                     market_date_taipei: decoded.market_date_taipei,
                     interaction_cutoff_unix_micros: decoded.interaction_cutoff_unix_micros,
                     evidence_cutoff_unix_micros: decoded.evidence_cutoff_unix_micros,
@@ -626,11 +704,14 @@ fn fold(slice: &CharacterSlice) -> Fold {
             "FactBecameVisible" => {
                 let decoded = decode_canonical::<world::v1::FactBecameVisibleV1>(bytes)
                     .expect("canonical FactBecameVisibleV1");
-                let market_date_taipei = fold.current_session_mut().market_date_taipei.clone();
+                let session = fold.current_session_mut();
+                let market_date_taipei = session.market_date_taipei.clone();
+                let session_index = session.session_index;
                 fold.facts.push(FoldedFact {
                     fact_revision_id: decoded.fact_revision_id,
                     market_date_taipei,
                     available_at_unix_micros: decoded.available_at_unix_micros,
+                    session_index,
                 });
             }
             "MarketSessionFinalityAccepted" => {
@@ -655,6 +736,8 @@ fn fold(slice: &CharacterSlice) -> Fold {
                 session.quantity_fixed = decoded.quantity_or_target_weight_fixed;
                 session.confidence_bp = decoded.confidence_bp;
                 session.thesis_revision = decoded.thesis_revision;
+                session.intent_security_id = decoded.security_id;
+                session.intent_perceived_fact_revision_ids = decoded.perceived_fact_revision_ids;
             }
             "SemanticSpeechActCommitted" => {
                 let decoded =
@@ -668,6 +751,7 @@ fn fold(slice: &CharacterSlice) -> Fold {
                 let decoded = decode_canonical::<character::v1::UtteranceArtifactV1>(bytes)
                     .expect("canonical UtteranceArtifactV1");
                 let index = fold.utterances.len();
+                let session_index = fold.sessions.last().map(|session| session.session_index);
                 fold.utterances.push(FoldedUtterance {
                     artifact_id: decoded.utterance_artifact_id,
                     canonical_text_utf8: decoded.canonical_text_utf8,
@@ -675,6 +759,7 @@ fn fold(slice: &CharacterSlice) -> Fold {
                     surface_kind: decoded.surface_kind,
                     replies_to: decoded.replies_to_utterance_artifact_id,
                     event_ref,
+                    session_index,
                 });
                 fold.current_session_mut().utterance_index = Some(index);
             }
@@ -740,6 +825,7 @@ fn fold(slice: &CharacterSlice) -> Fold {
                     .price_source
                     .expect("a canonical fill always names its sealed price source");
                 let manifest_hash = fold.manifest_hash_of(&price_source.fact_manifest_id);
+                let price_session_index = fold.session_index_of(&price_source.fact_manifest_id);
                 if let Some(order) = fold
                     .orders
                     .iter_mut()
@@ -755,6 +841,7 @@ fn fold(slice: &CharacterSlice) -> Fold {
                     fee_fixed: decoded.fee_fixed,
                     tax_fixed: decoded.tax_fixed,
                     event_ref,
+                    price_session_index,
                 });
             }
             "PaperAccountJournalPosted" => {
@@ -790,6 +877,7 @@ fn fold(slice: &CharacterSlice) -> Fold {
                     unrealized_pnl_fixed: 0,
                     stream_version: 0,
                     opened_at_unix_micros: lot.opened_at_unix_micros,
+                    opened_ref: event_ref,
                 });
             }
             "PaperPositionAdjusted" => {
@@ -831,12 +919,14 @@ fn fold(slice: &CharacterSlice) -> Fold {
                     .map(lot_cost_basis_minor)
                     .sum::<i64>();
                 let price_manifest_hash_hex = fold.manifest_hash_of(&price_source.fact_manifest_id);
+                let price_session_index = fold.session_index_of(&price_source.fact_manifest_id);
                 fold.current_session_mut().marks.push(FoldedMark {
                     unrealized_pnl_fixed: decoded.unrealized_pnl_fixed,
                     price_observed_at_unix_micros: price_source.price_observed_at_unix_micros,
                     cost_basis_minor_units,
                     price_manifest_hash_hex,
                     event_ref,
+                    price_session_index,
                 });
                 let position = fold
                     .position
@@ -881,24 +971,27 @@ fn fold(slice: &CharacterSlice) -> Fold {
 /// not the log this slice emits, and rendering it anyway would put an
 /// unlabelled or falsely-labelled sentence in front of a viewer.
 fn fold_segment(segment: &story::v1::NarrativeSegmentV1) -> FoldedSegment {
-    let body = match &segment.variant {
-        Some(story::v1::narrative_segment_v1::Variant::NarratorText(text)) => {
+    let (body, source_refs) = match &segment.variant {
+        Some(story::v1::narrative_segment_v1::Variant::NarratorText(text)) => (
             FoldedSegmentBody::Narrator {
                 truth_class: sealed_truth_class_label(text.truth_class),
                 text: text.text.clone(),
-            }
-        }
-        Some(story::v1::narrative_segment_v1::Variant::CharacterClaim(claim)) => {
+            },
+            text.source_refs.clone(),
+        ),
+        Some(story::v1::narrative_segment_v1::Variant::CharacterClaim(claim)) => (
             FoldedSegmentBody::Claim {
                 artifact_id: claim.utterance_artifact_id.clone(),
                 canonical_text_sha256_hex: hex(&claim.canonical_text_sha256),
-            }
-        }
+            },
+            claim.source_refs.clone(),
+        ),
         None => panic!("sealed segment {} has no variant", segment.segment_id),
     };
     FoldedSegment {
         segment_id: segment.segment_id.clone(),
         body,
+        source_refs,
     }
 }
 
@@ -970,6 +1063,11 @@ const ARCHIVE_DETAIL_SECTION_KEYS: [&str; 5] = ["relations", "chart", "traits", 
 /// value that is not a whole currency minor unit. Rendering a rounded or
 /// invented public figure instead is exactly what the fail-closed rule
 /// exists to prevent.
+///
+/// Projected under `ProjectionKillSwitch::release_gate_default()`: the
+/// current-market projection is closed, as it is until every release gate
+/// passes. The slice's market content is the synthetic historical fixture,
+/// so nothing in it is withheld.
 #[must_use]
 pub fn public_api_documents(slice: &CharacterSlice) -> Vec<(String, String)> {
     public_api_documents_with(slice, &ProjectionFaults::default())
@@ -986,37 +1084,66 @@ pub fn public_api_documents_with(
     slice: &CharacterSlice,
     faults: &ProjectionFaults,
 ) -> Vec<(String, String)> {
+    public_api_documents_gated(slice, faults, &ProjectionKillSwitch::release_gate_default())
+}
+
+/// `public_api_documents_with`, projected under an explicit kill-switch set
+/// (`docs/v5/market-safety.md` "Kill switch"). Every object a closed switch
+/// covers is withheld whole: a chapter moves to `heldEntries` with a fixed
+/// `heldReasonLabel`; an archive index section's summary is replaced by a
+/// `HeldArchiveSectionIndexEntry`; every other object is simply absent and
+/// its document carries the fixed `marketClosureReasonLabel`. Nothing is
+/// rewritten, and the character-world documents (relations, chart, traits,
+/// memories, life) are never touched.
+///
+/// # Panics
+///
+/// As `public_api_documents`.
+#[must_use]
+pub fn public_api_documents_gated(
+    slice: &CharacterSlice,
+    faults: &ProjectionFaults,
+    switches: &ProjectionKillSwitch,
+) -> Vec<(String, String)> {
     let fold = fold(slice);
+    let gate = Gate::new(switches, slice, &fold);
     let character_id = uuid(&fold.character_id);
 
     let mut documents = vec![
-        ("/api/v2/world".to_owned(), "v2/world.json".to_owned(), world_snapshot(slice, &fold)),
+        (
+            "/api/v2/world".to_owned(),
+            "v2/world.json".to_owned(),
+            world_snapshot(slice, &fold, &gate),
+        ),
         (
             format!("/api/v2/characters/{character_id}/close-up"),
             format!("v2/characters/{character_id}/close-up.json"),
-            close_up(slice, &fold),
+            close_up(slice, &fold, &gate),
         ),
         (
             format!("/api/v2/characters/{character_id}/life-journal"),
             format!("v2/characters/{character_id}/life-journal.json"),
-            life_journal(slice, &fold, faults),
+            life_journal(slice, &fold, faults, &gate),
         ),
         (
             format!("/api/v2/characters/{character_id}/archive"),
             format!("v2/characters/{character_id}/archive.json"),
-            archive_index(slice, &fold),
+            archive_index(slice, &fold, &gate),
         ),
         (
             format!("/api/v2/characters/{character_id}/archive/paper"),
             format!("v2/characters/{character_id}/archive/paper.json"),
-            paper_archive(slice, &fold),
+            paper_archive(slice, &fold, &gate),
         ),
     ];
     for key in ARCHIVE_DETAIL_SECTION_KEYS {
         documents.push((
             format!("/api/v2/characters/{character_id}/archive/{key}"),
             format!("v2/characters/{character_id}/archive/{key}.json"),
-            classify_section_nested_items(key, archive_sections::section_document(key, slice, &fold)),
+            classify_section_nested_items(
+                key,
+                archive_sections::section_document(key, slice, &fold, &gate),
+            ),
         ));
     }
 
@@ -1036,11 +1163,21 @@ pub fn public_api_documents_with(
 
 /// The envelope every projection response in `public-v2.yaml` carries
 /// (`docs/v5/system-design.md` §11.3).
-fn envelope(slice: &CharacterSlice, fold: &Fold, truth_classes: &[&str]) -> Map<String, Value> {
-    let global_position = i64::try_from(slice.events.len()).expect("slice log length fits i64");
+fn envelope(
+    slice: &CharacterSlice,
+    fold: &Fold,
+    gate: &Gate,
+    truth_classes: &[&str],
+) -> Map<String, Value> {
+    // Under a kill-switch horizon the response reports the last log
+    // position before it: the whole log's length would grow with every
+    // withheld event, and two days' difference would tell a trading day
+    // (more events) from a quiet one.
+    let log_length = u64::try_from(slice.events.len()).expect("slice log length fits u64");
+    let position = gate.reported_position(log_length);
     let mut envelope = Map::new();
-    envelope.insert("projectionVersion".to_owned(), json!(global_position));
-    envelope.insert("sourceGlobalPosition".to_owned(), json!(global_position));
+    envelope.insert("projectionVersion".to_owned(), json!(position));
+    envelope.insert("sourceGlobalPosition".to_owned(), json!(position));
     // The slice's world clock, not a wall clock: today's session is open,
     // and this projection is computed at the same in-session moment (10:30
     // Taipei) every time it runs.
@@ -1051,18 +1188,32 @@ fn envelope(slice: &CharacterSlice, fold: &Fold, truth_classes: &[&str]) -> Map<
         )),
     );
     envelope.insert("dataState".to_owned(), json!("READY"));
+    // The canonical visibility epoch, untouched. The kill-switch set is a
+    // second, independent coordinate recorded in `sourceRevisionSet`; a
+    // cache keys on the pair (see `public-v2.yaml` 3.0.0).
     envelope.insert("visibilityEpoch".to_owned(), json!(fold.visibility_epoch));
     envelope.insert("truthClasses".to_owned(), json!(truth_classes));
-    envelope.insert("sourceRevisionSet".to_owned(), source_revision_set(fold));
+    envelope.insert("sourceRevisionSet".to_owned(), source_revision_set(fold, gate));
     envelope
 }
 
-/// Every canonical revision this projection was computed from: the six
-/// mirrored manifests plus the paper aggregates' exact stream versions.
-fn source_revision_set(fold: &Fold) -> Value {
+/// The `refKind` under which every response records the kill-switch set it
+/// was projected under; the `refId` says where the set came from
+/// (`KillSwitchOrigin::ref_id`) and the `revision` which revision it was.
+const KILL_SWITCH_REF_KIND: &str = "projection_kill_switch";
+
+/// Every revision the visible content of this projection was computed from:
+/// the mirrored manifests of the sessions still shown, the paper aggregates'
+/// exact stream versions when today's paper view is shown, and the
+/// kill-switch set the projection ran under. A withheld session's manifest
+/// and the paper versions (which count the paper actions) are not listed
+/// once their content is withheld: a version number is itself a count of
+/// what happened.
+fn source_revision_set(fold: &Fold, gate: &Gate) -> Value {
     let mut refs: Vec<Value> = fold
         .sessions
         .iter()
+        .filter(|session| gate.session_visible(session.session_index))
         .map(|session| {
             json!({
                 "refId": session.manifest_id,
@@ -1071,23 +1222,40 @@ fn source_revision_set(fold: &Fold) -> Value {
             })
         })
         .collect();
+    if gate.today_visible() {
+        refs.push(json!({
+            "refId": uuid(&fold.paper_account_id),
+            "refKind": "paper_account",
+            "revision": fold.account_version,
+        }));
+        refs.push(json!({
+            "refId": uuid(&fold.position().position_id),
+            "refKind": "paper_position",
+            "revision": fold.position().stream_version,
+        }));
+    }
     refs.push(json!({
-        "refId": uuid(&fold.paper_account_id),
-        "refKind": "paper_account",
-        "revision": fold.account_version,
-    }));
-    refs.push(json!({
-        "refId": uuid(&fold.position().position_id),
-        "refKind": "paper_position",
-        "revision": fold.position().stream_version,
+        "refId": gate.switches().origin.ref_id(),
+        "refKind": KILL_SWITCH_REF_KIND,
+        "revision": gate.switches().revision,
     }));
     Value::Array(refs)
 }
 
-fn world_snapshot(slice: &CharacterSlice, fold: &Fold) -> Value {
+/// Marks a document whose objects a kill switch withheld.
+fn mark_market_closure(document: &mut Map<String, Value>, withheld: bool) {
+    if withheld {
+        document.insert(
+            "marketClosureReasonLabel".to_owned(),
+            json!(MARKET_CLOSURE_REASON_LABEL),
+        );
+    }
+}
+
+fn world_snapshot(slice: &CharacterSlice, fold: &Fold, gate: &Gate) -> Value {
     let today = fold.today();
     let settled = fold.last_settled_session();
-    let mut snapshot = envelope(slice, fold, &["fictional_setting", "simulated_narrative"]);
+    let mut snapshot = envelope(slice, fold, gate, &["fictional_setting", "simulated_narrative"]);
 
     snapshot.insert(
         "marketClock".to_owned(),
@@ -1120,7 +1288,13 @@ fn world_snapshot(slice: &CharacterSlice, fold: &Fold) -> Value {
         }),
     );
     // Exactly one canonical resident. Decorative silhouettes elsewhere in
-    // the scene are a rendering concern and never enter the contract.
+    // the scene are a rendering concern and never enter the contract. The
+    // resident stays in the world under any kill switch; what he is
+    // attending to today (the two meetings and his own records) is a
+    // statement folded from his whole history, so it is withdrawn with the
+    // today layer -- `null`, with the page's closure label -- and so is the
+    // ref to today's cognitive episode.
+    let today_shown = gate.today_visible();
     snapshot.insert(
         "characterPositions".to_owned(),
         json!([{
@@ -1129,36 +1303,45 @@ fn world_snapshot(slice: &CharacterSlice, fold: &Fold) -> Value {
             "worldY": 7,
             "poseState": "examining",
             "poseStateTruthClass": SIMULATED_NARRATIVE,
-            "focusHint": "兩次組會那兩天自己留下的紀錄",
+            "focusHint": if today_shown { json!("兩次組會那兩天自己留下的紀錄") } else { Value::Null },
             // What he is attending to is his attention: simulated.
-            "focusHintTruthClass": SIMULATED_NARRATIVE,
+            "focusHintTruthClass": if today_shown { json!(SIMULATED_NARRATIVE) } else { Value::Null },
             "zOrder": 0,
             "sceneLayer": "foreground",
             "detailTier": "high_detail",
-            "sourceEventRefs": [uuid(&today.cognitive_episode_id)],
+            "sourceEventRefs": if today_shown {
+                json!([uuid(&today.cognitive_episode_id)])
+            } else {
+                json!([])
+            },
         }]),
     );
     // At most five, and carrying no rank, score, ticker or performance
-    // figure (`docs/v5/market-safety.md` 今日五幕).
-    snapshot.insert(
-        "storyHooks".to_owned(),
-        json!([{
-            "hookId": uuid(&derive_id("v5-slice/story-hook/opening-hall-1")),
-            "characterId": uuid(&fold.character_id),
-            "sceneRef": scene_id,
-            "label": "開盤廳裡有人在對照自己兩次組會的紀錄",
-            "labelTruthClass": SIMULATED_NARRATIVE,
-        }]),
-    );
+    // figure (`docs/v5/market-safety.md` 今日五幕). Each one is an act a
+    // kill switch can close by its `hookId`; a closed act is absent, and the
+    // 0-act page is a legal state.
+    let hooks = [json!({
+        "hookId": uuid(&derive_id("v5-slice/story-hook/opening-hall-1")),
+        "characterId": uuid(&fold.character_id),
+        "sceneRef": scene_id,
+        "label": "開盤廳裡有人在對照自己兩次組會的紀錄",
+        "labelTruthClass": SIMULATED_NARRATIVE,
+    })];
+    let (open, closed): (Vec<Value>, Vec<Value>) = hooks.into_iter().partition(|hook| {
+        gate.story_act_visible(hook["hookId"].as_str().expect("a hook has an id"))
+    });
+    snapshot.insert("storyHooks".to_owned(), Value::Array(open));
+    mark_market_closure(&mut snapshot, !closed.is_empty() || !today_shown);
     Value::Object(snapshot)
 }
 
-fn close_up(slice: &CharacterSlice, fold: &Fold) -> Value {
+fn close_up(slice: &CharacterSlice, fold: &Fold, gate: &Gate) -> Value {
     let position = fold.position();
     let mark = fold.current_mark();
     let mut close_up = envelope(
         slice,
         fold,
+        gate,
         &[
             "fictional_setting",
             "symbolic_interpretation",
@@ -1166,6 +1349,8 @@ fn close_up(slice: &CharacterSlice, fold: &Fold) -> Value {
         ],
     );
 
+    // Who he is and where he stands: authored chassis and a neutral pose.
+    // These stay under every kill switch.
     close_up.insert("characterId".to_owned(), json!(uuid(&fold.character_id)));
     close_up.insert("displayName".to_owned(), json!(seed::DISPLAY_NAME));
     close_up.insert("displayNameTruthClass".to_owned(), json!(FICTIONAL_SETTING));
@@ -1179,6 +1364,18 @@ fn close_up(slice: &CharacterSlice, fold: &Fold) -> Value {
     );
     close_up.insert("poseState".to_owned(), json!("examining"));
     close_up.insert("poseStateTruthClass".to_owned(), json!(SIMULATED_NARRATIVE));
+
+    // Everything else on this page is a statement about today folded from
+    // his whole history: what he is doing about the two meetings, the
+    // tension between them ("still not retracted" is a claim about every
+    // later session), the latest sentence of each kind, and the position as
+    // it stands now. Under any closed session all of it is withdrawn whole,
+    // and the page says so; nothing older is promoted in its place.
+    if !gate.today_visible() {
+        close_up.insert("unresolvedCommitments".to_owned(), Value::Array(Vec::new()));
+        mark_market_closure(&mut close_up, true);
+        return Value::Object(close_up);
+    }
     close_up.insert(
         "currentVerbPhrase".to_owned(),
         json!("正在對照兩次組會那兩天自己留下的紀錄"),
@@ -1212,6 +1409,7 @@ fn close_up(slice: &CharacterSlice, fold: &Fold) -> Value {
         .iter()
         .rev()
         .find(|utterance| !utterance.is_self_acknowledged())
+        .filter(|utterance| gate.utterance_visible(utterance))
     {
         close_up.insert("publicClaim".to_owned(), utterance_value(utterance));
     }
@@ -1220,6 +1418,7 @@ fn close_up(slice: &CharacterSlice, fold: &Fold) -> Value {
         .iter()
         .rev()
         .find(|utterance| utterance.is_self_acknowledged())
+        .filter(|utterance| gate.utterance_visible(utterance))
     {
         close_up.insert("selfAcknowledgement".to_owned(), utterance_value(utterance));
     }
@@ -1258,11 +1457,17 @@ fn close_up(slice: &CharacterSlice, fold: &Fold) -> Value {
     Value::Object(close_up)
 }
 
-fn life_journal(slice: &CharacterSlice, fold: &Fold, faults: &ProjectionFaults) -> Value {
+fn life_journal(
+    slice: &CharacterSlice,
+    fold: &Fold,
+    faults: &ProjectionFaults,
+    gate: &Gate,
+) -> Value {
     let position = fold.position();
     let mut page = envelope(
         slice,
         fold,
+        gate,
         &[
             "fictional_setting",
             "symbolic_interpretation",
@@ -1277,26 +1482,38 @@ fn life_journal(slice: &CharacterSlice, fold: &Fold, faults: &ProjectionFaults) 
     // chapter is not in `entries` at all: it is listed in `heldEntries` with
     // an id, a date and a reason label, and nothing else -- so no client can
     // render its content by forgetting to check a flag.
-    let settled = fold
-        .sessions
-        .iter()
-        .filter(|session| session.finality_accepted);
-    let (held, public): (Vec<&FoldedSession>, Vec<&FoldedSession>) =
-        settled.partition(|session| faults.held_chapters.contains(&session.session_index));
-    let entries: Vec<Value> = public
-        .into_iter()
-        .map(|session| {
+    //
+    // A chapter at or after the kill-switch horizon is held the same way,
+    // with its own fixed reason label: its market-derived content is one
+    // unit folded from every earlier session (holdings, P&L, held days, the
+    // habit count, the open question), and nothing in it is rewritten. Its
+    // sealed segments whose own provenance is not market-derived (the natal
+    // motif's reading) stay readable on the held entry, verbatim, under
+    // `nonMarketSegments`.
+    let mut entries = Vec::new();
+    let mut held = Vec::new();
+    for session in fold.sessions.iter().filter(|session| session.finality_accepted) {
+        if faults.held_chapters.contains(&session.session_index) {
+            held.push(evidence::held_entry(session, evidence::HELD_REASON_LABEL));
+        } else if !gate.session_visible(session.session_index) {
+            let mut entry = evidence::held_entry(session, KILL_SWITCH_HELD_REASON_LABEL);
+            let segments = evidence::non_market_segments(session, gate);
+            if !segments.is_empty() {
+                entry
+                    .as_object_mut()
+                    .expect("a held entry is an object")
+                    .insert("nonMarketSegments".to_owned(), Value::Array(segments));
+            }
+            held.push(entry);
+        } else {
             let narrative_failed = faults
                 .narrative_failed_chapters
                 .contains(&session.session_index);
-            journal_entry(slice, fold, session, position, narrative_failed)
-        })
-        .collect();
+            entries.push(journal_entry(slice, fold, session, position, narrative_failed));
+        }
+    }
     page.insert("entries".to_owned(), Value::Array(entries));
-    page.insert(
-        "heldEntries".to_owned(),
-        Value::Array(held.into_iter().map(evidence::held_entry).collect()),
-    );
+    page.insert("heldEntries".to_owned(), Value::Array(held));
     page.insert("nextCursor".to_owned(), Value::Null);
     Value::Object(page)
 }
@@ -1556,13 +1773,23 @@ fn observable_segment_truth_class(session: &FoldedSession) -> &'static str {
         .expect("a composed chapter seals a classified observable segment")
 }
 
-fn archive_index(slice: &CharacterSlice, fold: &Fold) -> Value {
+/// The archive index sections whose one-line summary is authored chassis
+/// rather than folded from his sessions (the natal motif and its sealed
+/// expiry; the four-axis and blood-type chassis). Every other summary
+/// counts or restates what his sessions left, so it is withdrawn with the
+/// today layer.
+const CHASSIS_SECTION_KEYS: [&str; 2] = ["chart", "traits"];
+
+fn archive_index(slice: &CharacterSlice, fold: &Fold, gate: &Gate) -> Value {
     let character_id = uuid(&fold.character_id);
     let position = fold.position();
     let as_of = taipei_datetime(fold.current_mark().price_observed_at_unix_micros);
+    let today_shown = gate.today_visible();
+    let epoch = fold.visibility_epoch;
     let mut index = envelope(
         slice,
         fold,
+        gate,
         &[
             "fictional_setting",
             "symbolic_interpretation",
@@ -1574,57 +1801,70 @@ fn archive_index(slice: &CharacterSlice, fold: &Fold) -> Value {
         "archiveSchemaRevision".to_owned(),
         json!(ARCHIVE_SCHEMA_REVISION),
     );
-    index.insert(
-        "longTermTensionSummary".to_owned(),
-        json!(format!(
-            "他說自己靠證據做事，卻連續 {} 個交易時段沒有打開同一份反面資料。",
-            recurrence_count(&slice.bias_observations, BiasKind::ConfirmationBias)
-        )),
-    );
-    index.insert(
-        "longTermTensionSummaryTruthClass".to_owned(),
-        json!(SIMULATED_NARRATIVE),
-    );
-    // 最近留下的三件事: at most three, each checkable against a canonical
-    // event rather than against a mood.
-    index.insert(
-        "recentHighlights".to_owned(),
-        json!([
-            format!(
-                "模擬紀錄：1 個部位仍在，原始失效條件已發生，已實現虧損 {} 元。",
-                format_whole_currency(minor_units(position.realized_pnl_fixed).abs()),
-            ),
-            format!(
-                "說法：引用的理由換過 {} 次，新增支持事實 0 筆。",
-                slice.thesis_chain.len().saturating_sub(1)
-            ),
-            relationship_highlight(fold),
-        ]),
-    );
-    // One class per highlight, index for index: a paper figure, a change of
-    // his stated reason, and what he said at two meetings.
+    // The long-term tension ("N sessions in a row") and 最近留下的三件事 (a
+    // paper figure, a change of his stated reason, what he said at two
+    // meetings) are all folded from his whole history: shown only when no
+    // session is closed, withdrawn whole otherwise.
+    let mut highlights = Vec::new();
+    if today_shown {
+        index.insert(
+            "longTermTensionSummary".to_owned(),
+            json!(format!(
+                "他說自己靠證據做事，卻連續 {} 個交易時段沒有打開同一份反面資料。",
+                recurrence_count(&slice.bias_observations, BiasKind::ConfirmationBias)
+            )),
+        );
+        index.insert(
+            "longTermTensionSummaryTruthClass".to_owned(),
+            json!(SIMULATED_NARRATIVE),
+        );
+        highlights.push(format!(
+            "模擬紀錄：1 個部位仍在，原始失效條件已發生，已實現虧損 {} 元。",
+            format_whole_currency(minor_units(position.realized_pnl_fixed).abs()),
+        ));
+        highlights.push(format!(
+            "說法：引用的理由換過 {} 次，新增支持事實 0 筆。",
+            slice.thesis_chain.len().saturating_sub(1)
+        ));
+        highlights.push(relationship_highlight(fold));
+    }
     index.insert(
         "recentHighlightTruthClasses".to_owned(),
-        json!([SIMULATED_NARRATIVE, SIMULATED_NARRATIVE, SIMULATED_NARRATIVE]),
+        json!(vec![SIMULATED_NARRATIVE; highlights.len()]),
     );
+    index.insert("recentHighlights".to_owned(), json!(highlights));
 
     let sections: Vec<Value> = ARCHIVE_SECTION_KEYS
         .iter()
         .map(|key| {
+            // Every section has its own endpoint in this slice, so every
+            // entrance links to a page that exists -- also when its summary
+            // is withheld.
+            let section_path = format!("/api/v2/characters/{character_id}/archive/{key}");
+            if !today_shown && !CHASSIS_SECTION_KEYS.contains(key) {
+                return json!({
+                    "sectionKey": key,
+                    "viewerAudienceScope": ARCHIVE_SCOPE,
+                    "entryVisibility": "HELD",
+                    "summaryHeldReasonLabel": SUMMARY_HELD_REASON_LABEL,
+                    "asOf": as_of,
+                    "visibilityEpoch": epoch,
+                    "sectionPath": section_path,
+                });
+            }
             json!({
                 "sectionKey": key,
                 "viewerAudienceScope": ARCHIVE_SCOPE,
                 "summary": section_summary(key, fold, position),
                 "summaryTruthClass": section_summary_truth_class(key),
                 "asOf": as_of,
-                "visibilityEpoch": fold.visibility_epoch,
-                // Every section has its own endpoint in this slice, so every
-                // entrance links to a page that exists.
-                "sectionPath": format!("/api/v2/characters/{character_id}/archive/{key}"),
+                "visibilityEpoch": epoch,
+                "sectionPath": section_path,
             })
         })
         .collect();
     index.insert("sections".to_owned(), Value::Array(sections));
+    mark_market_closure(&mut index, !today_shown);
     Value::Object(index)
 }
 
@@ -1687,13 +1927,15 @@ fn relationship_highlight(fold: &Fold) -> String {
     }
 }
 
-fn paper_archive(slice: &CharacterSlice, fold: &Fold) -> Value {
+fn paper_archive(slice: &CharacterSlice, fold: &Fold, gate: &Gate) -> Value {
     let position = fold.position();
     let as_of = taipei_datetime(fold.current_mark().price_observed_at_unix_micros);
+    let today_shown = gate.today_visible();
 
     let mut archive = envelope(
         slice,
         fold,
+        gate,
         &[
             "fictional_setting",
             "symbolic_interpretation",
@@ -1703,33 +1945,54 @@ fn paper_archive(slice: &CharacterSlice, fold: &Fold) -> Value {
     archive.insert("characterId".to_owned(), json!(uuid(&fold.character_id)));
     archive.insert("appliedAudienceScope".to_owned(), json!(ARCHIVE_SCOPE));
     archive.insert("asOf".to_owned(), json!(as_of));
-    archive.insert("paperVersionSet".to_owned(), paper_version_set(fold));
-    archive.insert(
-        "account".to_owned(),
-        json!({
-            "currency": "TWD",
-            "cashMinorUnits": minor_units(fold.cash_fixed),
-            "reservedCashMinorUnits": 0,
-            "initialCapitalMinorUnits": minor_units(fold.initial_cash_fixed),
-            "correctionRefs": Value::Array(Vec::new()),
-            "asOf": as_of,
-            "truthClass": SIMULATED_NARRATIVE,
-        }),
-    );
-    archive.insert(
-        "positions".to_owned(),
-        json!([paper_position(slice, fold, position, &as_of)]),
-    );
-    archive.insert(
-        "historicalActionFills".to_owned(),
-        Value::Array(
-            fold.sessions
-                .iter()
-                .map(|session| action_fill_record(slice, fold, session, position))
-                .collect(),
-        ),
-    );
-    archive.insert("dataRevisions".to_owned(), data_revisions(fold, position));
+    // Today's paper view -- the position, the account cash and the exact
+    // stream versions -- accumulates every paper action ever taken: cash
+    // moves by each fill, and a version counts each change. Under any closed
+    // session all three are withdrawn whole (the account and the version set
+    // are absent, `positions` is empty) and the page carries the closure
+    // label, so no figure here can be differenced against a visible one.
+    if today_shown {
+        archive.insert("paperVersionSet".to_owned(), paper_version_set(fold));
+        archive.insert(
+            "account".to_owned(),
+            json!({
+                "currency": "TWD",
+                "cashMinorUnits": minor_units(fold.cash_fixed),
+                "reservedCashMinorUnits": 0,
+                "initialCapitalMinorUnits": minor_units(fold.initial_cash_fixed),
+                "correctionRefs": Value::Array(Vec::new()),
+                "asOf": as_of,
+                "truthClass": SIMULATED_NARRATIVE,
+            }),
+        );
+    }
+    let positions = if today_shown {
+        vec![paper_position(slice, fold, position, &as_of)]
+    } else {
+        Vec::new()
+    };
+    archive.insert("positions".to_owned(), Value::Array(positions));
+    // One record per session before the horizon, exactly as it would read
+    // without any switch; from the horizon on there is no record at all --
+    // not a shell, whose state would mark the day.
+    let records: Vec<Value> = fold
+        .sessions
+        .iter()
+        .filter(|session| gate.session_visible(session.session_index))
+        .map(|session| action_fill_record(slice, fold, session, position, session.finality_accepted))
+        .collect();
+    archive.insert("historicalActionFills".to_owned(), Value::Array(records));
+    // A revision note restates a fact the session that published it made
+    // visible; it follows that session.
+    let revisions: Vec<Value> = data_revisions(fold, position)
+        .into_iter()
+        .filter(|note| {
+            fold.fact(note["revisionId"].as_str().expect("a revision note has an id"))
+                .is_some_and(|fact| gate.session_visible(fact.session_index))
+        })
+        .collect();
+    archive.insert("dataRevisions".to_owned(), Value::Array(revisions));
+    mark_market_closure(&mut archive, !today_shown);
     Value::Object(archive)
 }
 
@@ -1954,11 +2217,15 @@ fn paper_position(
     Value::Object(value)
 }
 
+/// One paper action record. `disclose` is true only for a session whose
+/// finality has been accepted (records at or after the kill-switch horizon
+/// are not built at all).
 fn action_fill_record(
     slice: &CharacterSlice,
     fold: &Fold,
     session: &FoldedSession,
     position: &FoldedPosition,
+    disclose: bool,
 ) -> Value {
     let mut record = Map::new();
     record.insert(
@@ -1980,17 +2247,14 @@ fn action_fill_record(
     );
     record.insert(
         "recordDataState".to_owned(),
-        json!(if session.finality_accepted {
-            "READY"
-        } else {
-            "HELD"
-        }),
+        json!(if disclose { "READY" } else { "HELD" }),
     );
     // The finality fence, made mechanical: until this trading day's
     // `MarketSessionFinalityAccepted` has landed, the disclosure key is not
     // serialized at all -- never present with nulled-out fields
-    // (`docs/v5/market-safety.md` 當期交易時段不得公開).
-    if session.finality_accepted {
+    // (`docs/v5/market-safety.md` 當期交易時段不得公開). A post-close
+    // disclosure a kill switch covers is absent the same way.
+    if disclose {
         let mut disclosure = Map::new();
         // His disclosed paper action and fill.
         disclosure.insert("truthClass".to_owned(), json!(SIMULATED_NARRATIVE));
@@ -2048,13 +2312,13 @@ fn action_fill_record(
     Value::Object(record)
 }
 
-fn data_revisions(fold: &Fold, position: &FoldedPosition) -> Value {
+fn data_revisions(fold: &Fold, position: &FoldedPosition) -> Vec<Value> {
     let Some(correction) = fold.fact(CORRECTION_FACT_REVISION_ID) else {
         // No mirrored correction, so nothing to report. An empty list is the
         // honest answer; a placeholder note would not be.
-        return Value::Array(Vec::new());
+        return Vec::new();
     };
-    json!([{
+    vec![json!({
         "revisionId": correction.fact_revision_id,
         "appliedAt": taipei_datetime(correction.available_at_unix_micros),
         "kind": "fact_correction",
@@ -2065,7 +2329,7 @@ fn data_revisions(fold: &Fold, position: &FoldedPosition) -> Value {
         ),
         // A note about a fixture fact takes the fact's source class.
         "truthClass": SYNTHETIC_FACT_TRUTH_CLASS,
-    }])
+    })]
 }
 
 // -- derived per-day copy -------------------------------------------------
