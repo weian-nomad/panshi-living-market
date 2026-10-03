@@ -24,21 +24,25 @@
 :8080 {
 	root * /srv
 
-	# Deferred (because of `-Server`), so it lands on every response.
-	header {
-		-Server
-		Content-Security-Policy "default-src 'self'; base-uri 'none'; connect-src 'self'; font-src 'self'; form-action 'none'; frame-ancestors 'none'; img-src 'self' data:; manifest-src 'self'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; worker-src 'self'"
-		Permissions-Policy "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
-		Referrer-Policy "no-referrer"
-		X-Content-Type-Options "nosniff"
-		X-Frame-Options "DENY"
-		X-Robots-Tag "noindex, nofollow"
-	}
+	# A header block that deletes a field is deferred, and deferred operations
+	# never reach error responses (the 401 challenge, a file_server 404).
+	# So the deletion stands alone here and every field we add is set
+	# immediately at the top of the route below.
+	header -Server
 
 	route {
-		# Default for every response, the 401 included. Only an authenticated,
-		# existing sealed asset is made cacheable below, and only privately.
-		header Cache-Control "no-store"
+		# Set immediately so they land on every response, the 401 included.
+		# Only an authenticated, existing sealed asset is made cacheable below,
+		# and only privately.
+		header {
+			Cache-Control "no-store"
+			Content-Security-Policy "default-src 'self'; base-uri 'none'; connect-src 'self'; font-src 'self'; form-action 'none'; frame-ancestors 'none'; img-src 'self' data:; manifest-src 'self'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; worker-src 'self'"
+			Permissions-Policy "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
+			Referrer-Policy "no-referrer"
+			X-Content-Type-Options "nosniff"
+			X-Frame-Options "DENY"
+			X-Robots-Tag "noindex, nofollow"
+		}
 
 		@health path /healthz
 		respond @health "ok" 200

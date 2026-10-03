@@ -57,6 +57,8 @@ for path in / /world /people/someone /world.html /api/v2/world /api/v2/nope /ass
 	header_has 'www-authenticate: basic'
 	header_has 'x-robots-tag: noindex, nofollow'
 	header_has 'cache-control: no-store'
+	header_has 'content-security-policy:'
+	header_has 'x-frame-options: deny'
 	if grep -q '盤勢' "$body"; then fail "$path leaked page content without credentials"; fi
 	expect_status 401 -K "$work/wrong" "$base_url$path"
 done
@@ -81,6 +83,9 @@ for asset in $assets; do
 done
 expect_status 404 -K "$work/auth" "$base_url/assets/does-not-exist.js"
 if grep -qi '^cache-control:.*immutable' "$headers"; then fail "a missing asset was marked immutable"; fi
+# A file_server 404 is an error response, like the 401: the headers must still land.
+header_has 'x-robots-tag: noindex, nofollow'
+header_has 'content-security-policy:'
 
 # 4. The bundled slice API: JSON, no-store, same rule as the dev middleware.
 expect_status 200 -K "$work/auth" "$base_url/api/v2/world"

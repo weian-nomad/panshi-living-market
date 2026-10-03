@@ -83,20 +83,27 @@ describe("preview Caddyfile access control", () => {
   it("leaves only /healthz before the authentication", () => {
     const route = caddyfile.slice(caddyfile.indexOf("route {"));
     const beforeAuth = route.slice(0, route.indexOf("basic_auth"));
-    const handlers = beforeAuth
+    const withoutHeaderBlock = beforeAuth.replace(/\n\t\theader \{[^}]*\}/, "\n\t\t<route headers>");
+    const handlers = withoutHeaderBlock
       .split("\n")
       .map((line) => line.trim())
       .filter((line) => line.length > 0 && !line.startsWith("#") && line !== "route {");
-    expect(handlers).toEqual(['header Cache-Control "no-store"', "@health path /healthz", 'respond @health "ok" 200']);
+    expect(handlers).toEqual(["<route headers>", "@health path /healthz", 'respond @health "ok" 200']);
   });
 
   it("marks every response noindex, the 401 and /healthz included", () => {
-    const globalHeaders = caddyfile.match(/\n\theader \{([^}]*)\}/);
-    expect(globalHeaders).not.toBeNull();
-    // `-Server` makes the block deferred: it is applied to every response written, 401 included.
-    expect(globalHeaders[1]).toContain("-Server");
-    expect(globalHeaders[1]).toContain('X-Robots-Tag "noindex, nofollow"');
-    expect(caddyfile.indexOf("X-Robots-Tag")).toBeLessThan(caddyfile.indexOf("route {"));
+    // A header block that deletes a field is deferred, and deferred operations do
+    // not reach error responses (verified against Caddy 2.11.4: the 401 from
+    // basic_auth lacked them). The deletion therefore stands alone outside the
+    // route, and every added field is set immediately as the route's first handler.
+    expect(caddyfile).toMatch(/\n\theader -Server\n/);
+    const routeHeaders = caddyfile.match(/route \{\n(?:\t\t#[^\n]*\n)*\t\theader \{([^}]*)\}/);
+    expect(routeHeaders).not.toBeNull();
+    expect(routeHeaders[1]).not.toMatch(/^\s*-/m);
+    expect(routeHeaders[1]).toContain('Cache-Control "no-store"');
+    expect(routeHeaders[1]).toContain('X-Robots-Tag "noindex, nofollow"');
+    expect(routeHeaders[1]).toContain("Content-Security-Policy");
+    expect(caddyfile.indexOf("X-Robots-Tag")).toBeLessThan(caddyfile.indexOf("basic_auth"));
   });
 
   it("does not serve the research study and caches nothing publicly", () => {
