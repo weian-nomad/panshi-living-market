@@ -31,5 +31,6 @@ Operator notes for this move:
 
 - `public/manifest.webmanifest` still declares `start_url` and `scope` as `/`, and `public/study-sw.js` still caches `/index.html` as its offline shell document. Both files are part of the sealed release and were left untouched. Consequence: an installed home-screen shortcut now opens the public world, and a study phone that navigates to the bare origin overwrites its cached offline shell with the world document. Participants must open their `/study/P01?visit=1` link directly. Narrowing the service-worker scope to `/study` is a separate, re-sealed release.
 - The document filenames are unchanged (`index.html` is the study, `world.html` is the world). Path routing lives in `Caddyfile` here and in `apps/web/tools/v5-api-middleware.mjs` for dev/preview; those two must stay in step.
+- The build also carries the bundled V5 slice API (`dist/api/v2/*.json`) for the password-protected preview in `deploy/preview`. This Caddyfile answers `/api/*` with 404, so the public research origin does not expose slice data; serving it publicly would be a separate release decision.
 
 Changing DNS, edge routing or the production service is a separate operator action. Do it only after the release artifact is frozen and the live target has been rechecked.

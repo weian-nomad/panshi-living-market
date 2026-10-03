@@ -40,6 +40,13 @@
 		@study path /study /study/* /research /research/*
 		rewrite @study /index.html
 
+		# The build now also carries the V5 slice API (`dist/api/v2/*.json`, for
+		# the password-protected preview in deploy/preview). This public research
+		# origin does not serve it: opening slice data to the public is a separate
+		# release decision, not a side effect of a rebuild.
+		@sliceApi path /api /api/*
+		respond @sliceApi 404
+
 		# No SPA fallback: an unknown path is a 404, not a silent landing in
 		# whichever app happens to own `index.html`.
 		file_server

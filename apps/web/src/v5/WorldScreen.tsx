@@ -1,7 +1,11 @@
 // 公共世界（開盤廳）畫面。
 //
 // 資料來源是 `apiClient.fetchWorld()` 的 `WorldSnapshot`（由外殼 `SliceApp` 取得後
-// 傳入，整個切片只發一次請求）；幾何全部來自 `./scene`，不含任何圖片資產。
+// 傳入，整個切片只發一次請求）；幾何全部來自 `./scene`。
+//
+// 角色美術（執行期載入，`./characterArtStore`）：居民有通過驗證、而且小圖已解碼的美術
+// 清單時，人形換成清單的世界小圖；沒有清單、清單無效或圖載入失敗，一律留在原本的 SVG
+// 幾何佔位，不顯示破圖。小圖只換外觀：命中判定、按鈕、無障礙名稱與跟拍狀態機都不變。
 //
 // 產品不變式（experience-spec.md §5.2、market-safety.md、AGENTS.md）：
 // - 沒有全員總覽、排行、選股器、密集財務圖，也沒有「今日主角」與自動切鏡。
@@ -42,9 +46,11 @@ import {
   reduceFollow,
   type FollowMenuChoice,
 } from "./followGesture";
+import { characterArtFileUrl, spritePlacement, type CharacterArtManifest } from "./characterArt";
 import { WORLD_BREATH_MS } from "./motion";
 import { EmptyStatePanel } from "./statePanels";
 import { SystemLabel } from "./SystemLabel";
+import { useCharacterArt, useMarkArtBroken } from "./useCharacterArt";
 import {
   BACKDROP_SHAPES,
   COPPER_RULES,
@@ -273,6 +279,60 @@ function Figure({ figure, breathing }: { figure: SceneFigure; breathing: boolean
       />
       <circle cx={geometry.head.cx} cy={geometry.head.cy} r={geometry.head.r} fill={fill} />
     </g>
+  );
+}
+
+/**
+ * 一名居民的世界小圖：清單的 `standingHeightPx` 對齊居民全身高、`footAnchor` 對齊腳底點，
+ * 所以小圖與佔位人形占同一塊舞台，命中判定不用改。圖只是外觀（`aria-hidden`）；
+ * 名稱與動作入口仍是舞台上的按鈕。reduced motion 時 `panshi-motion` 取消呼吸。
+ */
+function SpriteFigure({
+  figure,
+  manifest,
+  onBroken,
+}: {
+  figure: SceneFigure;
+  manifest: CharacterArtManifest;
+  onBroken: () => void;
+}) {
+  const sprite = manifest.worldSprite;
+  const placement = spritePlacement(sprite, figure.footX, figure.footY, figure.height);
+  const contact = figureGeometry(figure.footX, figure.footY, figure.height).contact;
+
+  return (
+    <g
+      className="v5-stage__breath panshi-motion"
+      style={{ animation: `v5-breath ${WORLD_BREATH_MS}ms ease-in-out infinite` }}
+      aria-hidden="true"
+      data-art="sprite"
+      data-asset-pack={manifest.assetPackId}
+    >
+      <ellipse cx={contact.cx} cy={contact.cy} rx={contact.rx} ry={contact.ry} fill="var(--ink-1000)" opacity="0.55" />
+      <image
+        href={characterArtFileUrl(figure.characterId, sprite.file)}
+        x={placement.x}
+        y={placement.y}
+        width={placement.width}
+        height={placement.height}
+        preserveAspectRatio="none"
+        onError={onBroken}
+      />
+    </g>
+  );
+}
+
+/** 有可用美術就畫小圖，否則（載入中、沒有清單、清單無效、缺圖）畫原本的幾何佔位。 */
+function ResidentFigure({ figure }: { figure: SceneFigure }) {
+  const art = useCharacterArt(figure.characterId, "sprite");
+  const markBroken = useMarkArtBroken();
+  if (art.phase !== "ready") return <Figure figure={figure} breathing />;
+  return (
+    <SpriteFigure
+      figure={figure}
+      manifest={art.manifest}
+      onBroken={() => markBroken(figure.characterId, "sprite")}
+    />
   );
 }
 
@@ -599,7 +659,7 @@ export function WorldScreen({ snapshot, onOpenCloseUp }: WorldScreenProps) {
                     facing={facingFromX(figure.footX)}
                   />
                 ) : (
-                  <Figure figure={figure} breathing />
+                  <ResidentFigure figure={figure} />
                 )}
               </g>
             );

@@ -1,0 +1,283 @@
+{
+  "contractVersion": "character-art/v1",
+  "characterId": "96450815-0db8-f735-a139-5ba222da86b2",
+  "assetPackId": "luyanzhi-rig-v1",
+  "worldSprite": {
+    "file": "world-sprite.svg",
+    "width": 104,
+    "height": 256,
+    "footAnchor": {
+      "x": 46.84,
+      "y": 254.29
+    },
+    "standingHeightPx": 252.78
+  },
+  "closeUpRig": {
+    "canvas": {
+      "width": 1024,
+      "height": 1536
+    },
+    "frame": {
+      "x": 112,
+      "y": 96,
+      "width": 800,
+      "height": 1000
+    },
+    "waistY": 776,
+    "staticFallback": {
+      "file": "rig/master_static.png"
+    },
+    "layers": [
+      {
+        "id": "bg",
+        "file": "rig/bg.png",
+        "x": 0,
+        "y": 0,
+        "width": 1024,
+        "height": 1536,
+        "breath": "none"
+      },
+      {
+        "id": "hair_back",
+        "file": "rig/hair_back.png",
+        "x": 341,
+        "y": 130,
+        "width": 305,
+        "height": 277,
+        "breath": "follow",
+        "attachY": 440
+      },
+      {
+        "id": "body_lower",
+        "file": "rig/body_lower.png",
+        "x": 288,
+        "y": 768,
+        "width": 478,
+        "height": 696,
+        "breath": "none"
+      },
+      {
+        "id": "torso",
+        "file": "rig/torso.png",
+        "x": 310,
+        "y": 369,
+        "width": 460,
+        "height": 415,
+        "breath": "scale"
+      },
+      {
+        "id": "paper_up",
+        "file": "rig/paper_up.png",
+        "x": 537,
+        "y": 717,
+        "width": 181,
+        "height": 63,
+        "breath": "scale"
+      },
+      {
+        "id": "eye_white",
+        "file": "rig/eye_white.png",
+        "x": 394,
+        "y": 302,
+        "width": 133,
+        "height": 36,
+        "breath": "follow",
+        "attachY": 440
+      },
+      {
+        "id": "iris_L",
+        "file": "rig/iris_L.png",
+        "x": 416,
+        "y": 316,
+        "width": 21,
+        "height": 14,
+        "breath": "follow",
+        "attachY": 440,
+        "part": "irisFar"
+      },
+      {
+        "id": "iris_R",
+        "file": "rig/iris_R.png",
+        "x": 492,
+        "y": 309,
+        "width": 23,
+        "height": 15,
+        "breath": "follow",
+        "attachY": 440,
+        "part": "irisNear"
+      },
+      {
+        "id": "face_skin",
+        "file": "rig/face_skin.png",
+        "x": 342,
+        "y": 130,
+        "width": 304,
+        "height": 312,
+        "breath": "follow",
+        "attachY": 440
+      },
+      {
+        "id": "lid_open",
+        "file": "rig/lid_open.png",
+        "x": 404,
+        "y": 307,
+        "width": 114,
+        "height": 13,
+        "breath": "follow",
+        "attachY": 440,
+        "part": "lidOpen"
+      },
+      {
+        "id": "lid_half",
+        "file": "rig/lid_half.png",
+        "x": 404,
+        "y": 307,
+        "width": 114,
+        "height": 17,
+        "breath": "follow",
+        "attachY": 440,
+        "part": "lidHalf"
+      },
+      {
+        "id": "lid_closed",
+        "file": "rig/lid_closed.png",
+        "x": 404,
+        "y": 307,
+        "width": 114,
+        "height": 22,
+        "breath": "follow",
+        "attachY": 440,
+        "part": "lidClosed"
+      },
+      {
+        "id": "brows_mouth",
+        "file": "rig/brows_mouth.png",
+        "x": 393,
+        "y": 279,
+        "width": 137,
+        "height": 132,
+        "breath": "follow",
+        "attachY": 440
+      },
+      {
+        "id": "hand_cup",
+        "file": "rig/hand_cup.png",
+        "x": 236,
+        "y": 552,
+        "width": 133,
+        "height": 220,
+        "breath": "follow",
+        "attachY": 655
+      },
+      {
+        "id": "thumb",
+        "file": "rig/thumb.png",
+        "x": 245,
+        "y": 552,
+        "width": 41,
+        "height": 26,
+        "breath": "follow",
+        "attachY": 655,
+        "part": "thumb",
+        "pivot": {
+          "x": 252.22,
+          "y": 569.05
+        }
+      },
+      {
+        "id": "hand_paper",
+        "file": "rig/hand_paper.png",
+        "x": 520,
+        "y": 776,
+        "width": 241,
+        "height": 196,
+        "breath": "none"
+      },
+      {
+        "id": "hair_front_glasses",
+        "file": "rig/hair_front_glasses.png",
+        "x": 353,
+        "y": 177,
+        "width": 229,
+        "height": 222,
+        "breath": "follow",
+        "attachY": 440
+      }
+    ],
+    "motion": {
+      "seed": 20261002,
+      "breath": {
+        "periodMs": 10007,
+        "inhaleFraction": 0.42,
+        "scaleYMax": 0.01,
+        "easing": [
+          0.37,
+          0,
+          0.63,
+          1
+        ]
+      },
+      "blink": {
+        "baseMs": 4999,
+        "jitterMs": 1999,
+        "halfMs": 40,
+        "closedMs": [
+          50,
+          70
+        ],
+        "doubleProbability": 0.2,
+        "doubleGapMs": [
+          160,
+          240
+        ],
+        "firstMs": [
+          1200,
+          2600
+        ]
+      },
+      "gaze": {
+        "baseMs": 9001,
+        "jitterMs": 2999,
+        "nearDx": -3,
+        "farDx": -2,
+        "outMs": 180,
+        "backMs": 220,
+        "holdMs": [
+          1000,
+          2000
+        ],
+        "firstMs": [
+          3000,
+          5000
+        ],
+        "easing": [
+          0.37,
+          0,
+          0.63,
+          1
+        ]
+      },
+      "thumb": {
+        "baseMs": 19993,
+        "jitterMs": 4993,
+        "angleDeg": -5,
+        "liftMs": 280,
+        "holdMs": 120,
+        "pressMs": 320,
+        "leadMs": 250,
+        "tailMs": 250,
+        "firstMs": [
+          7000,
+          9000
+        ],
+        "easing": [
+          0.37,
+          0,
+          0.63,
+          1
+        ]
+      },
+      "reducedFadeMs": 80
+    }
+  }
+}

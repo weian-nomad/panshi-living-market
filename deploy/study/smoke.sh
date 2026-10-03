@@ -33,6 +33,11 @@ curl -fsS "$base_url/research" | grep -q '<div id="root"></div>'
 test "$(curl -s -o /dev/null -w '%{http_code}' "$base_url/journal")" = "404"
 test "$(curl -s -o /dev/null -w '%{http_code}' "$base_url/archive")" = "404"
 
+# The slice API bundled into the build is for the private preview only; this
+# public origin does not serve it under any spelling.
+test "$(curl -s -o /dev/null -w '%{http_code}' "$base_url/api/v2/world")" = "404"
+test "$(curl -s -o /dev/null -w '%{http_code}' "$base_url/api/v2/world.json")" = "404"
+
 curl -fsS "$base_url/study-release.json" | grep -q '"buildId": "study-2026-07-23.5"'
 curl -fsS "$base_url/study-release.json" | grep -q '"consentVersion": "2026-07-21.v4"'
 curl -fsS "$base_url/manifest.webmanifest" | grep -q '"start_url": "/"'

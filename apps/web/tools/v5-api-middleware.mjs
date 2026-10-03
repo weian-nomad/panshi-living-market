@@ -28,7 +28,10 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE_ROOT = path.resolve(HERE, "../../../fixtures/v5/one-character-slice/api");
 const FIXTURE_INDEX = path.join(FIXTURE_ROOT, "index.json");
 
-const API_PREFIX = "/api/v2/";
+// Shared with `./v5-slice-api-bundle.mjs`, which writes the same route table into
+// the release build, so the dev server and the release image answer the same
+// paths with the same bytes.
+export const API_PREFIX = "/api/v2/";
 
 // The V5 slice shell. `world.html` keeps its filename so the release image and
 // the dev server serve the same document at `/`.
@@ -98,7 +101,11 @@ function sendProblem(res) {
   res.end(body);
 }
 
-async function readRouteTable() {
+/**
+ * The slice's route table (`index.json`: public path -> fixture file relative to
+ * the fixture root), or `null` when it is missing or unreadable.
+ */
+export async function readRouteTable() {
   // Re-read on every request: regenerating the fixtures must not require a
   // dev-server restart.
   let raw;
@@ -120,7 +127,8 @@ async function readRouteTable() {
   return routes;
 }
 
-function resolveFixtureFile(relativePath) {
+/** Absolute fixture path for a route-table entry, or `null` when it leaves the fixture root. */
+export function resolveFixtureFile(relativePath) {
   if (typeof relativePath !== "string" || relativePath.length === 0) return null;
   const resolved = path.resolve(FIXTURE_ROOT, relativePath);
   if (resolved !== FIXTURE_ROOT && !resolved.startsWith(`${FIXTURE_ROOT}${path.sep}`)) {

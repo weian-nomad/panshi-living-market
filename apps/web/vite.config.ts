@@ -2,6 +2,7 @@ import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 
 import { v5ApiMiddleware } from "./tools/v5-api-middleware.mjs";
+import { v5SliceApiBundle } from "./tools/v5-slice-api-bundle.mjs";
 
 const SEALED_STUDY_BUILD_ID = "study-2026-07-23.5";
 
@@ -12,7 +13,10 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
-    plugins: [react(), v5ApiMiddleware()],
+    // `v5ApiMiddleware` serves `/api/v2/*` from the slice fixtures in dev/preview;
+    // `v5SliceApiBundle` writes the same routes into `dist/api/v2/` for the
+    // release images (served by `deploy/preview/Caddyfile`).
+    plugins: [react(), v5ApiMiddleware(), v5SliceApiBundle()],
     // No SPA fallback: an unknown path must 404 instead of silently landing in
     // whichever app owns `index.html`. The two shells are addressed explicitly
     // by `v5ApiMiddleware` (dev/preview) and by `deploy/study/Caddyfile`

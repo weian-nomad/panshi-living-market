@@ -1,0 +1,287 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "panshi.character-art/v1",
+  "title": "CharacterArtManifestV1",
+  "description": "Runtime art manifest for one character, served same-origin at /art/characters/{characterId}/manifest.json. The art files themselves are supplied by the deployer at run time and never enter this repository. Every file path is relative to the manifest's own directory. One manifest is one complete pack: a single world sprite and a layered close-up rig with its idle-motion parameters. A consumer must fail closed: a missing, unparseable or invalid manifest, a characterId that is not the one requested, or any image that fails to load or whose decoded size differs from the size declared here means the character keeps the geometric placeholder; a partial pack is never shown. Every assertion below is a real one (const, enum, pattern, bounds, required, closed objects); `format` is not used. Rules JSON Schema cannot express are enforced by the reference validator (apps/web/src/v5/characterArt.ts) and held to the corpus under fixtures/: layer ids unique; exactly one layer for each eye part (irisNear, irisFar, lidOpen, lidHalf, lidClosed) and at most one thumb; every layer box, the frame, waistY, every attachY and the thumb pivot inside the canvas (the pivot inside its own layer); the frame is 4:5 within 1%; the sprite foot anchor lies inside the sprite and standingHeightPx does not exceed it; every [min, max] pair is ordered; every jitter is smaller than its base; each cubic-bezier x lies in [0, 1]; and the four base periods (breath.periodMs, blink.baseMs, gaze.baseMs, thumb.baseMs) are pairwise coprime so the idle cycles never lock into a visible loop. Motion bounds come from docs/v5/visual-system.md where a token exists (motion.world_breath 8-12 s for the breath period, motion.reduced_fade_max 120 ms for the reduced-motion fade); the remaining bounds are guardrails for an adult, low-amplitude idle: vertical breath at most 1% about the waist line, gaze only toward the viewer's left, thumb at most 5 degrees.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contractVersion", "characterId", "assetPackId", "worldSprite", "closeUpRig"],
+  "properties": {
+    "contractVersion": {
+      "const": "character-art/v1"
+    },
+    "characterId": {
+      "description": "The character this pack belongs to. Must equal the {characterId} in the URL the manifest was read from.",
+      "type": "string",
+      "minLength": 36,
+      "maxLength": 36,
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "assetPackId": {
+      "description": "Identifier of the approved asset pack this manifest was cut from (provenance; the approval record itself stays with the art pipeline).",
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 64,
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "worldSprite": {
+      "description": "One small image for the public world stage. It is scaled so that standingHeightPx (crown to footAnchor.y) spans the resident's stage height, with footAnchor on the resident's foot point; hit testing keeps using the resident's stage geometry.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "width", "height", "footAnchor", "standingHeightPx"],
+      "properties": {
+        "file": { "$ref": "#/$defs/ArtFile" },
+        "width": { "type": "integer", "minimum": 1, "maximum": 1024 },
+        "height": { "type": "integer", "minimum": 1, "maximum": 1024 },
+        "footAnchor": { "$ref": "#/$defs/Point" },
+        "standingHeightPx": { "type": "number", "minimum": 1, "maximum": 1024 }
+      }
+    },
+    "closeUpRig": {
+      "description": "Layered close-up. Layers are painted in array order on a canvas of canvas.width x canvas.height pixels; frame is the 4:5 window the close-up shows. staticFallback is the flattened rest pose at canvas size, shown under prefers-reduced-motion.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["canvas", "frame", "waistY", "staticFallback", "layers", "motion"],
+      "properties": {
+        "canvas": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["width", "height"],
+          "properties": {
+            "width": { "$ref": "#/$defs/PixelLength" },
+            "height": { "$ref": "#/$defs/PixelLength" }
+          }
+        },
+        "frame": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["x", "y", "width", "height"],
+          "properties": {
+            "x": { "$ref": "#/$defs/PixelOffset" },
+            "y": { "$ref": "#/$defs/PixelOffset" },
+            "width": { "$ref": "#/$defs/PixelLength" },
+            "height": { "$ref": "#/$defs/PixelLength" }
+          }
+        },
+        "waistY": {
+          "description": "Canvas y of the waist line: the fixed line the breath scales about.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 4096
+        },
+        "staticFallback": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["file"],
+          "properties": {
+            "file": { "$ref": "#/$defs/ArtFile" }
+          }
+        },
+        "layers": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 32,
+          "items": {
+            "oneOf": [
+              { "$ref": "#/$defs/StillOrScaledLayer" },
+              { "$ref": "#/$defs/FollowingLayer" },
+              { "$ref": "#/$defs/ThumbLayer" }
+            ]
+          }
+        },
+        "motion": { "$ref": "#/$defs/IdleMotion" }
+      }
+    }
+  },
+  "$defs": {
+    "ArtFile": {
+      "description": "Relative path under the manifest's directory: one to four segments of ASCII letters, digits, '-' and '_', ending in .png or .webp. No '..', no leading '/', no scheme, no query.",
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}(/[A-Za-z0-9][A-Za-z0-9_-]{0,63}){0,3}\\.(png|webp)$"
+    },
+    "LayerId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 32,
+      "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$"
+    },
+    "PixelLength": { "type": "integer", "minimum": 1, "maximum": 4096 },
+    "PixelOffset": { "type": "integer", "minimum": 0, "maximum": 4096 },
+    "Point": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y"],
+      "properties": {
+        "x": { "type": "number", "minimum": 0, "maximum": 4096 },
+        "y": { "type": "number", "minimum": 0, "maximum": 4096 }
+      }
+    },
+    "EyePart": {
+      "description": "Eye layers the idle motion drives: irises translate horizontally (gaze), lids swap by opacity (blink).",
+      "enum": ["irisNear", "irisFar", "lidOpen", "lidHalf", "lidClosed"]
+    },
+    "CubicBezier": {
+      "description": "cubic-bezier(x1, y1, x2, y2).",
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": { "type": "number", "minimum": -2, "maximum": 3 }
+    },
+    "StillOrScaledLayer": {
+      "description": "breath \"none\": never moves. breath \"scale\": scales vertically about waistY with the breath.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "file", "x", "y", "width", "height", "breath"],
+      "properties": {
+        "id": { "$ref": "#/$defs/LayerId" },
+        "file": { "$ref": "#/$defs/ArtFile" },
+        "x": { "$ref": "#/$defs/PixelOffset" },
+        "y": { "$ref": "#/$defs/PixelOffset" },
+        "width": { "$ref": "#/$defs/PixelLength" },
+        "height": { "$ref": "#/$defs/PixelLength" },
+        "breath": { "enum": ["none", "scale"] },
+        "part": { "$ref": "#/$defs/EyePart" }
+      }
+    },
+    "FollowingLayer": {
+      "description": "Rides on the breathing body without deforming: translates by the displacement the breath scale gives canvas row attachY.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "file", "x", "y", "width", "height", "breath", "attachY"],
+      "properties": {
+        "id": { "$ref": "#/$defs/LayerId" },
+        "file": { "$ref": "#/$defs/ArtFile" },
+        "x": { "$ref": "#/$defs/PixelOffset" },
+        "y": { "$ref": "#/$defs/PixelOffset" },
+        "width": { "$ref": "#/$defs/PixelLength" },
+        "height": { "$ref": "#/$defs/PixelLength" },
+        "breath": { "const": "follow" },
+        "attachY": { "type": "number", "minimum": 0, "maximum": 4096 },
+        "part": { "$ref": "#/$defs/EyePart" }
+      }
+    },
+    "ThumbLayer": {
+      "description": "The thumb that lifts and presses; rotates about pivot (canvas coordinates) and rides on the breath like a following layer.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "file", "x", "y", "width", "height", "breath", "attachY", "part", "pivot"],
+      "properties": {
+        "id": { "$ref": "#/$defs/LayerId" },
+        "file": { "$ref": "#/$defs/ArtFile" },
+        "x": { "$ref": "#/$defs/PixelOffset" },
+        "y": { "$ref": "#/$defs/PixelOffset" },
+        "width": { "$ref": "#/$defs/PixelLength" },
+        "height": { "$ref": "#/$defs/PixelLength" },
+        "breath": { "const": "follow" },
+        "attachY": { "type": "number", "minimum": 0, "maximum": 4096 },
+        "part": { "const": "thumb" },
+        "pivot": { "$ref": "#/$defs/Point" }
+      }
+    },
+    "IdleMotion": {
+      "description": "Idle micro-motion. Only transform and opacity are animated. A seeded PRNG (mulberry32) makes the irregular schedule replayable. Blink: next blink baseMs +/- jitterMs after the previous one ends; lids swap open -> half (halfMs) -> closed (closedMs) -> half (halfMs) -> open; after a single blink a second follows with doubleProbability after doubleGapMs. Gaze: both irises shift left (nearDx, farDx canvas px; never right), hold, return; next glance baseMs +/- jitterMs start-to-start. Thumb: eyes glance first, leadMs later the thumb rotates to angleDeg over liftMs, holds holdMs, presses back over pressMs; next baseMs +/- jitterMs start-to-start. firstMs is the [min, max] delay of the first occurrence after motion starts.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["seed", "breath", "blink", "gaze", "thumb", "reducedFadeMs"],
+      "properties": {
+        "seed": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+        "breath": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["periodMs", "inhaleFraction", "scaleYMax", "easing"],
+          "properties": {
+            "periodMs": { "type": "integer", "minimum": 8000, "maximum": 12000 },
+            "inhaleFraction": { "type": "number", "minimum": 0.2, "maximum": 0.8 },
+            "scaleYMax": { "type": "number", "minimum": 0, "maximum": 0.01 },
+            "easing": { "$ref": "#/$defs/CubicBezier" }
+          }
+        },
+        "blink": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["baseMs", "jitterMs", "halfMs", "closedMs", "doubleProbability", "doubleGapMs", "firstMs"],
+          "properties": {
+            "baseMs": { "type": "integer", "minimum": 2000, "maximum": 10000 },
+            "jitterMs": { "type": "integer", "minimum": 0, "maximum": 5000 },
+            "halfMs": { "type": "integer", "minimum": 20, "maximum": 60 },
+            "closedMs": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": { "type": "integer", "minimum": 30, "maximum": 100 }
+            },
+            "doubleProbability": { "type": "number", "minimum": 0, "maximum": 0.5 },
+            "doubleGapMs": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": { "type": "integer", "minimum": 100, "maximum": 400 }
+            },
+            "firstMs": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": { "type": "integer", "minimum": 0, "maximum": 10000 }
+            }
+          }
+        },
+        "gaze": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["baseMs", "jitterMs", "nearDx", "farDx", "outMs", "backMs", "holdMs", "firstMs", "easing"],
+          "properties": {
+            "baseMs": { "type": "integer", "minimum": 4000, "maximum": 20000 },
+            "jitterMs": { "type": "integer", "minimum": 0, "maximum": 6000 },
+            "nearDx": { "type": "integer", "minimum": -6, "maximum": 0 },
+            "farDx": { "type": "integer", "minimum": -6, "maximum": 0 },
+            "outMs": { "type": "integer", "minimum": 100, "maximum": 400 },
+            "backMs": { "type": "integer", "minimum": 100, "maximum": 400 },
+            "holdMs": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": { "type": "integer", "minimum": 500, "maximum": 4000 }
+            },
+            "firstMs": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": { "type": "integer", "minimum": 0, "maximum": 15000 }
+            },
+            "easing": { "$ref": "#/$defs/CubicBezier" }
+          }
+        },
+        "thumb": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["baseMs", "jitterMs", "angleDeg", "liftMs", "holdMs", "pressMs", "leadMs", "tailMs", "firstMs", "easing"],
+          "properties": {
+            "baseMs": { "type": "integer", "minimum": 10000, "maximum": 40000 },
+            "jitterMs": { "type": "integer", "minimum": 0, "maximum": 10000 },
+            "angleDeg": { "type": "number", "minimum": -5, "maximum": 0 },
+            "liftMs": { "type": "integer", "minimum": 100, "maximum": 600 },
+            "holdMs": { "type": "integer", "minimum": 0, "maximum": 600 },
+            "pressMs": { "type": "integer", "minimum": 100, "maximum": 600 },
+            "leadMs": { "type": "integer", "minimum": 0, "maximum": 600 },
+            "tailMs": { "type": "integer", "minimum": 0, "maximum": 600 },
+            "firstMs": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": { "type": "integer", "minimum": 0, "maximum": 30000 }
+            },
+            "easing": { "$ref": "#/$defs/CubicBezier" }
+          }
+        },
+        "reducedFadeMs": {
+          "description": "Cross-fade between the static master and the rig when reduced motion changes; at most motion.reduced_fade_max.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 120
+        }
+      }
+    }
+  }
+}

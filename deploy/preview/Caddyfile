@@ -1,0 +1,99 @@
+{
+	admin off
+	auto_https off
+	persist_config off
+}
+
+# Private preview of the V5 one-character slice.
+#
+# - Every path except /healthz requires HTTP basic auth. The user name and the
+#   bcrypt hash come only from the environment (PREVIEW_AUTH_USER,
+#   PREVIEW_AUTH_HASH); nothing secret lives in this file. The image entrypoint
+#   refuses to start without both, and an empty account line also fails closed
+#   here (Caddy rejects a half-empty account at load time; an empty account list
+#   can only ever answer 401).
+# - Every response, the 401 challenge and /healthz included, is noindex.
+# - The slice API is bundled into the build (apps/web/tools/v5-slice-api-bundle.mjs)
+#   and served with the same path rule as the dev middleware
+#   (apps/web/tools/v5-api-middleware.mjs). Keep the two in step.
+# - Character art is not in the image. The deployer mounts it read-only at
+#   /srv/art/characters; without it the front end keeps its geometric
+#   placeholders.
+# - The sealed research-v4 study is not part of the preview and is not served.
+
+:8080 {
+	root * /srv
+
+	# Deferred (because of `-Server`), so it lands on every response.
+	header {
+		-Server
+		Content-Security-Policy "default-src 'self'; base-uri 'none'; connect-src 'self'; font-src 'self'; form-action 'none'; frame-ancestors 'none'; img-src 'self' data:; manifest-src 'self'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; worker-src 'self'"
+		Permissions-Policy "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
+		Referrer-Policy "no-referrer"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		X-Robots-Tag "noindex, nofollow"
+	}
+
+	route {
+		# Default for every response, the 401 included. Only an authenticated,
+		# existing sealed asset is made cacheable below, and only privately.
+		header Cache-Control "no-store"
+
+		@health path /healthz
+		respond @health "ok" 200
+
+		basic_auth {
+			{$PREVIEW_AUTH_USER} {$PREVIEW_AUTH_HASH}
+		}
+
+		# ---- Everything below is authenticated. ----
+
+		# The research-v4 study (its consent text, its service worker scoped to
+		# `/`, its manifest) belongs to the research origin, not to this preview.
+		@study path /study /study/* /research /research/* /index.html /study-sw.js /study-release.json /manifest.webmanifest
+		respond @study 404
+
+		# Hashed build assets and art files never change under one name. `private`:
+		# a shared cache must not keep anything from behind the password. The art
+		# manifest is revalidated on every load instead (it names the files).
+		@artManifest path_regexp ^/art/characters/[^/]+/manifest\.json$
+		@sealedAssets {
+			path /assets/* /art/* /icons/*
+			not path_regexp ^/art/characters/[^/]+/manifest\.json$
+			file
+		}
+		header @sealedAssets Cache-Control "private, max-age=31536000, immutable"
+		header @artManifest Cache-Control "private, no-cache"
+
+		# ---- Slice API: /api/v2/<rest> -> /srv/api/v2/<rest>.json ----
+		# Same rule as apps/web/tools/v5-api-middleware.mjs: trailing slashes are
+		# stripped, only GET/HEAD of a bundled route answers 200 JSON, anything
+		# else under /api/v2/ is a 404 application/problem+json, no-store.
+		@apiTrailingSlash path_regexp apiTrailingSlash ^(/api/v2/.+?)/+$
+		rewrite @apiTrailingSlash {re.apiTrailingSlash.1}
+
+		@api path /api/v2/*
+		route @api {
+			@apiFile {
+				method GET HEAD
+				file {path}.json
+			}
+			route @apiFile {
+				rewrite {path}.json
+				header Content-Type "application/json; charset=utf-8"
+				file_server
+			}
+			# The JSON braces are escaped (\{ \}) so only {http.request.uuid} is a placeholder.
+			header Content-Type "application/problem+json; charset=utf-8"
+			respond `\{"type":"/problems/unknown-resource","title":"找不到這個資源","status":404,"reasonCode":"UNKNOWN_RESOURCE","traceId":"{http.request.uuid}"\}` 404
+		}
+
+		# The bare origin and the slice routes are the V5 world shell.
+		@world path / /world /world/* /people /people/*
+		rewrite @world /world.html
+
+		# No SPA fallback: an unknown path is a 404.
+		file_server
+	}
+}

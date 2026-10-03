@@ -21,6 +21,10 @@
 //
 // 沒有模擬部位時改顯示工作／關係／記憶後果，不硬塞空績效（§7.2 最後一條）。
 // reduced motion 時取消微動作，改用描邊與狀態文字（visual-system.md）。
+//
+// 角色美術（執行期載入）：有通過驗證、而且整套圖層都已解碼的美術清單時，近景改用
+// `CharacterRig` 分層 rig 與待機微動作；沒有清單、清單無效或任何一張圖缺失時，留在
+// 下面的幾何近景佔位，不顯示破圖、不顯示半套 rig。
 // 「記住這個人」只寫 localStorage，不打後端（封測不接帳號流程）。
 
 import { useEffect, useState, useSyncExternalStore } from "react";
@@ -32,12 +36,14 @@ import type {
   TruthClass,
   UnresolvedCommitment,
 } from "../api/generated-v2/types.gen";
+import { CharacterRig } from "./CharacterRig";
 import { ClaimWithTruth, ItemTruthTag, WithheldClaim } from "./ItemTruthTag";
 import { claimTruthClassOf, distinctTruthClasses } from "./claimTruth";
 import { DATA_UNAVAILABLE_LABEL, formatAsOfIntraday, percentFixed2ToString, projectionVersionLabel } from "./format";
 import { CLOSEUP_ACTION_LEAD_MS, OUTCOME_REVEAL_MS, WORLD_BREATH_MS } from "./motion";
 import { figureGeometry } from "./scene";
 import { SystemLabel } from "./SystemLabel";
+import { useCharacterArt, useMarkArtBroken } from "./useCharacterArt";
 
 /** 中性的可觀察姿態用語（public-v2.yaml：這組枚舉刻意不帶市場訊號）。 */
 const POSE_LABEL: Readonly<Record<CharacterPoseState, string>> = {
@@ -255,6 +261,21 @@ function Portrait({ reducedMotion }: { reducedMotion: boolean }) {
   );
 }
 
+/** 近景畫面：整套美術就緒時用分層 rig，否則（載入中、沒有清單、缺圖）用幾何近景。 */
+function CloseUpPortrait({ characterId, reducedMotion }: { characterId: string; reducedMotion: boolean }) {
+  const art = useCharacterArt(characterId, "rig");
+  const markBroken = useMarkArtBroken();
+  if (art.phase !== "ready") return <Portrait reducedMotion={reducedMotion} />;
+  return (
+    <CharacterRig
+      characterId={characterId}
+      manifest={art.manifest}
+      reducedMotion={reducedMotion}
+      onBroken={() => markBroken(characterId, "rig")}
+    />
+  );
+}
+
 /** 一項後果碎片。紙上數字一律附 as_of；沒有紙上後果就換成工作／關係／記憶。 */
 function ConsequenceFragment({
   highlight,
@@ -419,7 +440,7 @@ export function CloseUpScreen({
       <style>{STYLES}</style>
 
       <div className="v5-closeup__portrait">
-        <Portrait reducedMotion={reducedMotion} />
+        <CloseUpPortrait characterId={closeUp.characterId} reducedMotion={reducedMotion} />
       </div>
       <ClaimWithTruth
         truthClass={closeUp.poseStateTruthClass}
